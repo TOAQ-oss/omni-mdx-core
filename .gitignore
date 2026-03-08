@@ -1,0 +1,17 @@
+# Rust
+core-parser/target/
+core-parser/Cargo.lock
+
+# WebAssembly
+packages/mdx-next/wasm-core/
+
+# Node / Next.js
+node_modules/
+.next/
+dist/
+.env*
+*.log
+
+# Others
+.DS_Store
+Thumbs.db

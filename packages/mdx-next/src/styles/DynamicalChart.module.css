@@ -1,0 +1,106 @@
+.wrapper {
+  margin: 2.5rem 0;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+.chartSection {
+  padding: 1.5rem;
+  width: 100%;
+}
+
+.chartArea {
+  height: 400px;
+  min-height: 400px;
+  width: 100%;
+  user-select: none;
+}
+
+.chartArea :global(.recharts-wrapper) {
+  outline: none !important;
+}
+
+.chartArea :global(.recharts-surface) {
+  outline: none !important;
+}
+
+.chartArea :global(*:focus) {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.controlsSection {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+.parameterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.labelRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 0.25rem;
+}
+
+.labelText {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  line-height: 1;
+}
+
+.sliderContainer {
+  margin-top: 0.75rem;
+}
+
+.rangeInput {
+  width: 100%;
+  height: 0.5rem;
+  background-color: #e5e7eb;
+  border-radius: 0.5rem;
+  appearance: none;
+  cursor: pointer;
+  accent-color: #2563eb;
+}
+
+.rangeInput:focus {
+  outline: 2px solid #dbeafe;
+  outline-offset: 2px;
+}
+
+.rangeLabels {
+  display: flex;
+  justify-content: space-between;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; /* font-mono */
+  font-size: 0.625rem;
+  color: #9ca3af;
+  margin-top: 0.25rem;
+}
+
+.captionContainer {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.captionText {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-size: 0.875rem;
+  font-style: italic;
+  margin-top: 0.5rem;
+  line-height: 1.25rem;
+  color: #6b7280;
+}

@@ -1,0 +1,54 @@
+.annotation_container {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.5rem;
+    color: #4b5563;
+    width: 100%;
+    scroll-margin-top: 100px;
+    padding: 8px;
+    border-radius: 6px;
+    transition: background-color 0.5s ease;
+}
+
+.annotation_container:target {
+    background-color: #fef9c3;
+    animation: fadeOut 3s 1s forwards;
+}
+
+@keyframes fadeOut {
+    to { background-color: transparent; }
+}
+
+.note_index {
+    text-decoration: none;
+    user-select: none;
+    font-weight: 700;
+    color: #3b82f6;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.note_index:hover {
+    text-decoration: underline;
+}
+
+.ref_link {
+    cursor: pointer;
+    font-size: 0.75em;
+    vertical-align: super;
+    color: #3b82f6;
+    text-decoration: none;
+    margin-left: 2px;
+    font-weight: 600;
+    transition: color 0.2s;
+}
+
+.ref_link:hover {
+    color: #1d4ed8;
+    text-decoration: none;
+}

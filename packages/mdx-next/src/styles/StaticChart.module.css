@@ -1,0 +1,50 @@
+.chartWrapper {
+  margin: 2.5rem 0;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+.content {
+  width: 100%;
+  padding: 1.5rem;
+}
+
+.chartArea {
+  user-select: none;
+  height: 400px;
+  min-height: 400px;
+  width: 100%;
+}
+
+.chartArea :global(.recharts-wrapper) {
+  outline: none !important;
+}
+
+.chartArea :global(.recharts-surface) {
+  outline: none !important;
+}
+
+.chartArea :global(*:focus) {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.captionContainer {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.captionText {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-size: 0.875rem;
+  font-style: italic;
+  margin-top: 0.5rem;
+  line-height: 1.25rem;
+  color: #6b7280;
+}

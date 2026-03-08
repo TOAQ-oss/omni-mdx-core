@@ -1,0 +1,8 @@
+{
+  "name": "omni-mdx-workspace",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "tests/next/*"
+  ]
+}
