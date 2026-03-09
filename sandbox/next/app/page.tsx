@@ -44,7 +44,6 @@ export default function TestPage() {
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 1. Initialisation impérative du WASM au montage
   useEffect(() => {
     initWasm()
       .then(() => setIsReady(true))
@@ -54,12 +53,10 @@ export default function TestPage() {
       });
   }, []);
 
-  // 2. Le parsing ne s'exécute QUE si isReady est true
   const { ast, parseError } = useMemo(() => {
     if (!isReady || !markdownContent) return { ast: null, parseError: null };
 
     try {
-      // Maintenant que isReady est true, __wbindgen_free et le reste sont définis
       const jsonAst = parse_mdx_to_json(markdownContent);
       return { 
         ast: JSON.parse(jsonAst), 
