@@ -47,9 +47,9 @@ Each module is published independently on its respective registry:
 
 |Package|Platform|Installation|
 |:--|:--|:--|
-| @omni/mdx-engine | NPM / Next.js |npm install @omni/mdx-engine |
-| omni-mdx | PyPI / Python | pip install omni-mdx |
-| omni_mdx | Pub / Dart | pub add omni_mdx |
+| @toaq-oss/mdx-engine | NPM / Next.js |npm install @toaq-oss/mdx-engine |
+| toaq-mdx (Soon) | PyPI / Python | pip install toaq-mdx |
+| toaq_mdx (Soon) | Pub / Dart | pub add tpaq_mdx |
 
 ## 📄 License
 This project is licensed under the MIT License. You are free to use, modify, and distribute it.
