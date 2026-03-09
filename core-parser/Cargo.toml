@@ -1,16 +1,31 @@
 [package]
-name = "core-parser"
-version = "0.1.0"
+name    = "mdx-parser"
+version = "0.2.0"
 edition = "2021"
 
 [lib]
-# "cdylib" est magique : ça permet de compiler en .wasm pour le web, 
-# ou en .so/.dll/.dylib pour le mobile/desktop via FFI.
+name       = "mdx_parser"
 crate-type = ["cdylib", "rlib"]
 
+[[bin]]
+name = "test_parse"
+path = "src/bin/test_parse.rs"
+
 [dependencies]
-pulldown-cmark = "0.11"
-regex = "1.10"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-wasm-bindgen = "0.2.114"
+pulldown-cmark = "0.10"
+regex          = "1"
+serde          = { version = "1", features = ["derive"] }
+serde_json     = "1"
+wasm-bindgen   = { version = "0.2.93", optional = true }
+
+[features]
+default = []
+wasm    = ["wasm-bindgen"]
+ffi     = []
+
+# wasm-pack reads this and automatically passes --features wasm at build time.
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ["-Oz"]
+
+[package.metadata.wasm-pack.profile.dev]
+wasm-opt = false

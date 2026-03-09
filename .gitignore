@@ -1,6 +1,5 @@
 # Rust
-core-parser/target/
-core-parser/Cargo.lock
+target/
 
 # WebAssembly
 packages/mdx-next/wasm-core/
