@@ -49,7 +49,7 @@ Each module is published independently on its respective registry:
 |:--|:--|:--|
 | [@toaq-oss/mdx-engine](https://www.npmjs.com/package/@toaq-oss/mdx-engine) | NPM / Next.js | npm install @toaq-oss/mdx-engine |
 | toaq-mdx (Soon) | PyPI / Python | pip install toaq-mdx |
-| toaq_mdx (Soon) | Pub / Dart | pub add tpaq_mdx |
+| toaq_mdx (Soon) | Pub / Dart | pub add toaq_mdx |
 
 ## 📄 License
 This project is licensed under the MIT License. You are free to use, modify, and distribute it.
