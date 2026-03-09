@@ -47,7 +47,7 @@ Each module is published independently on its respective registry:
 
 |Package|Platform|Installation|
 |:--|:--|:--|
-| @toaq-oss/mdx-engine | NPM / Next.js |npm install @toaq-oss/mdx-engine |
+| [@toaq-oss/mdx-engine](https://www.npmjs.com/package/@toaq-oss/mdx-engine) | NPM / Next.js | npm install @toaq-oss/mdx-engine |
 | toaq-mdx (Soon) | PyPI / Python | pip install toaq-mdx |
 | toaq_mdx (Soon) | Pub / Dart | pub add tpaq_mdx |
 
