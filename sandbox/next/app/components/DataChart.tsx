@@ -1,5 +1,5 @@
 "use client";
-import { parseProps } from '@omni/mdx-engine';
+import { parseProps } from '@toaq-oss/mdx-engine';
 
 interface DataChartProps {
   title: string;

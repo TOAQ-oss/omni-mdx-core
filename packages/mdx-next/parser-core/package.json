@@ -1,0 +1,15 @@
+{
+  "name": "mdx-parser",
+  "type": "module",
+  "version": "0.2.0",
+  "files": [
+    "mdx_parser_bg.wasm",
+    "mdx_parser.js",
+    "mdx_parser.d.ts"
+  ],
+  "main": "mdx_parser.js",
+  "types": "mdx_parser.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

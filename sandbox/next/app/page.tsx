@@ -1,7 +1,8 @@
 "use client";
-import { useMemo } from 'react';
-import { MDXViewer, parse_mdx_to_json } from '@omni/mdx-engine';
+import { useEffect, useMemo, useState } from 'react';
+import initWasm, { MDXViewer, parse_mdx_to_json } from '@toaq-oss/mdx-engine';
 import { MDX_COMPONENTS } from './components/MDXComponents';
+import "katex/dist/katex.min.css";
 
 const markdownContent = `
 # Episode 1: The Evolution of Vocal Models
@@ -40,31 +41,44 @@ const myConfig = {
 };
 
 export default function TestPage() {
+  const [isReady, setIsReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // 1. Initialisation impérative du WASM au montage
+  useEffect(() => {
+    initWasm()
+      .then(() => setIsReady(true))
+      .catch((err) => {
+        console.error("Échec du chargement du moteur Rust:", err);
+        setError("Impossible de charger le moteur de rendu.");
+      });
+  }, []);
+
+  // 2. Le parsing ne s'exécute QUE si isReady est true
   const { ast, parseError } = useMemo(() => {
-    if (!markdownContent) return { ast: null, parseError: null };
+    if (!isReady || !markdownContent) return { ast: null, parseError: null };
 
     try {
+      // Maintenant que isReady est true, __wbindgen_free et le reste sont définis
       const jsonAst = parse_mdx_to_json(markdownContent);
-      
       return { 
         ast: JSON.parse(jsonAst), 
         parseError: null 
       };
     } catch (err) {
-      console.error("Critical error in omni rust core :", err);
       return { 
         ast: null, 
         parseError: err instanceof Error ? err.message : String(err) 
       };
     }
-  }, [markdownContent]);
+  }, [isReady, markdownContent]);
 
-  if (parseError) return <p>Erreur : {parseError}</p>;
-  if (!ast)  return <p>Chargement…</p>;
+  if (error || parseError) return <p className="p-8 text-red-600">Erreur : {error || parseError}</p>;
+  if (!isReady || !ast) return <p className="p-8">Chargement du moteur Rust ultra-rapide...</p>;
 
   return (
     <main className="max-w-3xl mx-auto p-8">
-      <MDXViewer ast={ast} config={myConfig} />
+      <MDXViewer ast={ast} config={{ features: { math: true }, components: MDX_COMPONENTS }} />
     </main>
   );
 }

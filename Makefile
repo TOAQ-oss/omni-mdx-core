@@ -1,5 +1,5 @@
-CORE_DIR  = core-parser
-WASM_OUT  = packages\mdx-next\omni-core
+CORE_DIR = core-parser
+WASM_OUT = packages/mdx-next/omni-core
 
 .PHONY: build test build-web setup clean
 
@@ -11,9 +11,10 @@ test:
 	cd $(CORE_DIR) && cargo run --bin test_perf
 
 build-web:
-	cd $(CORE_DIR) && wasm-pack build --target bundler --release --features wasm
-	cmd /c "if not exist $(WASM_OUT) mkdir $(WASM_OUT)"
-	cmd /c "xcopy /E /Y /I $(CORE_DIR)\pkg\* $(WASM_OUT)\"
+	cd $(CORE_DIR) && wasm-pack build --target web --release --features wasm
+	mkdir -p $(WASM_OUT)
+	cp -r $(CORE_DIR)/pkg/* $(WASM_OUT)/
+	rm -f $(WASM_OUT)/.gitignore
 
 setup:
 	npm install
@@ -21,4 +22,4 @@ setup:
 
 clean:
 	cd $(CORE_DIR) && cargo clean
-	cmd /c "if exist $(CORE_DIR)\pkg rmdir /S /Q $(CORE_DIR)\pkg"
+	rm -rf $(CORE_DIR)/pkg

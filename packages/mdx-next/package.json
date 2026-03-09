@@ -1,11 +1,24 @@
 {
-  "name": "@omni/mdx-engine",
-  "version": "0.1.0",
-  "main": "src/index.ts",
-  "private": true,
+  "name": "@toaq-oss/mdx-engine",
+  "version": "0.1.2",
+  "author": "TOAQ",
+  "description": "Ultra-fast MDX rendering engine powered by Rust and WebAssembly.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "parser-core"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
   "peerDependencies": {
-    "react": ">=18",
-    "react-dom": "^19.2.4"
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
   },
   "dependencies": {
     "react-katex": "^3.1.0"

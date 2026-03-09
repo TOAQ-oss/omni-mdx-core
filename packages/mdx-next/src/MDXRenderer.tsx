@@ -6,8 +6,6 @@ import type { MDXConfig } from "./types/MDXConfig";
 import type { AttrValue, AstNode } from "./types/Ast";
 import { MDXErrorBoundary } from "./MDXErrorBoundary";
 import { InlineMath, BlockMath } from "react-katex";
-import "katex/dist/katex.min.css";
-
 
 /**
  * Tracks whether the renderer is currently inside a custom JSX component.
@@ -122,7 +120,7 @@ const MDXContent = ({ ast }: { ast: AstNode[] }) => {
     if (process.env.NODE_ENV !== "production") {
       console.warn(`[MDXRenderer] Unknown component: <${node.node_type}>`);
     }
-    
+
     return (
       <div key={key} data-missing-component={node.node_type}>
         {renderedChildren}

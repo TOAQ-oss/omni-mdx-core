@@ -1,9 +1,6 @@
 # Rust
 target/
 
-# WebAssembly
-packages/mdx-next/wasm-core/
-
 # Node / Next.js
 node_modules/
 .next/
@@ -11,6 +8,13 @@ dist/
 .env*
 *.log
 
+# NPM
+*.tgz
+
 # Others
 .DS_Store
 Thumbs.db
+
+# Future release
+packages/*
+!packages/mdx-next
