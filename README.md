@@ -1,54 +1,55 @@
 # 🦀 Omni-MDX
-## Un moteur de rendu MDX rapide, cross-platform et cross-langage propulsé par Rust.
+## A fast, cross-platform, cross-language MDX rendering engine powered by Rust.
 
-Omni-MDX est conçu pour transformer des documents scientifiques complexes (LaTeX, MDX, composants interactifs) en un arbre de données (AST) universel. Initialement créé pour la plateforme TOAQ, ce moteur permet de visualiser du MDX (Markdown Extended) sur des projets du style Web, App, Software.
+Omni-MDX is designed to transform complex scientific documents (LaTeX, MDX, interactive components) into a universal data tree (AST). Initially created for the TOAQ platform, this engine allows MDX (Markdown Extended) to be viewed on web, app, and software projects.
 
-## 🚀 Vision du Projet
-L'objectif d'Omni-MDX est de résoudre le problème de la fragmentation des parseurs. Au lieu d'avoir un parseur en JavaScript pour le site web et un autre en Python pour le traitement de données, Omni-MDX propose un **Cœur Unique en Rust** compilé pour chaque environnement.
-* **Vitesse Native :** Parsing haute performance grâce à Rust.
-* **Math-Ready :** Support natif de KaTeX ($E=mc^2$) et des blocs d'équations.
-* **Composants Agnostiques :** Le moteur identifie les composants JSX/MDX et délègue le rendu à la plateforme hôte.
-* **Multi-Cible** : Un seul code source pour le Web (WASM), Python (IA/Datasets) et bientôt Mobile (Dart/FFI).
+## 🚀 Project Vision
+Omni-MDX aims to solve the problem of parser fragmentation. Instead of having one parser in JavaScript for the website and another in Python for data processing, Omni-MDX offers a **Single Core in Rust** compiled for each environment.
+* **Native Speed:** High-performance parsing thanks to Rust.
+* **Math-Ready:** Native support for KaTeX ($E=mc^2$) and equation blocks.
+* **Component Agnostic:** The engine identifies JSX/MDX components and delegates rendering to the host platform.
+* **Multi-Target:** A single source code for the web (WASM), Python (AI/Datasets), and soon mobile (Dart/FFI).
 
 ## 🏗️ Architecture du Monorepo
 ```
 omni-mdx/
-├── core-parser/          # 🦀 Le Cœur Rust (Source de vérité)
-│   ├── src/              # Logique de parsing MDX -> JSON
-│   └── bindings/         # Points d'entrée spécifiques (WASM, Python, etc.)
+├── core-parser/
+│   ├── src/
+│   └── bindings/
 ├── packages/
-│   ├── mdx-engine/       # ⚛️ Wrapper React / Next.js (WebAssembly)
-│   └── mdx-python/       # 🐍 Binding Python (PyO3) - [Work in progress]
-└── tests/
-    └── next-sandbox/     # 🧪 Environnement de test Next.js
+│   ├── mdx-next/
+│   └── mdx-python/ [In progress]
+└── sandbox/
+    └── next/
 ```
 
-##  🛠️ Installation & Développement
-### Pré-requis
-* [Rust](https://rustup.rs/) (dernière version stable)
+##  🛠️ Installation & Development
+### Prerequisites
+* [Rust](https://rustup.rs/) (latest stable version)
 * [Node.js](https://nodejs.org/fr) (v18+)
-* [wasm-pack](https://www.google.com/search?q=https://rustwasm.github.io/wasm-pack/installer/) (pour la partie Web)
+* [wasm-pack](https://www.google.com/search?q=https://rustwasm.github.io/wasm-pack/installer/) (for the web part)
 
-### 1. Compiler le moteur (WASM)
-Depuis la racine du projet :
+### 1. Compile the engine (WASM)
+From the project root directory:
 ```bash
-cd core-parser
-wasm-pack build --target bundler --out-dir ../packages/mdx-engine/wasm-core
+make setup
+
+make build-web
 ```
-2. Lancer le bac à sable (Next.js)
+2. Launch the sandbox (Next.js)
 ```bash
-cd tests/next-sandbox
+cd sandbox/next
 npm install
 npm run dev --webpack
 ```
-## 📦 Distribution des Paquets
-Chaque module est publié de manière indépendante sur son registre respectif :
+## 📦 Package Distribution
+Each module is published independently on its respective registry:
 
-|Paquet|Plateforme|Installation|
+|Package|Platform|Installation|
 |:--|:--|:--|
 | @omni/mdx-engine | NPM / Next.js |npm install @omni/mdx-engine |
 | omni-mdx | PyPI / Python | pip install omni-mdx |
 | omni_mdx | Pub / Dart | pub add omni_mdx |
 
-## 📄 Licence
-Ce projet est sous licence MIT. Vous êtes libre de l'utiliser, de le modifier et de le distribuer.
+## 📄 License
+This project is licensed under the MIT License. You are free to use, modify, and distribute it.
