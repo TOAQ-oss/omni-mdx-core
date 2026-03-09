@@ -10,7 +10,7 @@ Omni-MDX aims to solve the problem of parser fragmentation. Instead of having on
 * **Component Agnostic:** The engine identifies JSX/MDX components and delegates rendering to the host platform.
 * **Multi-Target:** A single source code for the web (WASM), Python (AI/Datasets), and soon mobile (Dart/FFI).
 
-## 🏗️ Architecture du Monorepo
+## 🏗️ Monorepo Architecture
 ```
 omni-mdx/
 ├── core-parser/
