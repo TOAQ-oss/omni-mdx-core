@@ -51,12 +51,22 @@ jobs:
 
       - name: Inject Rust Binary into Python Package
         run: |
-          echo "🔍 Débogage : Voici ce que Rust a généré dans le dossier release :"
-          ls -la core-parser/target/release/
+          echo "🔍 Recherche automatique du binaire Rust généré :"
+          find . -name "libtoaq*.so"
           
-          # On attrape le binaire via un joker (*) pour ignorer les problèmes de tirets/underscores
-          cp core-parser/target/release/lib*.so packages/mdx-python/toaq_mdx/toaq_parser_core.so
+          # On trouve le fichier .so et on le stocke dans une variable
+          SO_FILE=$(find . -name "libtoaq*.so" -type f | head -n 1)
           
+          if [ -z "$SO_FILE" ]; then
+            echo "❌ ERREUR : Aucun binaire .so trouvé par Rust !"
+            exit 1
+          fi
+          
+          echo "✅ Binaire trouvé ici : $SO_FILE"
+          
+          # On le copie et on le renomme proprement pour Python
+          cp "$SO_FILE" packages/mdx-python/toaq_mdx/toaq_parser_core.so
+
       - name: Build Python Wheel
         working-directory: packages/mdx-python
         run: |
