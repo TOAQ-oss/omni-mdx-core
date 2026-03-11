@@ -62,9 +62,6 @@ jobs:
           npm run build
 
       - name: Publish to NPM
-        uses: JS-DevTools/npm-publish@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          package: packages/mdx-next/package.json
-          access: public
-          provenance: true
+        working-directory: packages/mdx-next
+        run: |
+          npm publish --access public --provenance --ignore-scripts
