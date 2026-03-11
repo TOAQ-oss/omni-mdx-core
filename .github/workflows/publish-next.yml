@@ -64,5 +64,4 @@ jobs:
       - name: Publish to NPM
         working-directory: packages/mdx-next
         run: |
-          npm whoami
           npm publish --access public --provenance
