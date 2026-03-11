@@ -1,6 +1,6 @@
 {
   "name": "@toaq-oss/mdx-engine",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "author": "TOAQ",
   "description": "Ultra-fast MDX rendering engine powered by Rust and WebAssembly.",
   "repository": {
