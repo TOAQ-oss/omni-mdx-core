@@ -43,7 +43,7 @@ cd tests/
 git pull https://github.com/TOAQ-oss/omni-mdx-sandbox
 
 # To use Next sandbox
-cd next
+cd omni-mdx-sandbox/next
 npm install
 npm run dev
 ```
