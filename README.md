@@ -36,12 +36,18 @@ make setup
 
 make build-web
 ```
-2. Launch the sandbox (Next.js)
+2. Get the sandbox
 ```bash
-cd sandbox/next
+mkdir tests/
+cd tests/
+git pull https://github.com/TOAQ-oss/omni-mdx-sandbox
+
+# To use Next sandbox
+cd next
 npm install
-npm run dev --webpack
+npm run dev
 ```
+
 ## 📦 Package Distribution
 Each module is published independently on its respective registry:
 
