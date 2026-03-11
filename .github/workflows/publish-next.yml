@@ -1,0 +1,70 @@
+name: NPM Next.js Publish
+
+on:
+  push:
+    branches:
+      - main
+    # Ne se lance QUE si tu modifies le Next.js ou le cœur Rust
+    paths:
+      - 'packages/mdx-next/**'
+      - 'core-parser/**'
+  workflow_dispatch:
+
+jobs:
+  publish-npm:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # 1. Préparation de l'environnement Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      # 2. Installation de l'outil officiel Rust -> WASM
+      - name: Install wasm-pack
+        uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: 'latest'
+
+      # 3. Compilation du Moteur en WebAssembly
+      - name: Build Rust to WASM
+        working-directory: core-parser
+        # --target bundler prépare le code pour Webpack (le moteur de Next.js)
+        run: wasm-pack build --target bundler --release
+
+      - name: Move WASM to Next.js package and clean up
+        run: |
+          echo "🚚 Transfert du build WASM vers le package Next.js..."
+          
+          # On crée le dossier de destination (s'il n'existe pas)
+          mkdir -p packages/mdx-next/parser-core
+          
+          # On copie tout le contenu du dossier pkg
+          cp -r core-parser/pkg/* packages/mdx-next/parser-core/
+          
+          # 💥 ON DÉTRUIT LE .gitignore POUR FORCER L'INCLUSION NPM
+          rm -f packages/mdx-next/parser-core/.gitignore
+          
+          echo "✅ Transfert et nettoyage terminés. Contenu :"
+          ls -la packages/mdx-next/parser-core/
+          
+      # 4. Préparation du package NPM
+      - name: Install Dependencies & Build Next Package
+        working-directory: packages/mdx-next
+        run: |
+          # Installation des dépendances classiques
+          npm ci
+          # Construction du build Next.js / de ta librairie React
+          npm run build
+
+      # 5. Publication
+      - name: Publish to NPM (Simulation)
+        working-directory: packages/mdx-next
+        # Plus besoin de la variable env NODE_AUTH_TOKEN !
+        run: npm publish --access public --provenance --dry-run
