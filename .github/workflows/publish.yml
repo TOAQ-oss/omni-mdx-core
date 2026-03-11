@@ -35,7 +35,6 @@ jobs:
   # ==========================================
   publish-python:
     needs: detect-changes
-    # S'exécute SI le dossier python OU le dossier core a été modifié
     if: ${{ needs.detect-changes.outputs.python == 'true' || needs.detect-changes.outputs.core == 'true' }}
     runs-on: ubuntu-latest
     steps:
@@ -44,18 +43,26 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          python-version: '3.11'
 
-      - name: Build wheels with Maturin
-        uses: PyO3/maturin-action@v1
-        with:
-          # On compile le Rust contenu dans packages/mdx-python
-          working-directory: packages/mdx-python
-          command: build
-          args: --release --out dist
+      - name: Build Rust Core (Linux .so)
+        working-directory: core-parser
+        run: cargo build --release
+
+      - name: Inject Rust Binary into Python Package
+        run: |
+          # On copie le binaire généré par Rust vers le dossier Python
+          # Et on retire le préfixe "lib" imposé par Linux pour que Python puisse l'importer
+          cp core-parser/target/release/libtoaq_parser_core.so packages/mdx-python/toaq_mdx/toaq_parser_core.so
+          
+      - name: Build Python Wheel
+        working-directory: packages/mdx-python
+        run: |
+          pip install build twine
+          python -m build
           
       - name: SIMULATION Publish to PyPI
-        run: echo "📦 Twine upload réussi ! (Simulation)"
+        run: echo "📦 Compilation et Wheel générés avec succès ! (Simulation)"
     #   - name: Publish to PyPI
     #     env:
     #       TWINE_USERNAME: __token__
