@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "toaq-mdx"
+version = "0.1.1"
+description = "Ultra-fast MDX rendering engine powered by Rust and WebAssembly."
+readme = "README.md"
+requires-python = ">=3.7"
+
+[tool.setuptools]
+packages = ["toaq_mdx"]
+
+[tool.setuptools.package-data]
+"toaq_mdx" = ["*.pyd", "*.so", "*.dll"]

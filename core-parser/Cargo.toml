@@ -8,8 +8,8 @@ name       = "mdx_parser"
 crate-type = ["cdylib", "rlib"]
 
 [[bin]]
-name = "test_parse"
-path = "src/bin/test_parse.rs"
+name = "test_ast"
+path = "src/bin/test_ast.rs"
 
 [dependencies]
 pulldown-cmark = "0.10"
@@ -17,10 +17,12 @@ regex          = "1"
 serde          = { version = "1", features = ["derive"] }
 serde_json     = "1"
 wasm-bindgen   = { version = "0.2.93", optional = true }
+pyo3 = { version = "0.23", features = ["extension-module"], optional = true }
 
 [features]
 default = []
 wasm    = ["wasm-bindgen"]
+python = ["pyo3"]
 ffi     = []
 
 # wasm-pack reads this and automatically passes --features wasm at build time.
