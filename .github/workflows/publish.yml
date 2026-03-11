@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main # Le workflow se lance à chaque push sur la branche main
+      - test-ci-workflow
   workflow_dispatch:
 
 jobs:
