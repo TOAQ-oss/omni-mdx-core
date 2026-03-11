@@ -18,7 +18,7 @@ omni-mdx/
 │   └── bindings/
 ├── packages/
 │   ├── mdx-next/
-│   └── mdx-python/ [In progress]
+│   └── mdx-python/
 └── sandbox/
     └── next/
 ```
@@ -54,7 +54,7 @@ Each module is published independently on its respective registry:
 |Package|Platform|Installation|
 |:--|:--|:--|
 | [@toaq-oss/mdx-engine](https://www.npmjs.com/package/@toaq-oss/mdx-engine) | NPM / Next.js | npm install @toaq-oss/mdx-engine |
-| toaq-mdx (Soon) | PyPI / Python | pip install toaq-mdx |
+| [toaq-mdx](https://pypi.org/project/toaq-mdx/) | PyPI / Python | pip install toaq-mdx |
 | toaq_mdx (Soon) | Pub / Dart | pub add toaq_mdx |
 
 ## 📄 License
