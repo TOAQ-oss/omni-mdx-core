@@ -82,6 +82,12 @@ jobs:
           
           Remove-Item $WHEEL_FILE
 
+      - name: Upload Wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}
+          path: packages/mdx-python/dist/*.whl
+          
   publish:
     name: Publish to PyPI
     needs: build-wheels
