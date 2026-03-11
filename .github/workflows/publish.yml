@@ -83,7 +83,11 @@ jobs:
     #     run: |
     #       pip install twine
     #       twine upload packages/mdx-python/dist/*
-
+      - name: Upload Artifact for manual inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-wheel-package
+          path: packages/mdx-python/dist/*.whl
   # ==========================================
   # 3. PUBLICATION NODE (NPM)
   # ==========================================
