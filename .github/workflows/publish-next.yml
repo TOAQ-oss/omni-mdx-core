@@ -28,7 +28,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Install Rust Stable
         uses: dtolnay/rust-toolchain@stable
@@ -61,8 +61,7 @@ jobs:
           npm ci
           npm run build
 
-      - name: Publish Package to NPM
-        run: |
-          npm publish -w @toaq-oss/mdx-engine --access public --provenance --ignore-scripts
+      - name: Publish to NPM
+        run: npm publish -w @toaq-oss/mdx-engine --access public --provenance
         env:
-          npm_config_//registry.npmjs.org/:aud: "https://registry.npmjs.org/"
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
