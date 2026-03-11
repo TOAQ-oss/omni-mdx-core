@@ -29,7 +29,7 @@ jobs:
 
       - name: Build Rust Core
         working-directory: core-parser
-        run: cargo build --release --features python
+        run: cargo build --release --features "python pyo3/extension-module"
 
       # ── INJECTION POUR LINUX & MAC (Bash) ──
       - name: Inject Binary (Linux/Mac)
