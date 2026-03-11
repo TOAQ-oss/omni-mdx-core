@@ -27,18 +27,11 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Build Rust Core
+      - name: Build and Inject Rust Module
         working-directory: core-parser
-        shell: bash
         run: |
-          if [ "${{ runner.os }}" == "macOS" ]; then
-            # Commande spécifique pour macOS : autorise les symboles non définis
-            export RUSTFLAGS="-C link-arg=-undefined -C link-arg=dynamic_lookup"
-            cargo build --release --features python
-          else
-            # Pour Windows et Linux, le flag extension-module suffit généralement
-            cargo build --release --features "python pyo3/extension-module"
-          fi
+          pip install maturin
+          maturin build --release --features python --interpreter python3.11 --out ../packages/mdx-python/toaq_mdx/
 
       # ── INJECTION POUR LINUX & MAC (Bash) ──
       - name: Inject Binary (Linux/Mac)
