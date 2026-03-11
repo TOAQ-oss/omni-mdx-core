@@ -8,8 +8,8 @@ name       = "mdx_parser"
 crate-type = ["cdylib", "rlib"]
 
 [[bin]]
-name = "test_parse"
-path = "src/bin/test_parse.rs"
+name = "test_ast"
+path = "src/bin/test_ast.rs"
 
 [dependencies]
 pulldown-cmark = "0.10"
