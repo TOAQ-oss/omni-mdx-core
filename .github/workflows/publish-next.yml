@@ -45,7 +45,7 @@ jobs:
         env:
           RUSTUP_TOOLCHAIN: stable
         run: |
-          cargo install wasm-bindgen-cli --version 0.2.95
+          command -v wasm-bindgen >/dev/null || cargo install wasm-bindgen-cli --version 0.2.95
           
           cargo build --release --target wasm32-unknown-unknown
           
