@@ -1,0 +1,100 @@
+name: Python PyPI Publish
+
+on:
+  push:
+    branches:
+      - main
+    # Le workflow se lance UNIQUEMENT si on touche à ces dossiers
+    paths:
+      - 'packages/mdx-python/**'
+      - 'core-parser/**'
+  workflow_dispatch:
+
+jobs:
+  build-wheels:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # C'est ici que la magie opère : 3 OS en parallèle !
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Build Rust Core
+        working-directory: core-parser
+        run: cargo build --release --features python
+
+      # ── INJECTION POUR LINUX & MAC (Bash) ──
+      - name: Inject Binary (Linux/Mac)
+        if: runner.os != 'Windows'
+        run: |
+          # Mac génère des .dylib ou .so, Linux des .so
+          BIN_FILE=$(find . -path "*/release/*" -type f \( -name "*.so" -o -name "*.dylib" \) | head -n 1)
+          cp "$BIN_FILE" packages/mdx-python/toaq_mdx/toaq_parser_core.so
+
+      # ── INJECTION POUR WINDOWS (PowerShell) ──
+      - name: Inject Binary (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          # Windows génère des .dll (que Python appelle .pyd)
+          $BIN_FILE = Get-ChildItem -Path .\target\release\ -Recurse -Include *.dll, *.pyd | Select-Object -First 1
+          Copy-Item $BIN_FILE.FullName -Destination packages\mdx-python\toaq_mdx\toaq_parser_core.pyd
+
+      - name: Build Python Wheel
+        working-directory: packages/mdx-python
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
+          python -m build
+
+      - name: Retag Wheel (Linux/Mac)
+        if: runner.os != 'Windows'
+        working-directory: packages/mdx-python
+        run: |
+          pip install wheel
+          OS_TAG=$(python -c "import sysconfig; print(sysconfig.get_platform().replace('-', '_').replace('.', '_'))")
+          python -m wheel tags --platform-tag $OS_TAG dist/*any.whl
+          rm dist/*any.whl  # On supprime l'ancien fichier générique
+
+      # ── RETAG POUR WINDOWS (PowerShell) ──
+      - name: Retag Wheel (Windows)
+        if: runner.os == 'Windows'
+        working-directory: packages/mdx-python
+        run: |
+          pip install wheel
+          $OS_TAG = python -c "import sysconfig; print(sysconfig.get_platform().replace('-', '_').replace('.', '_'))"
+          python -m wheel tags --platform-tag $OS_TAG dist\*any.whl
+          Remove-Item dist\*any.whl
+          
+      - name: Upload Artifacts (Sauvegarde temporaire)
+        uses: actions/upload-artifact@v4
+        with:
+          # On sauvegarde les Wheels générés par chaque OS
+          name: wheels-${{ matrix.os }}
+          path: packages/mdx-python/dist/*.whl
+
+  publish:
+    name: Publish to PyPI
+    needs: build-wheels
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer tous les Wheels
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+          pattern: wheels-*
+          merge-multiple: true
+
+      - name: SIMULATION Publish
+        run: |
+          echo "📦 Prêt à envoyer ces fichiers sur PyPI :"
+          ls -la dist/
+          # pip install twine
+          # twine upload dist/*
