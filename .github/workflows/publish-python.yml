@@ -65,15 +65,20 @@ jobs:
           python -m wheel tags --platform-tag $OS_TAG dist/*any.whl
           rm dist/*any.whl  # On supprime l'ancien fichier générique
 
-      # ── RETAG POUR WINDOWS (PowerShell) ──
       - name: Retag Wheel (Windows)
         if: runner.os == 'Windows'
         working-directory: packages/mdx-python
         run: |
           pip install wheel
+          # On récupère le nom du fichier wheel réel
+          $WHEEL_FILE = Get-ChildItem dist\*any.whl | Select-Object -ExpandProperty FullName
           $OS_TAG = python -c "import sysconfig; print(sysconfig.get_platform().replace('-', '_').replace('.', '_'))"
-          python -m wheel tags --platform-tag $OS_TAG dist\*any.whl
-          Remove-Item dist\*any.whl
+          
+          echo "🏷️ Renommage de $WHEEL_FILE avec le tag $OS_TAG"
+          python -m wheel tags --platform-tag $OS_TAG $WHEEL_FILE
+          
+          # On supprime l'ancien
+          Remove-Item $WHEEL_FILE
           
       - name: Upload Artifacts (Sauvegarde temporaire)
         uses: actions/upload-artifact@v4
