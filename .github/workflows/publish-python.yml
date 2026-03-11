@@ -66,7 +66,12 @@ jobs:
         working-directory: packages/mdx-python
         run: |
           pip install wheel
-          OS_TAG=$(python -c "import sysconfig; print(sysconfig.get_platform().replace('-', '_').replace('.', '_'))")
+          if [ "${{ runner.os }}" == "Linux" ]; then
+            OS_TAG="manylinux_2_17_x86_64"
+          else
+            OS_TAG=$(python -c "import sysconfig; print(sysconfig.get_platform().replace('-', '_').replace('.', '_'))")
+          fi
+          
           python -m wheel tags --platform-tag $OS_TAG dist/*any.whl
           rm dist/*any.whl
 
@@ -87,7 +92,7 @@ jobs:
         with:
           name: wheels-${{ matrix.os }}
           path: packages/mdx-python/dist/*.whl
-          
+
   publish:
     name: Publish to PyPI
     needs: build-wheels
