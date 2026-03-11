@@ -51,22 +51,21 @@ jobs:
 
       - name: Inject Rust Binary into Python Package
         run: |
-          echo "🔍 Recherche de tous les fichiers .so générés par Rust :"
-          find core-parser/target/release -name "*.so"
+          echo "🔍 Recherche du binaire .so depuis la racine du projet..."
           
-          # On prend le premier fichier .so trouvé
-          SO_FILE=$(find core-parser/target/release -name "*.so" -type f | head -n 1)
+          # On cherche partout (.) un fichier .so dans un dossier 'release'
+          SO_FILE=$(find . -path "*/release/*.so" -type f | head -n 1)
           
           if [ -z "$SO_FILE" ]; then
-            echo "❌ ERREUR : Aucun binaire .so trouvé ! Vérifiez que crate-type = [\"cdylib\"] est bien dans core-parser/Cargo.toml"
-            # Affichage de tout le dossier pour le débogage si ça échoue
-            ls -la core-parser/target/release/
+            echo "❌ ERREUR : Aucun binaire .so trouvé !"
+            echo "Voici tous les dossiers 'target' générés par Rust pour déboguer :"
+            find . -type d -name "target" -exec ls -laR {} +
             exit 1
           fi
           
-          echo "✅ Binaire dynamique trouvé : $SO_FILE"
+          echo "✅ Binaire dynamique trouvé ici : $SO_FILE"
           
-          # On le copie et on lui donne le nom exact attendu par Python
+          # On copie le binaire trouvé vers le package Python
           cp "$SO_FILE" packages/mdx-python/toaq_mdx/toaq_parser_core.so
 
       - name: Build Python Wheel
