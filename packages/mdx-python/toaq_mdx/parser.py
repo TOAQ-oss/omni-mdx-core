@@ -1,5 +1,5 @@
 """
-toaq_mdx.parser — Parsing MDX vers AST Python.
+toaq_mdx.parser — Parsing MDX to Python AST.
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from .exceptions import MDXSyntaxError
 
 class MDXParser:
     """
-    Parse du MDX en liste d'AstNode.
+    Parse MDX to a list of AstNode.
 
     Usage
     -----
@@ -25,31 +25,31 @@ class MDXParser:
 
     def parse(self, mdx_text: str) -> List[AstNode]:
         """
-        Parse un string MDX et retourne la liste des nœuds racine.
+        Parse MDX text and return the list of root nodes.
 
         Parameters
         ----------
         mdx_text : str
-            Source MDX brut.
+            Raw MDX source.
 
         Returns
         -------
         list[AstNode]
-            Nœuds racine de l'AST.
+            Root nodes of the AST.
 
         Raises
         ------
         MDXSyntaxError
-            Si le MDX contient une erreur de syntaxe.
+            If the MDX contains a syntax error.
         """
         raw_json = self._interface.parse_to_json(mdx_text)
         return parse_ast(raw_json)
 
     def parse_to_dict(self, mdx_text: str) -> list:
         """
-        Retourne l'AST sous forme de liste de dicts Python bruts
-        (sans désérialisation en AstNode).
-        Utile pour du debug ou de la sérialisation JSON.
+        Return the AST as a list of raw Python dicts
+        (without deserialization to AstNode).
+        Useful for debugging or JSON serialization.
         """
         import json
         raw_json = self._interface.parse_to_json(mdx_text)

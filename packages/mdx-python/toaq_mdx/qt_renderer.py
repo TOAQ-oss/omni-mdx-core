@@ -1,11 +1,11 @@
 """
-toaq_mdx.qt_renderer — Rendu AST en widgets PyQt5 natifs.
+toaq_mdx.qt_renderer — AST rendered in native PyQt5 widgets.
 
-Zéro HTML produit. Chaque AstNode devient un widget Qt dédié.
-Les formules mathématiques sont rendues :
-  - InlineMath → texte Unicode via math_render.latex_to_unicode
-  - BlockMath  → image PNG via matplotlib.mathtext (si disponible)
-                 fallback sur texte Unicode sinon
+No HTML produced. Each AstNode becomes a dedicated Qt widget.
+Mathematical formulas are rendered:
+  - InlineMath → Unicode text via math_render.latex_to_unicode
+  - BlockMath → PNG image via matplotlib.mathtext (if available)
+                 fallback to Unicode text otherwise
 
 Usage
 -----
@@ -28,13 +28,8 @@ from PyQt5.QtGui import QFont, QPixmap
 from .ast import AstNode
 from .math_render import latex_to_unicode, latex_to_pixmap, latex_to_pixmap_available
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-#  FlowLayout — word-wrap de widgets inline
-# ══════════════════════════════════════════════════════════════════════════════
-
 class FlowLayout(QLayout):
-    """Dispose les widgets en lignes avec retour automatique (word-wrap)."""
+    """Dispose the widgets in lines with automatic line break (word-wrap)."""
 
     def __init__(self, parent=None, h_spacing=2, v_spacing=4):
         super().__init__(parent)
@@ -78,11 +73,6 @@ class FlowLayout(QLayout):
             line_h = max(line_h, ih)
         return y + line_h - rect.y()
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-#  InlineLabel — widget texte inline stylisé
-# ══════════════════════════════════════════════════════════════════════════════
-
 class InlineLabel(QLabel):
     def __init__(self, text: str, bold=False, italic=False,
                  strike=False, code=False, math_inline=False, parent=None):
@@ -113,68 +103,59 @@ class InlineLabel(QLabel):
             self.setStyleSheet("background:transparent;padding:0;color:#1a202c;")
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  QtRenderer
-# ══════════════════════════════════════════════════════════════════════════════
-
-# Composants built-in — peuvent être surchargés par le développeur
 _BUILTIN_COMPONENTS = {"Note", "Details"}
-
 
 class QtRenderer:
     """
-    Convertit une liste d'AstNode en widgets Qt natifs.
+    Converts a list of AstNodes into native Qt widgets.
 
-    Priorité de rendu pour un composant JSX :
-    1. Composant enregistré par le développeur  (via ``components=`` ou ``register()``)
-    2. Composant built-in                       (Note, Details)
-    3. Fallback générique                       (encadré violet avec le nom)
+    Rendering priority for a JSX component:
+    1. Component registered by the developer  (via ``components=`` or ``register()``)
+    2. Built-in component                       (Note, Details)
+    3. Generic fallback                       (purple box with the name)
 
     Parameters
     ----------
-    components : dict, optional
-        Registre initial de composants custom.
-        Signature : ``fn(node: AstNode, renderer: QtRenderer) -> QWidget``
+    components: dict, optional
+        Initial registry of custom components.
+        Signature: ``fn(node: AstNode, renderer: QtRenderer) -> QWidget``
 
-        Exemple — surcharger Note avec un style custom ::
+        Example — override Note with a custom style ::
 
             from PyQt5.QtWidgets import QFrame, QVBoxLayout, QLabel
 
             def my_note(node, renderer):
                 frame = QFrame()
-                frame.setStyleSheet("border: 2px solid red; border-radius: 8px;")
+                frame.setStyleSheet(“border: 2px solid red; border-radius: 8px;”)
                 layout = QVBoxLayout(frame)
-                title = node.attr_text("title") or ""
-                layout.addWidget(QLabel(f"⚠ {title}"))
+                title = node.attr_text(“title”) or ‘’
+                layout.addWidget(QLabel(f“⚠ {title}”))
                 for w in renderer._render_mixed_children(node.children):
                     layout.addWidget(w)
                 return frame
 
-            renderer = QtRenderer(components={"Note": my_note})
+            renderer = QtRenderer(components={“Note”: my_note})
 
-        Le composant reçoit :
-        - ``node``     : l'AstNode complet avec ``node.attributes``, ``node.children``
-        - ``renderer`` : le QtRenderer courant — utilisez ``renderer._render_mixed_children()``
-          pour rendre les enfants, ou ``renderer.render()`` pour un sous-arbre complet.
+        The component receives:
+        - ``node``     : the complete AstNode with ``node.attributes``, ``node.children``
+        - ``renderer``: the current QtRenderer — use ``renderer._render_mixed_children()``
+          to render children, or ``renderer.render()`` for a complete subtree.
 
-    math_font_size : int
-        Taille de police (pt) pour le rendu image des formules block math.
+    math_font_size: int
+        Font size (pt) for image rendering of block math formulas.
     """
 
     def __init__(self, components: Optional[Dict[str, Callable]] = None,
                  math_font_size: int = 14):
-        # Copie défensive — on ne modifie pas le dict passé par l'appelant
         self.components:     Dict[str, Callable] = dict(components or {})
         self.math_font_size: int                 = math_font_size
 
-    # ── Registre de composants ────────────────────────────────────────────────
-
     def register(self, name: str, fn: Callable) -> "QtRenderer":
         """
-        Enregistre (ou remplace) un composant.
+        Registers (or replaces) a component.
 
-        Peut surcharger un built-in (Note, Details) ou définir un nouveau.
-        Retourne ``self`` pour le chaînage.
+        Can override a built-in (Note, Details) or define a new one.
+        Returns ``self`` for chaining.
 
         Example
         -------
@@ -185,27 +166,25 @@ class QtRenderer:
 
     def unregister(self, name: str) -> "QtRenderer":
         """
-        Supprime un composant enregistré.
+        Deletes a registered component.
 
-        Si ``name`` est un built-in (Note, Details), le built-in reprend le dessus.
-        Retourne ``self`` pour le chaînage.
+        If ``name`` is a built-in (Note, Details), the built-in takes precedence.
+        Returns ``self`` for chaining.
         """
         self.components.pop(name, None)
         return self
 
     def registered(self) -> Dict[str, Callable]:
-        """Retourne une copie du registre courant (user components uniquement)."""
+        """Returns a copy of the current registry (user components only)."""
         return dict(self.components)
 
     @property
     def builtin_components(self) -> frozenset:
-        """Noms des composants built-in (toujours disponibles même sans enregistrement)."""
+        """Names of built-in components (always available even without registration)."""
         return frozenset(_BUILTIN_COMPONENTS)
 
-    # ── Entrée publique ───────────────────────────────────────────────────────
-
     def render(self, nodes: List[AstNode], parent: Optional[QWidget] = None) -> QWidget:
-        """Retourne un QWidget contenant le rendu de tous les nœuds."""
+        """Returns a QWidget containing the rendering of all nodes."""
         container = QWidget(parent)
         container.setStyleSheet("background:transparent;")
         layout = QVBoxLayout(container)
@@ -217,8 +196,6 @@ class QtRenderer:
                 layout.addWidget(w)
         layout.addStretch()
         return container
-
-    # ── Dispatch ──────────────────────────────────────────────────────────────
 
     def _node(self, node: AstNode) -> Optional[QWidget]:
         t = node.node_type
@@ -238,7 +215,6 @@ class QtRenderer:
         fn = dispatch.get(t)
         if fn:
             return fn(node)
-        # InlineMath au niveau bloc (rare mais possible) → widget centré
         if t == "InlineMath":
             return self._inline_math_as_block(node)
         if node.is_component:
@@ -246,8 +222,6 @@ class QtRenderer:
         if node.children:
             return self.render(node.children)
         return None
-
-    # ── Headings ──────────────────────────────────────────────────────────────
 
     def _heading(self, node: AstNode) -> QLabel:
         level = int(node.node_type[1])
@@ -263,8 +237,6 @@ class QtRenderer:
         lbl.setStyleSheet(f"color:{color};background:transparent;{border}{margin}")
         return lbl
 
-    # ── Paragraphe (flow inline) ───────────────────────────────────────────────
-
     def _paragraph(self, node: AstNode) -> QWidget:
         w = QWidget()
         w.setStyleSheet("background:transparent;")
@@ -275,7 +247,7 @@ class QtRenderer:
 
     def _inline_into(self, children: List[AstNode], layout: FlowLayout,
                      bold=False, italic=False, strike=False):
-        """Peuple un FlowLayout avec les nœuds inline."""
+        """Populate a FlowLayout with inline nodes."""
         for child in children:
             t = child.node_type
             if t == "text":
@@ -311,16 +283,14 @@ class QtRenderer:
 
     def _inline_math_into(self, node: AstNode, layout: FlowLayout):
         """
-        Rendu inline math → toujours Unicode.
-        matplotlib n'est pas adapté à l'inline : les images ne s'alignent
-        pas correctement dans un FlowLayout et cassent le flow de texte.
+        Inline math rendering → always Unicode.
+        matplotlib is not suited to inline rendering: images do not align
+        correctly in a FlowLayout and break the text flow.
         """
         latex = node.content or ""
         lbl = InlineLabel(latex_to_unicode(latex), math_inline=True)
         lbl.setToolTip(f"LaTeX : {latex}")
         layout.addWidget(lbl)
-
-    # ── BlockMath — image ou fallback unicode ─────────────────────────────────
 
     def _block_math(self, node: AstNode) -> QFrame:
         frame = QFrame()
@@ -334,7 +304,6 @@ class QtRenderer:
 
         latex = node.content or ""
 
-        # Tentative rendu image (matplotlib)
         pixmap: Optional[QPixmap] = None
         if latex_to_pixmap_available():
             pixmap = latex_to_pixmap(
@@ -355,7 +324,6 @@ class QtRenderer:
             layout.addWidget(lbl)
             frame.setMinimumHeight(pixmap.height() + 24)
         else:
-            # Fallback : unicode centré, avec le LaTeX source en monospace
             unicode_text = latex_to_unicode(latex)
 
             lbl_unicode = QLabel(unicode_text)
@@ -368,7 +336,6 @@ class QtRenderer:
             lbl_unicode.setToolTip(f"LaTeX : {latex}")
             layout.addWidget(lbl_unicode)
 
-            # Source LaTeX en petit monospace pour référence
             lbl_src = QLabel(latex)
             font_s = QFont("JetBrains Mono", 9)
             lbl_src.setFont(font_s)
@@ -383,7 +350,7 @@ class QtRenderer:
         return frame
 
     def _inline_math_as_block(self, node: AstNode) -> QWidget:
-        """InlineMath rencontré au niveau bloc (hors <p>) — centré."""
+        """InlineMath encountered at block level (outside <p>) — centered."""
         w = QWidget()
         w.setStyleSheet("background:transparent;")
         layout = QVBoxLayout(w)
@@ -394,8 +361,6 @@ class QtRenderer:
         lbl.setToolTip(f"LaTeX : {node.content}")
         layout.addWidget(lbl)
         return w
-
-    # ── Listes ────────────────────────────────────────────────────────────────
 
     def _list(self, node: AstNode, ordered: bool) -> QWidget:
         w = QWidget()
@@ -420,7 +385,6 @@ class QtRenderer:
             content.setStyleSheet("background:transparent;")
             cl = FlowLayout(content, h_spacing=2, v_spacing=2)
             content.setLayout(cl)
-            # Filtrer les sous-listes pour l'inline
             inline_children = [c for c in item.children
                                 if c.node_type not in ("ul", "ol")]
             self._inline_into(inline_children, cl)
@@ -429,7 +393,6 @@ class QtRenderer:
             rl.addWidget(content, 1)
             layout.addWidget(row)
 
-            # Sous-listes
             for child in item.children:
                 if child.node_type in ("ul", "ol"):
                     sub = self._list(child, child.node_type == "ol")
@@ -440,8 +403,6 @@ class QtRenderer:
                     wl.addWidget(sub)
                     layout.addWidget(wrapper)
         return w
-
-    # ── Blockquote ────────────────────────────────────────────────────────────
 
     def _blockquote(self, node: AstNode) -> QFrame:
         frame = QFrame()
@@ -458,8 +419,6 @@ class QtRenderer:
                 layout.addWidget(w)
         return frame
 
-    # ── Code block ────────────────────────────────────────────────────────────
-
     def _code_block(self, node: AstNode) -> QFrame:
         frame = QFrame()
         frame.setStyleSheet(
@@ -475,16 +434,12 @@ class QtRenderer:
         layout.addWidget(lbl)
         return frame
 
-    # ── Séparateur ────────────────────────────────────────────────────────────
-
     def _separator(self, node=None) -> QFrame:
         line = QFrame()
         line.setFrameShape(QFrame.HLine)
         line.setFixedHeight(1)
         line.setStyleSheet("background:#e5e7eb;border:none;margin:4px 0;")
         return line
-
-    # ── Table ─────────────────────────────────────────────────────────────────
 
     def _table(self, node: AstNode) -> QFrame:
         from PyQt5.QtWidgets import QGridLayout
@@ -523,21 +478,16 @@ class QtRenderer:
                 row_idx += 1
         return frame
 
-    # ── Composants JSX custom ─────────────────────────────────────────────────
-
     def _component(self, node: AstNode) -> QFrame:
-        # Composant enregistré
         fn = self.components.get(node.node_type)
         if fn:
             return fn(node, self)
 
-        # Composants built-in
         if node.node_type == "Note":
             return self._note(node)
         if node.node_type == "Details":
             return self._details(node)
-
-        # Fallback générique
+        
         frame = QFrame()
         frame.setStyleSheet(
             "QFrame{background:#f5f3ff;border:1px solid #ddd6fe;"
@@ -557,12 +507,12 @@ class QtRenderer:
 
     def _render_mixed_children(self, children: List[AstNode]) -> List[QWidget]:
         """
-        Rend une liste d'enfants qui peut mélanger nœuds block et inline.
+        Returns a list of children that can mix block and inline nodes.
 
-        Les nœuds inline consécutifs (text, InlineMath, strong, em, code, a)
-        sont regroupés dans un FlowLayout commun (comme un <p> implicite).
-        Les nœuds block (p, h1-h6, BlockMath, ul, ol, ...) sont rendus
-        individuellement via _node().
+        Consecutive inline nodes (text, InlineMath, strong, em, code, a)
+        are grouped together in a common FlowLayout (like an implicit <p>).
+        Block nodes (p, h1-h6, BlockMath, ul, ol, ...) are rendered
+        individually via _node().
         """
         _INLINE_TYPES = {"text", "InlineMath", "strong", "em", "del",
                          "code", "a", "br"}

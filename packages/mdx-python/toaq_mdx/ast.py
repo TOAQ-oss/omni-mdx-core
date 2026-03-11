@@ -11,7 +11,6 @@ from typing import Any, Dict, List, Optional, Union
 import json
 
 
-# ── AttrValue ─────────────────────────────────────────────────────────────────
 
 @dataclass
 class AttrValue:
@@ -25,8 +24,6 @@ class AttrValue:
     """
     kind: str                              # "text" | "expression" | "boolean" | "ast"
     value: Union[str, bool, List["AstNode"], None] = None
-
-    # ── Convenience predicates ────────────────────────────────────────────────
 
     @property
     def is_text(self) -> bool:
@@ -59,8 +56,6 @@ class AttrValue:
         """Return the sub-tree if kind is 'ast', else []."""
         return self.value if self.is_ast else []
 
-    # ── Deserialisation ───────────────────────────────────────────────────────
-
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "AttrValue":
         kind = data.get("kind", "boolean")
@@ -73,8 +68,6 @@ class AttrValue:
             return "AttrValue(boolean)"
         return f"AttrValue({self.kind}={self.value!r})"
 
-
-# ── AstNode ───────────────────────────────────────────────────────────────────
 
 @dataclass
 class AstNode:
@@ -100,8 +93,6 @@ class AstNode:
     attributes: Dict[str, AttrValue] = field(default_factory=dict)
     children: List["AstNode"] = field(default_factory=list)
     self_closing: bool = False
-
-    # ── Convenience helpers ───────────────────────────────────────────────────
 
     @property
     def is_text(self) -> bool:
@@ -160,8 +151,6 @@ class AstNode:
             return self.content or ""
         return "".join(c.text_content() for c in self.children)
 
-    # ── Deserialisation ───────────────────────────────────────────────────────
-
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "AstNode":
         attrs_raw = data.get("attributes") or {}
@@ -198,8 +187,6 @@ class AstNode:
             parts.append(f"children=[{len(self.children)}]")
         return f"AstNode({', '.join(parts)})"
 
-
-# ── Helpers ───────────────────────────────────────────────────────────────────
 
 def parse_ast(json_str: str) -> List[AstNode]:
     """Deserialise the raw JSON string from ``toaq_parser_core.parse()``."""

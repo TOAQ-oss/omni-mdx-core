@@ -1,18 +1,14 @@
 """
-toaq_mdx.math_render — Rendu LaTeX sans navigateur.
+toaq_mdx.math_render — LaTeX rendering without a browser.
 
-InlineMath  → Unicode via table de symboles.
-BlockMath   → QPixmap via matplotlib.mathtext (deux passes).
-              Fallback propre si la formule est trop complexe pour mathtext.
+InlineMath  → Unicode via symbol table.
+BlockMath   → QPixmap via matplotlib.mathtext (two passes).
+              Clean fallback if the formula is too complex for math text.
 """
 
 from __future__ import annotations
 import re
 from typing import Optional
-
-# ══════════════════════════════════════════════════════════════════════════════
-#  Table LaTeX → Unicode
-# ══════════════════════════════════════════════════════════════════════════════
 
 _GREEK = {
     r"\alpha":"α", r"\beta":"β", r"\gamma":"γ", r"\delta":"δ",
@@ -70,18 +66,13 @@ def _convert_commands(s: str) -> str:
     return s
 
 def latex_to_unicode(latex: str) -> str:
-    """Convertit LaTeX en texte Unicode lisible."""
+    """Convert LaTeX to readable Unicode text."""
     s = latex.strip()
     s = _convert_frac(s)
     s = _convert_commands(s)
     s = _convert_scripts(s)
     s = s.replace("{", "").replace("}", "")
     return re.sub(r' {2,}', ' ', s).strip()
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-#  Rendu image matplotlib — deux passes, sans fuite, sans crash
-# ══════════════════════════════════════════════════════════════════════════════
 
 def latex_to_pixmap_available() -> bool:
     try:
@@ -94,14 +85,14 @@ def latex_to_pixmap_available() -> bool:
 def latex_to_pixmap(latex: str, font_size: int = 14, dpi: int = 150,
                     bg: str = "#faf5ff", fg: str = "#3b0764"):
     """
-    Rend une formule LaTeX en QPixmap via matplotlib.mathtext.
+    Render a LaTeX formula as a QPixmap using matplotlib.mathtext.
 
-    Retourne None silencieusement si :
-    - matplotlib n'est pas installé
-    - la formule contient une syntaxe non supportée par mathtext
-    - toute autre erreur
+    Returns None silently if :
+    - matplotlib is not installed
+    - the formula contains syntax not supported by mathtext
+    - any other error
 
-    Le caller est responsable d'afficher un fallback Unicode dans ce cas.
+    The caller is responsible for displaying a fallback Unicode in this case.
     """
     import matplotlib
     matplotlib.use("Agg")
@@ -118,7 +109,6 @@ def latex_to_pixmap(latex: str, font_size: int = 14, dpi: int = 150,
         import io
         from PyQt5.QtGui import QPixmap, QImage
 
-        # ── Passe 1 : mesure du bbox ──────────────────────────────────────────
         fig_probe, ax_probe = plt.subplots(figsize=(10, 2), dpi=dpi)
         ax_probe.set_axis_off()
         txt = ax_probe.text(
@@ -128,11 +118,10 @@ def latex_to_pixmap(latex: str, font_size: int = 14, dpi: int = 150,
             transform=ax_probe.transAxes,
             usetex=False,
         )
-        # ← peut lever ValueError si mathtext ne supporte pas la formule
+
         fig_probe.canvas.draw()
         bbox_px = txt.get_window_extent(renderer=fig_probe.canvas.get_renderer())
 
-        # ── Passe 2 : rendu à la bonne taille ────────────────────────────────
         pad_px = 20
         fig_w  = (bbox_px.width  + pad_px * 2) / dpi
         fig_h  = (bbox_px.height + pad_px * 2) / dpi
@@ -159,11 +148,9 @@ def latex_to_pixmap(latex: str, font_size: int = 14, dpi: int = 150,
         return QPixmap.fromImage(qimage) if not qimage.isNull() else None
 
     except Exception:
-        # Silencieux — le caller affiche le fallback Unicode
         return None
 
     finally:
-        # Toujours fermer les figures pour éviter les fuites mémoire
         if fig_probe is not None:
             plt.close(fig_probe)
         if fig is not None:

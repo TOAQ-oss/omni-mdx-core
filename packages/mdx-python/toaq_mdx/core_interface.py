@@ -1,8 +1,8 @@
 """
-toaq_mdx.core_interface — Chargement du binaire Rust.
+toaq_mdx.core_interface — Loading the Rust binary.
 
-Le fichier toaq_parser_core.pyd est placé directement dans le dossier
-du package, ce qui permet de le distribuer sans installation séparée.
+The toaq_parser_core.pyd file is placed directly in the package folder,
+which allows it to be distributed without separate installation.
 """
 
 import importlib
@@ -16,17 +16,15 @@ from .exceptions import CoreNotAvailableError
 
 def _load_core():
     """
-    Charge toaq_parser_core depuis le dossier du package.
-    Essaie d'abord un import direct (si déjà dans sys.modules ou PATH),
-    puis cherche le .pyd dans le même dossier que ce fichier.
+    Load toaq_parser_core from the package folder.
+    First try a direct import (if already in sys.modules or PATH),
+    then search for the .pyd in the same folder as this file.
     """
-    # 1. Import direct (maturin develop, ou déjà dans sys.path)
     try:
         return importlib.import_module("toaq_parser_core")
     except ImportError:
         pass
 
-    # 2. Chargement depuis le dossier du package (distribution embarquée)
     pkg_dir = Path(__file__).parent
     for candidate in pkg_dir.glob("toaq_parser_core*.pyd"):
         spec = importlib.util.spec_from_file_location("toaq_parser_core", candidate)
@@ -36,7 +34,6 @@ def _load_core():
             spec.loader.exec_module(mod)
             return mod
 
-    # 3. Aussi essayer .so (Linux/macOS)
     for candidate in pkg_dir.glob("toaq_parser_core*.so"):
         spec = importlib.util.spec_from_file_location("toaq_parser_core", candidate)
         if spec and spec.loader:
@@ -46,38 +43,37 @@ def _load_core():
             return mod
 
     raise CoreNotAvailableError(
-        "Binaire Rust introuvable (toaq_parser_core.pyd / .so).\n"
-        "Placez le fichier dans le dossier toaq_mdx/ ou lancez :\n"
+        "Rust binary not found (toaq_parser_core.pyd / .so).\n"
+        "Place the file in the toaq_mdx/ folder or run:\n"
         "  cd core-parser && maturin develop --features python"
     )
 
 
-# Chargement unique au démarrage du module
 _core = _load_core()
 
 
 class CoreInterface:
-    """Interface bas niveau vers le parser Rust."""
+    """Low-level interface to the Rust parser."""
 
     @staticmethod
     def parse_to_json(mdx_text: str) -> str:
         """
-        Appelle le parser Rust et retourne l'AST sérialisé en JSON.
+        Call the Rust parser and return the serialized AST in JSON.
 
         Parameters
         ----------
         mdx_text : str
-            Source MDX brut.
+            Raw MDX source.
 
         Returns
         -------
         str
-            JSON représentant la liste de nœuds racine.
+            JSON representing the list of root nodes.
 
         Raises
         ------
         MDXSyntaxError
-            Si le parser Rust lève une erreur de parsing.
+            If the Rust parser raises a parsing error.
         """
         from .exceptions import MDXSyntaxError
         try:

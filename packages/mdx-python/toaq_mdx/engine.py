@@ -1,4 +1,3 @@
-import json
 from .core_interface import CoreInterface
 
 class OmniMDX:

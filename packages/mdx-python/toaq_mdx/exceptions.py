@@ -1,21 +1,21 @@
-"""toaq_mdx.exceptions — Exceptions du module."""
+"""toaq_mdx.exceptions — Module exceptions."""
 
 
 class OmniMDXError(Exception):
-    """Base exception pour toaq_mdx."""
+    """Base exception for toaq_mdx."""
     pass
 
 
 class MDXSyntaxError(OmniMDXError):
-    """Erreur de parsing MDX (tag non fermé, token invalide, etc.)."""
+    """MDX parsing error (unclosed tag, invalid token, etc.)."""
     pass
 
 
 class MDXRenderError(OmniMDXError):
-    """Erreur lors du rendu d'un nœud AST."""
+    """Error during AST node rendering."""
     pass
 
 
 class CoreNotAvailableError(OmniMDXError):
-    """Le binaire Rust (.pyd) n'est pas disponible."""
+    """The Rust binary (.pyd) is not available."""
     pass

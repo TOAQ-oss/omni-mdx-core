@@ -1,9 +1,9 @@
 """
-toaq_mdx.renderer — Rendu HTML depuis l'AST MDX.
+toaq_mdx.renderer — HTML rendering from AST MDX.
 
-Pour le rendu web (Next.js, Flask, FastAPI...).
-Les formules mathématiques sont émises avec des attributs ``data-math``
-prêts pour KaTeX côté client.
+For web rendering (Next.js, Flask, FastAPI, etc.).
+Mathematical formulas are output with ``data-math`` attributes
+ready for KaTeX on the client side.
 
 Usage
 -----
@@ -25,54 +25,54 @@ ComponentFn = Callable[["AstNode", "RenderContext"], str]
 
 
 class RenderContext:
-    """Options et registre de composants propagés dans le rendu."""
+    """Options and component registry propagated in the rendering."""
     def __init__(self, components=None, katex=True):
         self.components = components or {}
         self.katex = katex
 
 
-_BUILTIN_HTML_COMPONENTS: frozenset = frozenset()  # HTML n'a pas de built-ins, tout est custom
+_BUILTIN_HTML_COMPONENTS: frozenset = frozenset()  # HTML has no built-ins, everything is custom
 
 
 class HtmlRenderer:
     """
-    Convertit une liste d'AstNode en HTML string.
+    Converts a list of AstNode to an HTML string.
 
-    Priorité de rendu pour un composant JSX :
-    1. Composant enregistré par le développeur  (via ``components=`` ou ``register()``)
-    2. Fallback générique                       (div avec data-component=...)
+    Rendering priority for a JSX component:
+    1. Component registered by the developer  (via ``components=`` or ``register()``)
+    2. Generic fallback                       (div with data-component=...)
 
     Parameters
     ----------
-    components : dict, optional
-        Registre de composants custom.
-        Signature : ``fn(node: AstNode, ctx: RenderContext) -> str``
+    components: dict, optional
+        Custom component registry.
+        Signature: ``fn(node: AstNode, ctx: RenderContext) -> str``
 
-        Exemple — définir un composant Note ::
+        Example — defining a Note component ::
 
             def render_note(node, ctx):
-                kind  = node.attr_text("type") or "info"
-                title = node.attr_text("title") or ""
+                kind  = node.attr_text(“type”) or “info”
+                title = node.attr_text(“title”) or “”
                 inner = ctx.renderer.render(node.children)
                 return f'<aside class="note note--{kind}"><b>{title}</b>{inner}</aside>'
 
-            renderer = HtmlRenderer(components={"Note": render_note})
+            renderer = HtmlRenderer(components={“Note”: render_note})
 
-    katex : bool
-        Si True, les formules émettent ``data-math`` pour KaTeX côté client.
-        Si False, elles sont dans des balises ``<code>``.
+    katex: bool
+        If True, formulas emit ``data-math`` for KaTeX on the client side.
+        If False, they are enclosed in ``<code>`` tags.
     """
 
     def __init__(self, components=None, katex=True):
         self._ctx = RenderContext(components=dict(components or {}), katex=katex)
 
     def register(self, name: str, fn) -> "HtmlRenderer":
-        """Enregistre (ou remplace) un composant HTML. Retourne self."""
+        """Register (or replace) an HTML component. Returns self."""
         self._ctx.components[name] = fn
         return self
 
     def unregister(self, name: str) -> "HtmlRenderer":
-        """Supprime un composant enregistré. Retourne self."""
+        """Unregister a registered component. Returns self."""
         self._ctx.components.pop(name, None)
         return self
 
@@ -166,5 +166,5 @@ class HtmlRenderer:
 
 
 def render_html(nodes, *, components=None, katex=True) -> str:
-    """Raccourci fonctionnel pour HtmlRenderer().render(nodes)."""
+    """Functional shortcut for HtmlRenderer().render(nodes)."""
     return HtmlRenderer(components=components, katex=katex).render(nodes)
