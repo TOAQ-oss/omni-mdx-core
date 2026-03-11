@@ -40,9 +40,13 @@ jobs:
       # 3. Compilation (On force la mise à jour des dépendances WASM)
       - name: Build Rust to WASM
         working-directory: core-parser
+        env:
+          RUSTUP_TOOLCHAIN: stable # <--- FORCE L'USAGE DE STABLE ICI
         run: |
-          # On s'assure que cargo-update est là pour rafraîchir les outils si besoin
-          cargo update -p wasm-bindgen
+          # Supprimer le cache local de wasm-pack pour forcer une réinstallation propre des outils
+          rm -rf ~/.cache/.wasm-pack
+          
+          # Lancer le build
           wasm-pack build --target bundler --release
           
       # 4. Préparation du package NPM
