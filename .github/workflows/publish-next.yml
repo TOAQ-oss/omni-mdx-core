@@ -61,6 +61,23 @@ jobs:
           npm ci
           npm run build
 
+      - name: OIDC Diagnostic
+        working-directory: packages/mdx-next
+        run: |
+          echo "🔍 Vérification de l'identité OIDC..."
+          if [ -n "$ACTIONS_ID_TOKEN_REQUEST_URL" ]; then
+            echo "✅ GitHub OIDC Provider est présent."
+          else
+            echo "❌ GitHub OIDC Provider est ABSENT. Vérifie les permissions id-token: write."
+          fi
+          
+          echo "📁 Structure du dossier actuel :"
+          ls -la
+          
+          echo "📄 Vérification de l'absence de .npmrc parasite :"
+          if [ -f "../../.npmrc" ]; then echo "⚠️ .npmrc trouvé à la RACINE"; fi
+          if [ -f ".npmrc" ]; then echo "⚠️ .npmrc trouvé dans le PACKAGE"; fi
+          
       - name: Publish to NPM
         working-directory: packages/mdx-next
         run: |
