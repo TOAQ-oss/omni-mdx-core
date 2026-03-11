@@ -26,33 +26,24 @@ jobs:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
 
-      # 2. Installation de l'outil officiel Rust -> WASM
+      - name: Install Rust Stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      # 2. Installation de wasm-pack
       - name: Install wasm-pack
         uses: jetli/wasm-pack-action@v0.4.0
         with:
           version: 'latest'
 
-      # 3. Compilation du Moteur en WebAssembly
+      # 3. Compilation (On force la mise à jour des dépendances WASM)
       - name: Build Rust to WASM
         working-directory: core-parser
-        # --target bundler prépare le code pour Webpack (le moteur de Next.js)
-        run: wasm-pack build --target bundler --release
-
-      - name: Move WASM to Next.js package and clean up
         run: |
-          echo "🚚 Transfert du build WASM vers le package Next.js..."
-          
-          # On crée le dossier de destination (s'il n'existe pas)
-          mkdir -p packages/mdx-next/parser-core
-          
-          # On copie tout le contenu du dossier pkg
-          cp -r core-parser/pkg/* packages/mdx-next/parser-core/
-          
-          # 💥 ON DÉTRUIT LE .gitignore POUR FORCER L'INCLUSION NPM
-          rm -f packages/mdx-next/parser-core/.gitignore
-          
-          echo "✅ Transfert et nettoyage terminés. Contenu :"
-          ls -la packages/mdx-next/parser-core/
+          # On s'assure que cargo-update est là pour rafraîchir les outils si besoin
+          cargo update -p wasm-bindgen
+          wasm-pack build --target bundler --release
           
       # 4. Préparation du package NPM
       - name: Install Dependencies & Build Next Package
@@ -66,5 +57,4 @@ jobs:
       # 5. Publication
       - name: Publish to NPM (Simulation)
         working-directory: packages/mdx-next
-        # Plus besoin de la variable env NODE_AUTH_TOKEN !
         run: npm publish --access public --provenance --dry-run
