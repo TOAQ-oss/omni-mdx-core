@@ -40,3 +40,6 @@ pub fn parse_mdx_to_json_pretty(input: &str) -> Result<String, JsError> {
 pub fn parse_mdx_version() -> String {
     env!("CARGO_PKG_VERSION").to_string()
 }
+
+#[cfg(feature = "python")]
+pub mod python;

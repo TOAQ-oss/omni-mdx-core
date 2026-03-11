@@ -11,6 +11,12 @@ dist/
 # NPM
 *.tgz
 
+# Python
+.venv
+__pycache__
+*.egg-info
+*.py[cod]
+
 # Others
 .DS_Store
 Thumbs.db
@@ -18,3 +24,10 @@ Thumbs.db
 # Future release
 packages/*
 !packages/mdx-next
+!packages/mdx-python
+
+# Tests (To test the project, please refer to sandbox repository)
+tests/*
+
+# Github Secrets
+.secrets

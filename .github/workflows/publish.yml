@@ -1,0 +1,100 @@
+name: Omni-MDX Smart Publish
+
+on:
+  push:
+    branches:
+      - main # Le workflow se lance à chaque push sur la branche main
+
+jobs:
+  # ==========================================
+  # 1. DÉTECTION DES CHANGEMENTS
+  # ==========================================
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      core: ${{ steps.filter.outputs.core }}
+      python: ${{ steps.filter.outputs.python }}
+      next: ${{ steps.filter.outputs.next }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            core:
+              - 'core-parser/**'
+            python:
+              - 'packages/mdx-python/**'
+            next:
+              - 'packages/mdx-next/**'
+
+  # ==========================================
+  # 2. PUBLICATION PYTHON (PyPI)
+  # ==========================================
+  publish-python:
+    needs: detect-changes
+    # S'exécute SI le dossier python OU le dossier core a été modifié
+    if: ${{ needs.detect-changes.outputs.python == 'true' || needs.detect-changes.outputs.core == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Build wheels with Maturin
+        uses: PyO3/maturin-action@v1
+        with:
+          # On compile le Rust contenu dans packages/mdx-python
+          working-directory: packages/mdx-python
+          command: build
+          args: --release --out dist
+          
+      - name: SIMULATION Publish to PyPI
+        run: echo "📦 Twine upload réussi ! (Simulation)"
+    #   - name: Publish to PyPI
+    #     env:
+    #       TWINE_USERNAME: __token__
+    #       TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+    #     run: |
+    #       pip install twine
+    #       twine upload packages/mdx-python/dist/*
+
+  # ==========================================
+  # 3. PUBLICATION NODE (NPM)
+  # ==========================================
+  publish-next:
+    needs: detect-changes
+    # S'exécute SI le dossier next OU le dossier core a été modifié
+    if: ${{ needs.detect-changes.outputs.next == 'true' || needs.detect-changes.outputs.core == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      # Si ton package next a besoin de compiler du Rust en WASM, c'est ici :
+      # - name: Install wasm-pack
+      #   run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+      # - name: Build WASM
+      #   run: cd core-parser && wasm-pack build --target web
+
+      - name: Install dependencies and Build
+        working-directory: packages/mdx-next
+        run: |
+          npm ci
+          npm run build
+
+    #   - name: Publish to NPM
+    #     working-directory: packages/mdx-next
+    #     env:
+    #       NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    #     run: npm publish --access public
+      - name: SIMULATION Publish to NPM
+        run: echo "📦 NPM publish réussi ! (Simulation)"

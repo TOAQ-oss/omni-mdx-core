@@ -16,6 +16,10 @@ build-web:
 	cp -r $(CORE_DIR)/pkg/* $(WASM_OUT)/
 	rm -f $(WASM_OUT)/.gitignore
 
+build-python:
+	cd $(CORE_DIR) && maturin develop --release --features python
+	pip install -e $(PYTHON_PKG)
+	
 setup:
 	npm install
 	cd tests/next-sandbox && npm install
