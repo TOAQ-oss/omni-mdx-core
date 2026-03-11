@@ -8,6 +8,7 @@
     "url": "https://github.com/TOAQ-oss/omni-mdx-core.git",
     "directory": "packages/mdx-next"
   },
+  "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
