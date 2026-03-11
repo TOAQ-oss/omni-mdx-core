@@ -77,9 +77,10 @@ jobs:
           echo "📄 Vérification de l'absence de .npmrc parasite :"
           if [ -f "../../.npmrc" ]; then echo "⚠️ .npmrc trouvé à la RACINE"; fi
           if [ -f ".npmrc" ]; then echo "⚠️ .npmrc trouvé dans le PACKAGE"; fi
-          
+
       - name: Publish to NPM
         working-directory: packages/mdx-next
         run: |
-          echo "//registry.npmjs.org/:aud=https://registry.npmjs.org/" > .npmrc
-          npm publish --access public --provenance --ignore-scripts
+          npm config set //registry.npmjs.org/:aud=https://registry.npmjs.org/ --location=project
+          
+          npm publish -w @toaq-oss/mdx-engine --access public --provenance
