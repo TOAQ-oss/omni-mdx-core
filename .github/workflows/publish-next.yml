@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-    # Ne se lance QUE si tu modifies le Next.js ou le cœur Rust
     paths:
       - 'packages/mdx-next/**'
       - 'core-parser/**'
@@ -19,7 +18,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 1. Préparation de l'environnement Node.js
+      - name: Cache Cargo tools
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin
+          key: ${{ runner.os }}-cargo-tools-wasm-bindgen-0.2.95
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -31,7 +35,6 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
 
-      # 2. Installation de wasm-pack
       - name: Install wasm-pack
         uses: jetli/wasm-pack-action@v0.4.0
         with:
@@ -42,39 +45,22 @@ jobs:
         env:
           RUSTUP_TOOLCHAIN: stable
         run: |
-          # 1. Installer manuellement le CLI de bindgen (version stable et compatible)
           cargo install wasm-bindgen-cli --version 0.2.95
           
-          # 2. Compiler le binaire WASM brut via Cargo
           cargo build --release --target wasm32-unknown-unknown
           
-          # 3. Générer les fichiers JS/TS manuellement (ce que fait wasm-pack normalement)
           mkdir -p pkg
           wasm-bindgen ../target/wasm32-unknown-unknown/release/mdx_parser.wasm \
                        --out-dir pkg \
                        --target bundler \
                        --typescript
-          
-      # 4. Préparation du package NPM
+
       - name: Install Dependencies & Build Next Package
         working-directory: packages/mdx-next
         run: |
-          # Installation des dépendances classiques
           npm ci
-          # Construction du build Next.js / de ta librairie React
           npm run build
 
-      # 5. Publication
-      - name: Publish to NPM (Simulation)
+      - name: Publish to NPM
         working-directory: packages/mdx-next
-        run: npm publish --access public --provenance --dry-run
-
-      - name: Pack the library (Create .tgz)
-        working-directory: packages/mdx-next
-        run: npm pack
-
-      - name: Upload NPM Artifact for manual inspection
-        uses: actions/upload-artifact@v4
-        with:
-          name: npm-package-check
-          path: packages/mdx-next/*.tgz
+        run: npm publish --access public --provenance

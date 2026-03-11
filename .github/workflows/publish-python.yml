@@ -109,11 +109,7 @@ jobs:
           pattern: wheels-*
           merge-multiple: true
 
-      - name: Vérification visuelle (Debug)
-        run: ls -R dist/
-
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           skip-existing: true
-          verbose: true
