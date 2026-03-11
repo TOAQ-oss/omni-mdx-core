@@ -11,13 +11,18 @@ dist/
 # NPM
 *.tgz
 
+# Python
+.venv
+__pycache__
+*.egg-info
+*.py[cod]
+
 # Others
 .DS_Store
 Thumbs.db
 
-# Future release
-packages/*
-!packages/mdx-next
-
 # Github
 .secrets
+
+# Development environment
+tests

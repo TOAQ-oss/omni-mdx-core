@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-    # Ne se lance QUE si tu modifies le Next.js ou le cœur Rust
     paths:
       - 'packages/mdx-next/**'
       - 'core-parser/**'
@@ -19,52 +18,49 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 1. Préparation de l'environnement Node.js
+      - name: Cache Cargo tools
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin
+          key: ${{ runner.os }}-cargo-tools-wasm-bindgen-0.2.95
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
 
-      # 2. Installation de l'outil officiel Rust -> WASM
+      - name: Install Rust Stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
       - name: Install wasm-pack
         uses: jetli/wasm-pack-action@v0.4.0
         with:
           version: 'latest'
 
-      # 3. Compilation du Moteur en WebAssembly
-      - name: Build Rust to WASM
+      - name: Build Rust to WASM (Manual Method)
         working-directory: core-parser
-        # --target bundler prépare le code pour Webpack (le moteur de Next.js)
-        run: wasm-pack build --target bundler --release
-
-      - name: Move WASM to Next.js package and clean up
+        env:
+          RUSTUP_TOOLCHAIN: stable
         run: |
-          echo "🚚 Transfert du build WASM vers le package Next.js..."
+          cargo install wasm-bindgen-cli --version 0.2.95
           
-          # On crée le dossier de destination (s'il n'existe pas)
-          mkdir -p packages/mdx-next/parser-core
+          cargo build --release --target wasm32-unknown-unknown
           
-          # On copie tout le contenu du dossier pkg
-          cp -r core-parser/pkg/* packages/mdx-next/parser-core/
-          
-          # 💥 ON DÉTRUIT LE .gitignore POUR FORCER L'INCLUSION NPM
-          rm -f packages/mdx-next/parser-core/.gitignore
-          
-          echo "✅ Transfert et nettoyage terminés. Contenu :"
-          ls -la packages/mdx-next/parser-core/
-          
-      # 4. Préparation du package NPM
+          mkdir -p pkg
+          wasm-bindgen ../target/wasm32-unknown-unknown/release/mdx_parser.wasm \
+                       --out-dir pkg \
+                       --target bundler \
+                       --typescript
+
       - name: Install Dependencies & Build Next Package
         working-directory: packages/mdx-next
         run: |
-          # Installation des dépendances classiques
           npm ci
-          # Construction du build Next.js / de ta librairie React
           npm run build
 
-      # 5. Publication
-      - name: Publish to NPM (Simulation)
+      - name: Publish to NPM
         working-directory: packages/mdx-next
-        # Plus besoin de la variable env NODE_AUTH_TOKEN !
-        run: npm publish --access public --provenance --dry-run
+        run: npm publish --access public --provenance
