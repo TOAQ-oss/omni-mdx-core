@@ -13,8 +13,9 @@ jobs:
   publish-npm:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
       id-token: write
+      contents: read
+      attestations: write
     steps:
       - uses: actions/checkout@v4
 
@@ -63,4 +64,6 @@ jobs:
 
       - name: Publish to NPM
         working-directory: packages/mdx-next
-        run: npm publish --access public --provenance
+        run: |
+          npm whoami
+          npm publish --access public --provenance
