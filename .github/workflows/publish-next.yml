@@ -68,3 +68,13 @@ jobs:
       - name: Publish to NPM (Simulation)
         working-directory: packages/mdx-next
         run: npm publish --access public --provenance --dry-run
+
+      - name: Pack the library (Create .tgz)
+        working-directory: packages/mdx-next
+        run: npm pack
+
+      - name: Upload NPM Artifact for manual inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-package-check
+          path: packages/mdx-next/*.tgz
