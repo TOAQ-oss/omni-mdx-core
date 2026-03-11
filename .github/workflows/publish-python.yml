@@ -81,12 +81,6 @@ jobs:
           python -m wheel tags --platform-tag $OS_TAG $WHEEL_FILE
           
           Remove-Item $WHEEL_FILE
-          
-      - name: Upload Artifacts (Sauvegarde temporaire)
-        uses: actions/upload-artifact@v4
-        with:
-          name: wheels-${{ matrix.os }}
-          path: packages/mdx-python/dist/*.whl
 
   publish:
     name: Publish to PyPI
@@ -107,5 +101,5 @@ jobs:
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          verify-metadata: true
           skip-existing: true
+          verbose: true
