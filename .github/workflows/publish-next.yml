@@ -64,5 +64,5 @@ jobs:
       - name: Publish to NPM
         working-directory: packages/mdx-next
         run: |
-          npm config set //registry.npmjs.org/:aud=https://registry.npmjs.org/
-          npm publish --access public --provenance
+          echo "//registry.npmjs.org/:aud=https://registry.npmjs.org/" > .npmrc
+          npm publish --access public --provenance --ignore-scripts
