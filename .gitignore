@@ -18,3 +18,6 @@ Thumbs.db
 # Future release
 packages/*
 !packages/mdx-next
+
+# Github
+.secrets
