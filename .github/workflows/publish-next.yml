@@ -37,17 +37,23 @@ jobs:
         with:
           version: 'latest'
 
-      # 3. Compilation (On force la mise à jour des dépendances WASM)
-      - name: Build Rust to WASM
+      - name: Build Rust to WASM (Manual Method)
         working-directory: core-parser
         env:
-          RUSTUP_TOOLCHAIN: stable # <--- FORCE L'USAGE DE STABLE ICI
+          RUSTUP_TOOLCHAIN: stable
         run: |
-          # Supprimer le cache local de wasm-pack pour forcer une réinstallation propre des outils
-          rm -rf ~/.cache/.wasm-pack
+          # 1. Installer manuellement le CLI de bindgen (version stable et compatible)
+          cargo install wasm-bindgen-cli --version 0.2.95
           
-          # Lancer le build
-          wasm-pack build --target bundler --release
+          # 2. Compiler le binaire WASM brut via Cargo
+          cargo build --release --target wasm32-unknown-unknown
+          
+          # 3. Générer les fichiers JS/TS manuellement (ce que fait wasm-pack normalement)
+          mkdir -p pkg
+          wasm-bindgen ../target/wasm32-unknown-unknown/release/mdx_parser.wasm \
+                       --out-dir pkg \
+                       --target bundler \
+                       --typescript
           
       # 4. Préparation du package NPM
       - name: Install Dependencies & Build Next Package
