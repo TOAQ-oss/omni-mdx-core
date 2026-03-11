@@ -3,6 +3,11 @@
   "version": "0.1.4",
   "author": "TOAQ",
   "description": "Ultra-fast MDX rendering engine powered by Rust and WebAssembly.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TOAQ-oss/omni-mdx-core.git",
+    "directory": "packages/mdx-next"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
