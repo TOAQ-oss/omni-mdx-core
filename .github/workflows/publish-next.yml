@@ -10,7 +10,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  # ── Build .node par plateforme ────────────────────────────────────────────────
   build-native:
     permissions:
       id-token: write
@@ -78,7 +77,7 @@ jobs:
 
       - name: Publish platform subpackage
         working-directory: platform-pkg
-        run: npm publish --access public --dry-run
+        run: npm publish --access public
 
       - name: Upload .node artifact
         uses: actions/upload-artifact@v4
@@ -87,7 +86,6 @@ jobs:
           path: core-parser/toaq-parser-core.*.node
           retention-days: 1
 
-  # ── Build WASM ────────────────────────────────────────────────────────────────
   build-wasm:
     runs-on: ubuntu-latest
     steps:
@@ -118,7 +116,6 @@ jobs:
           path: core-parser/pkg/
           retention-days: 1
 
-  # ── Publish @toaq-oss/mdx-engine ──────────────────────────────────────────────
   publish:
     needs: [build-native, build-wasm]
     runs-on: ubuntu-latest
@@ -165,4 +162,4 @@ jobs:
 
       - name: Publish @toaq-oss/mdx-engine
         working-directory: packages/mdx-next
-        run: npm publish --access public --dry-run
+        run: npm publish --access public
