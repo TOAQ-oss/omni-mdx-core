@@ -3,11 +3,12 @@
 /// Vérifie que le parser détecte et rapporte correctement les erreurs
 /// dans un MDX malformé, sans paniquer ni retourner de résultat silencieusement
 /// incorrect.
+/// Run with: `cargo run --bin test_errors --features="dev-tools"`
 
 use mdx_parser::ast::ParseError;
 use mdx_parser::parser::parse_mdx;
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// Helpers
 
 fn assert_err(label: &str, result: Result<Vec<mdx_parser::ast::AstNode>, ParseError>, expected_kind: &str) {
     match result {
@@ -32,7 +33,7 @@ fn assert_err(label: &str, result: Result<Vec<mdx_parser::ast::AstNode>, ParseEr
     }
 }
 
-// ── Test cases ────────────────────────────────────────────────────────────────
+// Test cases
 
 fn test_unclosed_jsx_block() {
     println!("\n[1] Unclosed JSX block");
@@ -120,13 +121,9 @@ fn test_whitespace_only() {
     }
 }
 
-// ── Entry point ───────────────────────────────────────────────────────────────
+// Entry point
 
 fn main() {
-    println!("══════════════════════════════════════════");
-    println!("  TEST SUITE 2 — Error Handling / Resilience");
-    println!("══════════════════════════════════════════");
-
     test_unclosed_jsx_block();
     test_mismatched_closing_tag();
     test_empty_input();

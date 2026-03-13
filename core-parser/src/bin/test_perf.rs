@@ -7,7 +7,7 @@
 ///   - Math and JSX interleaved in every possible position
 ///   - Attribute expressions with complex JS literals
 ///
-/// Run with: `cargo run --bin test_perf`
+/// Run with: `cargo run --bin test_perf --features="dev-tools"`
 
 use mdx_parser::parser::parse_mdx;
 use std::time::{Duration, Instant};
@@ -32,7 +32,7 @@ fn timed(label: &str, input: &str, max: Duration) {
 fn main() {
     println!("=== test_perf: performance & robustness ===\n");
 
-    // ── 1. Large document ─────────────────────────────────────────────────────
+    // 1. Large document
     println!("[1] Large document (~500 components)");
     {
         let mut doc = String::new();
@@ -53,7 +53,7 @@ fn main() {
         timed("500-component document", &doc, Duration::from_millis(500));
     }
 
-    // ── 2. Deeply nested JSX ──────────────────────────────────────────────────
+    // 2. Deeply nested JSX
     println!("\n[2] Deeply nested JSX (20 levels)");
     {
         let open:  String = (0..20).map(|i| format!("<Box level=\"{i}\">\n")).collect();
@@ -63,7 +63,7 @@ fn main() {
         timed("20-level nesting", &doc, Duration::from_millis(200));
     }
 
-    // ── 3. UTF-8 stress ───────────────────────────────────────────────────────
+    // 3. UTF-8 stress
     println!("\n[3] UTF-8 — accents, CJK, emoji throughout");
     {
         let doc = format!(
@@ -95,7 +95,7 @@ fn main() {
         }
     }
 
-    // ── 4. Math in every position ─────────────────────────────────────────────
+    //  4. Math in every position 
     println!("\n[4] Math in every possible position");
     {
         let doc = "\
@@ -143,7 +143,7 @@ $$
         }
     }
 
-    // ── 5. Complex attribute expressions ─────────────────────────────────────
+    //  5. Complex attribute expressions ─
     println!("\n[5] Complex attribute expressions");
     {
         let doc = r####"
