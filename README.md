@@ -16,7 +16,7 @@ omni-mdx/
 ├── core-parser/
 │   ├── src/
 │   └── bindings/
-├── packages/
+└── packages/
     ├── mdx-next/
     └── mdx-python/
 
