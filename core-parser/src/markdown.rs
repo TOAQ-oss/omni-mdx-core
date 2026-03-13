@@ -120,7 +120,45 @@ pub fn parse_markdown(
         match event {
             // HTML/Markdown Structural Tags (e.g., <p>, <h1>)
             Event::Start(tag) => {
-                stack.push(AstNode::element(map_tag(&tag), false));
+                let mut node = AstNode::element(map_tag(&tag), false);
+            
+                match &tag {
+                    Tag::Link { dest_url, title, .. } => {
+                        let attrs = node.attributes.get_or_insert_with(std::collections::HashMap::new);
+
+                        if !dest_url.is_empty() {
+                            attrs.insert(
+                                "href".to_string(),
+                                crate::ast::AttrValue::Text(dest_url.to_string()),
+                            );
+                        }
+                        if !title.is_empty() {
+                            attrs.insert(
+                                "title".to_string(),
+                                crate::ast::AttrValue::Text(title.to_string()),
+                            );
+                        }
+                    }
+                    Tag::Image { dest_url, title, .. } => {
+                        let attrs = node.attributes.get_or_insert_with(std::collections::HashMap::new);
+
+                        if !dest_url.is_empty() {
+                            attrs.insert(
+                                "src".to_string(),
+                                crate::ast::AttrValue::Text(dest_url.to_string()),
+                            );
+                        }
+                        if !title.is_empty() {
+                            attrs.insert(
+                                "title".to_string(),
+                                crate::ast::AttrValue::Text(title.to_string()),
+                            );
+                        }
+                    }
+                    _ => {}
+                }
+            
+                stack.push(node);
             }
 
             Event::End(_) => {
