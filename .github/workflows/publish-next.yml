@@ -1,4 +1,4 @@
-name: NPM Next.js Publish
+name: Publish @toaq-oss/mdx-engine
 
 on:
   push:
@@ -10,27 +10,67 @@ on:
   workflow_dispatch:
 
 jobs:
-  publish-npm:
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-      attestations: write
+  build-native:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            name: darwin-arm64
+          - os: macos-13
+            target: x86_64-apple-darwin
+            name: darwin-x64
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            name: linux-x64-gnu
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            name: win32-x64-msvc
+
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Cache Cargo tools
-        uses: actions/cache@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
         with:
-          path: ~/.cargo/bin
-          key: ${{ runner.os }}-cargo-tools-wasm-bindgen-0.2.95
+          targets: ${{ matrix.target }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
 
-      - name: Install Rust Stable
+      - name: Install napi-rs CLI
+        run: npm install -g @napi-rs/cli
+
+      - name: Build native addon
+        working-directory: core-parser
+        run: napi build --platform --release --features node --target ${{ matrix.target }} --no-js
+
+      - name: Prepare & publish platform subpackage
+        working-directory: core-parser
+        run: |
+          napi prepublish -t npm
+          npm publish npm/@toaq-oss/mdx-engine-${{ matrix.name }} --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Upload .node artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-${{ matrix.name }}
+          path: core-parser/toaq-parser-core.*.node
+          retention-days: 1
+
+  build-wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
@@ -40,28 +80,68 @@ jobs:
         with:
           version: 'latest'
 
-      - name: Build Rust to WASM (Manual Method)
+      - name: Build WASM
         working-directory: core-parser
-        env:
-          RUSTUP_TOOLCHAIN: stable
-        run: |
-          command -v wasm-bindgen >/dev/null || cargo install wasm-bindgen-cli --version 0.2.95
-          
-          cargo build --release --target wasm32-unknown-unknown
-          
-          mkdir -p pkg
-          wasm-bindgen ../target/wasm32-unknown-unknown/release/mdx_parser.wasm \
-                       --out-dir pkg \
-                       --target bundler \
-                       --typescript
+        run: wasm-pack build --target bundler --features wasm
 
-      - name: Install Dependencies & Build Next Package
+      - name: Clean wasm-pack generated files
+        working-directory: core-parser/pkg
+        run: rm -f .gitignore package.json README.md
+
+      - name: Upload WASM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm
+          path: core-parser/pkg/
+          retention-days: 1
+
+  publish:
+    needs: [build-native, build-wasm]
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      attestations: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Download all native .node artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: native-*
+          path: packages/mdx-next/native/
+          merge-multiple: true
+
+      - name: Download WASM artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: wasm
+          path: packages/mdx-next/wasm/
+
+      - name: Verify artifacts
+        run: |
+          echo "── native/ ──"
+          ls -la packages/mdx-next/native/
+          echo "── wasm/ ──"
+          ls -la packages/mdx-next/wasm/
+
+      - name: Install dependencies
         working-directory: packages/mdx-next
-        run: |
-          npm ci
-          npm run build
+        run: npm install --ignore-scripts
 
-      - name: Publish to NPM
-        run: npm publish -w @toaq-oss/mdx-engine --access public --provenance
+      - name: Build JS package
+        working-directory: packages/mdx-next
+        run: npm run build
+
+      - name: Publish @toaq-oss/mdx-engine
+        working-directory: packages/mdx-next
+        run: npm publish --access public --provenance
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
