@@ -10,17 +10,17 @@ crate-type = ["cdylib", "rlib"]
 [[bin]]
 name = "test_ast"
 path = "src/bin/test_ast.rs"
-required-features = []
+required-features = ["dev-tools"]
 
 [[bin]]
 name = "test_errors"
 path = "src/bin/test_errors.rs"
-required-features = []
+required-features = ["dev-tools"]
 
 [[bin]]
 name = "test_perf"
 path = "src/bin/test_perf.rs"
-required-features = []
+required-features = ["dev-tools"]
 
 [dependencies]
 pulldown-cmark = "0.10"
@@ -41,6 +41,7 @@ wasm    = ["wasm-bindgen"]
 python  = ["pyo3"]
 ffi     = []
 node    = ["napi", "napi-derive"]
+dev-tools  = []
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = ["-Oz"]
