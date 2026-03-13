@@ -11,16 +11,16 @@ on:
 
 jobs:
   build-native:
+    permissions:
+      id-token: write
+      contents: read
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         include:
           - os: macos-latest
             target: aarch64-apple-darwin
             name: darwin-arm64
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            name: darwin-x64
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             name: linux-x64-gnu
@@ -34,32 +34,50 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
+
+      - name: Add Rust target
+        run: rustup target add ${{ matrix.target }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install napi-rs CLI
         run: npm install -g @napi-rs/cli
 
-      - name: Add Rust target
-        run: rustup target add ${{ matrix.target }}
- 
       - name: Build native addon
         working-directory: core-parser
-        run: napi build --platform --release --features node --target ${{ matrix.target }} --no-js --use-napi-cross
+        run: napi build --platform --release --features node --target ${{ matrix.target }} --no-js
 
-      - name: Prepare & publish platform subpackage
-        working-directory: core-parser
+      - name: Create platform subpackage
+        shell: bash
         run: |
-          napi prepublish -t npm
-          npm publish npm/@toaq-oss/mdx-engine-${{ matrix.name }} --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          PKG_NAME="@toaq-oss/mdx-engine-${{ matrix.name }}"
+          NODE_FILE=$(ls core-parser/toaq-parser-core.*.node | head -1)
+          mkdir -p platform-pkg
+          cp "$NODE_FILE" "platform-pkg/toaq-parser-core.${{ matrix.name }}.node"
+          cat > platform-pkg/package.json << PKGJSON
+          {
+            "name": "$PKG_NAME",
+            "version": "0.2.1",
+            "description": "Native addon for @toaq-oss/mdx-engine (${{ matrix.name }})",
+            "license": "MIT",
+            "main": "toaq-parser-core.${{ matrix.name }}.node",
+            "files": ["toaq-parser-core.${{ matrix.name }}.node"],
+            "os": ["$(echo ${{ matrix.name }} | cut -d- -f1)"],
+            "cpu": ["$(echo ${{ matrix.name }} | cut -d- -f2)"],
+            "repository": {
+              "type": "git",
+              "url": "https://github.com/TOAQ-oss/omni-mdx-core"
+            }
+          }
+          PKGJSON
+
+      - name: Publish platform subpackage
+        working-directory: platform-pkg
+        run: npm publish --access public
 
       - name: Upload .node artifact
         uses: actions/upload-artifact@v4
@@ -104,7 +122,6 @@ jobs:
     permissions:
       id-token: write
       contents: read
-      attestations: write
 
     steps:
       - uses: actions/checkout@v4
@@ -112,7 +129,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
 
       - name: Download all native .node artifacts
@@ -145,6 +162,4 @@ jobs:
 
       - name: Publish @toaq-oss/mdx-engine
         working-directory: packages/mdx-next
-        run: npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
