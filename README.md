@@ -16,11 +16,10 @@ omni-mdx/
 ├── core-parser/
 │   ├── src/
 │   └── bindings/
-├── packages/
-│   ├── mdx-next/
-│   └── mdx-python/
-└── sandbox/
-    └── next/
+└── packages/
+    ├── mdx-next/
+    └── mdx-python/
+
 ```
 
 ##  🛠️ Installation & Development
