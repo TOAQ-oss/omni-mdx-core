@@ -48,7 +48,7 @@ jobs:
 
       - name: Build native addon
         working-directory: core-parser
-        run: napi build --platform --release --features node --target ${{ matrix.target }} --no-js
+        run: napi build --platform --release --features node --target ${{ matrix.target }} --no-js --use-napi-cross
 
       - name: Prepare & publish platform subpackage
         working-directory: core-parser
