@@ -42,7 +42,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install napi-rs CLI
@@ -56,13 +56,10 @@ jobs:
         shell: bash
         run: |
           PKG_NAME="@toaq-oss/mdx-engine-${{ matrix.name }}"
-          PKG_DIR="platform-pkg"
           NODE_FILE=$(ls core-parser/toaq-parser-core.*.node | head -1)
-
-          mkdir -p "$PKG_DIR"
-          cp "$NODE_FILE" "$PKG_DIR/toaq-parser-core.${{ matrix.name }}.node"
-
-          cat > "$PKG_DIR/package.json" << PKGJSON
+          mkdir -p platform-pkg
+          cp "$NODE_FILE" "platform-pkg/toaq-parser-core.${{ matrix.name }}.node"
+          cat > platform-pkg/package.json << PKGJSON
           {
             "name": "$PKG_NAME",
             "version": "0.2.1",
@@ -77,9 +74,7 @@ jobs:
 
       - name: Publish platform subpackage
         working-directory: platform-pkg
-        run: npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
 
       - name: Upload .node artifact
         uses: actions/upload-artifact@v4
@@ -126,7 +121,6 @@ jobs:
     permissions:
       id-token: write
       contents: read
-      attestations: write
 
     steps:
       - uses: actions/checkout@v4
@@ -134,7 +128,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
 
       - name: Download all native .node artifacts
@@ -167,6 +161,4 @@ jobs:
 
       - name: Publish @toaq-oss/mdx-engine
         working-directory: packages/mdx-next
-        run: npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
