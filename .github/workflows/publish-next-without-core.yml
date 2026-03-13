@@ -1,0 +1,60 @@
+name: Publish @toaq-oss/mdx-engine (JS only)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'packages/mdx-next/**'
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install wasm-pack
+        uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: 'latest'
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Build WASM
+        working-directory: core-parser
+        run: wasm-pack build --target bundler --features wasm
+
+      - name: Clean wasm-pack generated files
+        working-directory: core-parser/pkg
+        run: rm -f .gitignore package.json README.md
+
+      - name: Copy WASM to package
+        run: |
+          mkdir -p packages/mdx-next/wasm
+          cp -r core-parser/pkg/* packages/mdx-next/wasm/
+
+      - name: Install dependencies
+        working-directory: packages/mdx-next
+        run: npm install --ignore-scripts
+
+      - name: Build JS package
+        working-directory: packages/mdx-next
+        run: npm run build
+
+      - name: Publish @toaq-oss/mdx-engine
+        working-directory: packages/mdx-next
+        run: npm publish --access public

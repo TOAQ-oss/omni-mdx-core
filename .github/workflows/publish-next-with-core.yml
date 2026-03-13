@@ -5,9 +5,13 @@ on:
     branches:
       - main
     paths:
-      - 'packages/mdx-next/**'
       - 'core-parser/**'
   workflow_dispatch:
+    inputs:
+      skip_native:
+        description: 'Skip native build (use existing .node artifacts on npm)'
+        type: boolean
+        default: false
 
 jobs:
   build-native:
@@ -61,7 +65,7 @@ jobs:
           cat > platform-pkg/package.json << PKGJSON
           {
             "name": "$PKG_NAME",
-            "version": "0.2.2",
+            "version": "0.2.1",
             "description": "Native addon for @toaq-oss/mdx-engine (${{ matrix.name }})",
             "license": "MIT",
             "main": "toaq-parser-core.${{ matrix.name }}.node",
@@ -70,7 +74,7 @@ jobs:
             "cpu": ["$(echo ${{ matrix.name }} | cut -d- -f2)"],
             "repository": {
               "type": "git",
-              "url": "https://github.com/TOAQ-oss/omni-mdx-core"
+              "url": "git+https://github.com/TOAQ-oss/omni-mdx-core.git"
             }
           }
           PKGJSON
