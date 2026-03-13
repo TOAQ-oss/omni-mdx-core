@@ -2,12 +2,12 @@
 ///
 /// Parses a realistic MDX document and asserts that the output AST contains
 /// exactly the nodes, attributes, and children we expect.
-/// Run with: `cargo run --bin test_ast`
+/// Run with: `cargo run --bin test_ast --features="dev-tools"`
 
 use mdx_parser::ast::{AstNode, AttrValue};
 use mdx_parser::parser::parse_mdx;
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// Helpers
 
 fn find<'a>(nodes: &'a [AstNode], node_type: &str) -> Option<&'a AstNode> {
     nodes.iter().find(|n| n.node_type == node_type)
@@ -35,7 +35,7 @@ fn attr_text<'a>(node: &'a AstNode, key: &str) -> Option<&'a str> {
 fn pass(label: &str) { println!("  ✅ {label}"); }
 fn fail(label: &str, detail: &str) { eprintln!("  ❌ {label}: {detail}"); std::process::exit(1); }
 
-// ── Test document ─────────────────────────────────────────────────────────────
+// Test document
 
 const MDX: &str = "
 # Titre principal
@@ -66,6 +66,9 @@ $$
 
 - Premier \u{00e9}l\u{00e9}ment
 - Deuxi\u{00e8}me \u{00e9}l\u{00e9}ment
+
+## Link
+[Link text](https://example.com)
 ";
 
 fn main() {
@@ -76,7 +79,7 @@ fn main() {
         Err(e) => { eprintln!("❌ parse_mdx failed: {e}"); std::process::exit(1); }
     };
 
-    // ── 1. Top-level structure ────────────────────────────────────────────────
+    // 1. Top-level structure
     println!("[1] Top-level structure");
 
     let h1 = find(&ast, "h1").unwrap_or_else(|| { fail("h1 present", "not found"); unreachable!() });
@@ -91,7 +94,7 @@ fn main() {
     if paras.is_empty() { fail("paragraphs present", "none found"); }
     pass(&format!("{} paragraph(s) at root", paras.len()));
 
-    // ── 2. Inline formatting ──────────────────────────────────────────────────
+    // 2. Inline formatting
     println!("\n[2] Inline formatting");
 
     let first_p = paras[0];
@@ -101,7 +104,7 @@ fn main() {
     if !has_em     { fail("em in paragraph", "not found"); }
     pass("strong and em inside paragraph");
 
-    // ── 3. <Note> component ───────────────────────────────────────────────────
+    // 3. <Note> component
     println!("\n[3] <Note> component");
 
     let note = find(&ast, "Note").unwrap_or_else(|| { fail("Note present", "not found"); unreachable!() });
@@ -123,7 +126,7 @@ fn main() {
     if p_wrapping_math { fail("InlineMath not in <p>", "InlineMath is wrapped in <p>"); }
     pass("InlineMath is NOT wrapped in <p>");
 
-    // ── 4. <Details> with BlockMath ───────────────────────────────────────────
+    // 4. <Details> with BlockMath
     println!("\n[4] <Details> with BlockMath");
 
     let details = find(&ast, "Details").unwrap_or_else(|| { fail("Details present", "not found"); unreachable!() });
@@ -146,7 +149,7 @@ fn main() {
     if p_wrapping_bmath { fail("BlockMath not in <p>", "BlockMath is wrapped in <p>"); }
     pass("BlockMath is NOT wrapped in <p>");
 
-    // ── 5. <Table> self-closing with expression attrs ─────────────────────────
+    // 5. <Table> self-closing with expression attrs
     println!("\n[5] <Table> self-closing with expression attributes");
 
     let table = find(&ast, "Table").unwrap_or_else(|| { fail("Table present", "not found"); unreachable!() });
@@ -161,14 +164,14 @@ fn main() {
         _ => fail("Table headers", "expected Expression variant"),
     }
 
-    // ── 6. Root-level BlockMath ───────────────────────────────────────────────
+    // 6. Root-level BlockMath
     println!("\n[6] Root-level BlockMath");
 
     let root_bmath = find(&ast, "BlockMath");
     if root_bmath.is_none() { fail("root BlockMath", "not found"); }
     pass("Root-level BlockMath present");
 
-    // ── 7. Lists ──────────────────────────────────────────────────────────────
+    // 7. Lists
     println!("\n[7] Lists");
 
     let ul = find(&ast, "ul").unwrap_or_else(|| { fail("ul present", "not found"); unreachable!() });
@@ -176,7 +179,7 @@ fn main() {
     if items.len() != 2 { fail("li count", &format!("expected 2, got {}", items.len())); }
     pass("ul with 2 li items");
 
-    // ── 8. UTF-8 integrity ────────────────────────────────────────────────────
+    // 8. UTF-8 integrity
     println!("\n[8] UTF-8 integrity");
 
     let json = serde_json::to_string(&ast).unwrap();
@@ -186,6 +189,27 @@ fn main() {
     }
     pass("No UTF-8 corruption in JSON output");
 
-    // ── Done ──────────────────────────────────────────────────────────────────
+    println!("\n[9] Link attributes and content");
+
+    let p_link = find_all(&ast, "p").into_iter()
+        .find(|p| p.children.iter().any(|c| c.node_type == "a"))
+        .unwrap_or_else(|| { fail("Link container paragraph", "not found"); unreachable!() });
+
+    let link = p_link.children.iter().find(|c| c.node_type == "a")
+        .unwrap_or_else(|| { fail("Link (a) node", "not found"); unreachable!() });
+
+    if attr_text(link, "href") != Some("https://example.com") {
+        let got = attr_text(link, "href").unwrap_or("<none>");
+        fail("Link href", &format!("expected 'https://example.com', got '{got}'"));
+    }
+    pass("Link href attribute correct");
+
+    let link_text = text_content(link);
+    if link_text != "Link text" {
+        fail("Link text content", &format!("expected 'Link text', got '{link_text}'"));
+    }
+    pass("Link text content correct");
+
+    // Done
     println!("\n✅ All tests passed.");
 }
