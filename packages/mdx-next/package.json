@@ -1,6 +1,6 @@
 {
   "name": "@toaq-oss/mdx-engine",
-  "version": "0.2.0",
+  "version": "0.1.6",
   "description": "MDX parser + renderer for Next.js \u2014 Rust core, RSC-compatible",
   "license": "MIT",
   "type": "module",
