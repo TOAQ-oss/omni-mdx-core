@@ -142,6 +142,6 @@ jobs:
 
       - name: Publish @toaq-oss/mdx-engine
         working-directory: packages/mdx-next
-        run: npm publish --access public --provenance
+        run: npm publish --access public --provenance --dry-run
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
