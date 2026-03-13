@@ -61,7 +61,7 @@ jobs:
           cat > platform-pkg/package.json << PKGJSON
           {
             "name": "$PKG_NAME",
-            "version": "0.2.1",
+            "version": "0.2.2",
             "description": "Native addon for @toaq-oss/mdx-engine (${{ matrix.name }})",
             "license": "MIT",
             "main": "toaq-parser-core.${{ matrix.name }}.node",
