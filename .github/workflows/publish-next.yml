@@ -12,15 +12,12 @@ on:
 jobs:
   build-native:
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         include:
           - os: macos-latest
             target: aarch64-apple-darwin
             name: darwin-arm64
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            name: darwin-x64
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             name: linux-x64-gnu
@@ -48,10 +45,10 @@ jobs:
 
       - name: Add Rust target
         run: rustup target add ${{ matrix.target }}
- 
+
       - name: Build native addon
         working-directory: core-parser
-        run: napi build --platform --release --features node --target ${{ matrix.target }} --no-js --use-napi-cross
+        run: napi build --platform --release --features node --target ${{ matrix.target }} --no-js
 
       - name: Prepare & publish platform subpackage
         working-directory: core-parser
