@@ -4,25 +4,25 @@ All notable changes to `@toaq-oss/mdx-engine` are documented here.
 
 ---
 
-## [0.1.6] — 2026-03-13
+## [0.1.8] — 2026-03-13
 
-### 🚀 SSR natif — refonte complète du moteur de rendu
+### 🚀 Native SSR — Complete Redesign of the Rendering Engine
 
-Cette version est une réécriture majeure orientée performance serveur. Le parser tourne désormais en Rust natif côté serveur, et le rendu est assuré par un vrai React Server Component — aucun JavaScript n'est envoyé au navigateur pour le contenu MDX.
+This release is a major rewrite focused on server performance. The parser now runs in native Rust on the server side, and rendering is handled by a true React Server Component—no JavaScript is sent to the browser for MDX content.
 
 ---
 
-### Nouveautés
+### What's New
 
-#### Parser Rust natif (napi-rs)
-Le parser MDX est maintenant compilé en addon natif Node.js via napi-rs. Il remplace le pipeline JS/WASM précédent pour les environnements serveur.
+#### Native Rust Parser (napi-rs)
+The MDX parser is now compiled into a native Node.js add-on using napi-rs. It replaces the previous JS/WASM pipeline for server environments.
 
-- **10 à 50× plus rapide** que l'ancienne implémentation JS
-- Chargement automatique du bon `.node` selon la plateforme (`darwin-arm64`, `linux-x64-gnu`, `win32-x64-msvc`)
-- Fallback sur le dossier `native/` local pour les environnements de développement et monorepos
+- **10 to 50× faster** than the old JS implementation
+- Automatic loading of the correct `.node` file based on the platform (`darwin-arm64`, `linux-x64-gnu`, `win32-x64-msvc`)
+- Fallback to the local `native/` folder for development environments and monorepos
 
 #### `MDXServerRenderer` — React Server Component
-Nouveau composant de rendu côté serveur, sans aucun `"use client"`. Compatible Next.js App Router (RSC), SSG, ISR et SSR classique.
+New server-side rendering component, with no `“use client”`. Compatible with Next.js App Router (RSC), SSG, ISR, and classic SSR.
 
 ```tsx
 import { parseMdx, MDXServerRenderer } from "@toaq-oss/mdx-engine/server";
@@ -31,10 +31,10 @@ const ast = await parseMdx(content);
 return <MDXServerRenderer ast={ast} components={COMPONENTS} />;
 ```
 
-Le HTML est généré entièrement sur le serveur — zéro runtime MDX dans le bundle client.
+HTML is generated entirely on the server — zero MDX runtime in the client bundle.
 
-#### `MDXClientRenderer` — rendu client pour les éditeurs live
-Conservé pour les cas où le contenu MDX change dans le navigateur (éditeurs, previews en temps réel). Inclut l'hydratation KaTeX automatique via `useEffect`.
+#### `MDXClientRenderer` — client-side rendering for live editors
+Retained for cases where MDX content changes in the browser (editors, real-time previews). Includes automatic KaTeX hydration via `useEffect`.
 
 ```tsx
 import { MDXClientRenderer } from "@toaq-oss/mdx-engine/client";
@@ -42,17 +42,17 @@ import { MDXClientRenderer } from "@toaq-oss/mdx-engine/client";
 <MDXClientRenderer ast={ast} components={COMPONENTS} katex />
 ```
 
-#### Nouveau système d'imports en trois entrées
+#### New three-entry import system
 | Import | Usage |
 |---|---|
-| `@toaq-oss/mdx-engine` | Types + `MDX_COMPONENTS` — safe partout |
-| `@toaq-oss/mdx-engine/server` | `parseMdx`, `MDXServerRenderer` — Server Components uniquement |
-| `@toaq-oss/mdx-engine/client` | `MDXClientRenderer`, `MDXErrorBoundary` — Client Components uniquement |
+| `@toaq-oss/mdx-engine` | Types + `MDX_COMPONENTS` — safe everywhere |
+| `@toaq-oss/mdx-engine/server` | `parseMdx`, `MDXServerRenderer` — Server Components only |
+| `@toaq-oss/mdx-engine/client` | `MDXClientRenderer`, `MDXErrorBoundary` — Client Components only |
 
-#### `MDXErrorBoundary` intégré
-Chaque composant custom rendu par `MDXClientRenderer` est automatiquement isolé dans un `MDXErrorBoundary`. En cas d'erreur dans un composant (données nulles, crash runtime), le reste du document continue de s'afficher.
+#### Built-in `MDXErrorBoundary`
+Every custom component rendered by `MDXClientRenderer` is automatically isolated within an `MDXErrorBoundary`. If an error occurs in a component (null data, runtime crash), the rest of the document continues to display.
 
-Également exporté pour usage direct :
+Also exported for direct use:
 
 ```tsx
 import { MDXErrorBoundary } from "@toaq-oss/mdx-engine/client";
@@ -62,25 +62,25 @@ import { MDXErrorBoundary } from "@toaq-oss/mdx-engine/client";
 </MDXErrorBoundary>
 ```
 
-#### Gestion des maths par le parser Rust
-Les formules LaTeX sont extraites par le parser Rust avant tout autre traitement — plus besoin de `remark-math` ou `rehype-katex`.
+#### Math handling by the Rust parser
+LaTeX formulas are extracted by the Rust parser before any other processing takes place — no need for `remark-math` or `rehype-katex`.
 
-- `$E = mc^2$` → `<span class="math math-inline" data-math="...">`
-- `$$...$$` → `<div class="math math-display" data-math="...">`
+- `$E = mc^2$` → `<span class="math math-inline" data-math=“...”>`
+- `$$...$$` → `<div class="math math-display" data-math=“...”>`
 
-KaTeX hydrate les attributs `data-math` côté client.
+KaTeX populates the `data-math` attributes on the client side.
 
-#### `parseProps` — utilitaire exporté
-Fonction utilitaire pour parser les valeurs de props JSX dans les composants custom (objets, tableaux, booléens, nombres depuis des strings).
+#### `parseProps` — exported utility
+Utility function for parsing JSX prop values in custom components (objects, arrays, booleans, numbers from strings).
 
 ```tsx
-import { parseProps } from "@toaq-oss/mdx-engine";
+import { parseProps } from “@toaq-oss/mdx-engine”;
 
-const data = parseProps(props.data); // "[1,2,3]" → [1, 2, 3]
+const data = parseProps(props.data); // “[1,2,3]” → [1, 2, 3]
 ```
 
-#### Système de distribution par plateforme (optionalDependencies)
-En production, les addons natifs sont distribués comme sous-packages npm indépendants. npm/pnpm installe uniquement le package correspondant à la plateforme courante :
+#### Platform-specific distribution system (optionalDependencies)
+In production, native add-ons are distributed as independent npm sub-packages. npm/pnpm installs only the package corresponding to the current platform:
 
 ```
 @toaq-oss/mdx-engine-darwin-arm64   ← Mac M1/M2
@@ -89,28 +89,28 @@ En production, les addons natifs sont distribués comme sous-packages npm indép
 @toaq-oss/mdx-engine-win32-x64-msvc ← Windows
 ```
 
-Aucune configuration requise — la détection est automatique au runtime.
+No configuration required — detection is automatic at runtime.
 
 ---
 
-### Changements majeurs (breaking)
+### Major (breaking) changes
 
-- **`MDXViewer` supprimé** → utiliser `MDXServerRenderer` (server) ou `MDXClientRenderer` (client)
-- **`MdxConfigProvider` supprimé** → passer `components` directement en prop
-- **Le parser ne tourne plus dans le navigateur par défaut** → le WASM est réservé au client via `MDXClientRenderer`
-- **WASM non supporté en SSR** → si le `.node` natif est absent côté serveur, une erreur claire est levée avec les instructions de build
-
----
-
-### Corrections
-
-- Table : normalisation de la structure HTML (`thead > tr > th`, `tbody > tr > td`)
-- Blocs de code : le contenu JSX parsé à l'intérieur des ` ``` ` est extrait en texte brut
-- Import `import.meta.url` incompatible CJS → le server entry est maintenant ESM uniquement
-- Warning tsup `empty-import-meta` supprimé
+- **`MDXViewer` removed** → use `MDXServerRenderer` (server) or `MDXClientRenderer` (client)
+- **`MdxConfigProvider` removed** → pass `components` directly as a prop
+- **The parser no longer runs in the browser by default** → WASM is reserved for the client via `MDXClientRenderer`
+- **WASM not supported in SSR** → if the native `.node` is missing on the server side, a clear error is thrown with build instructions
 
 ---
 
-## [0.1.5] et antérieur
+### Fixes
 
-Pipeline JS/WASM côté client. Parser via `mdx_parser.wasm`, rendu via `MDXViewer`. Voir les commits git pour l'historique détaillé.
+- Table: HTML structure normalization (`thead > tr > th`, `tbody > tr > td`)
+- Code blocks: JSX content parsed inside ` ``` ` is extracted as plain text
+- `import.meta.url` import incompatible with CJS → the server entry is now ESM-only
+- tsup `empty-import-meta` warning removed
+
+---
+
+## [0.1.5] and earlier
+
+Client-side JS/WASM pipeline. Parsed using `mdx_parser.wasm`, rendered using `MDXViewer`. See the Git commits for a detailed history.

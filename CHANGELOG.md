@@ -16,15 +16,15 @@ This monorepo contains multiple packages, each with their own changelog.
 
 ## [2026-03-13] — v0.2.0 / v0.1.6 / v0.1.2
 
-### Refonte complète — SSR natif + parser Rust
+### Complete Redesign — Native SSR + Rust Parser
 
-Cette release marque le passage du moteur MDX d'un pipeline JS/WASM client-side vers une architecture server-first avec un core Rust partagé entre Node.js, Python et WASM.
+This release marks the transition of the MDX engine from a client-side JS/WASM pipeline to a server-first architecture with a Rust core shared between Node.js, Python, and WASM.
 
-**Voir les changelogs individuels pour le détail complet.**
+**See the individual changelogs for full details.**
 
-### Résumé
+### Summary
 
-- Le parser MDX tourne désormais en Rust natif via napi-rs (Node.js) et PyO3 (Python)
-- Le rendu Next.js est assuré par un React Server Component — zéro JS envoyé au navigateur pour le contenu
-- Le rendu Python supporte HTML (web) et Qt natif (desktop)
-- Le WASM reste disponible comme fallback pour les environnements browser/Edge
+- The MDX parser now runs in native Rust via napi-rs (Node.js) and PyO3 (Python)
+- Next.js rendering is handled by a React Server Component — zero JS sent to the browser for content
+- Python rendering supports HTML (web) and native Qt (desktop)
+- WASM remains available as a fallback for browser/Edge environments

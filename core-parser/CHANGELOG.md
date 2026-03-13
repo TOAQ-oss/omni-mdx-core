@@ -6,42 +6,42 @@ All notable changes to the Rust MDX parser crate are documented here.
 
 ## [0.2.0] — 2026-03-13
 
-### Version initiale publique
+### Initial Public Release
 
-Première version stable du parser MDX en Rust. Ce crate constitue le cœur du moteur `omni-mdx-core` — il est consommé par le package npm `@toaq-oss/mdx-engine` via napi-rs, par le package Python `toaq-mdx` via PyO3/maturin, et peut être compilé en WASM via wasm-bindgen.
+First stable version of the MDX parser in Rust. This crate forms the core of the `omni-mdx-core` engine—it is used by the npm package `@toaq-oss/mdx-engine` via napi-rs, by the Python package `toaq-mdx` via PyO3/maturin, and can be compiled to WASM via wasm-bindgen.
 
 ---
 
 ### Architecture
 
-#### Pipeline de parsing
+#### Parsing Pipeline
 
-Le parsing suit un ordre strict en trois passes, conçu pour éviter les conflits entre les grammaires MDX, JSX et LaTeX :
+Parsing follows a strict three-pass process designed to prevent conflicts between MDX, JSX, and LaTeX grammars:
 
 ```
 input
   │
   ▼
-extract_math()       ← 1re passe — extrait $...$ et $$...$$ avant tout
+extract_math()       ← First pass — extract $...$ and $$...$$ first
   │
   ▼
-extract_jsx()        ← 2e passe — extrait les blocs JSX
+extract_jsx()        ← 2nd pass — extracts the JSX blocks
   │
   ▼
-parse_markdown()     ← 3e passe — parse le Markdown via pulldown-cmark
+parse_markdown()     ← 3rd pass — parses the Markdown using pulldown-cmark
 ```
 
-L'ordre est critique : les formules mathématiques doivent être extraites avant le lexer JSX, car `$t > 0$` contient des `>` et `<` qui seraient autrement interprétés comme des balises.
+The order is critical: mathematical expressions must be parsed before the JSX lexer, because `$t > 0$` contains `>` and `<` characters that would otherwise be interpreted as tags.
 
-#### Système de placeholders
+#### Placeholder System
 
-Les blocs extraits sont remplacés par des tokens non-imprimables pour éviter toute collision avec le contenu MDX :
+Extracted blocks are replaced with non-printable tokens to prevent any conflicts with the MDX content:
 
-| Token | Signification |
+| Token | Meaning |
 |---|---|
-| `\x02JSXn\x03` | Bloc JSX numéro n |
-| `\x02MATHBn\x03` | Bloc math display `$$...$$` |
-| `\x02MATHIn\x03` | Bloc math inline `$...$` |
+| `\x02JSXn\x03` | JSX block number n |
+| `\x02MATHBn\x03` | Display math block `$$...$$` |
+| `\x02MATHIn\x03` | Inline math block `$...$` |
 
 #### AST
 
@@ -75,43 +75,43 @@ pub struct AstNode {
 
 ---
 
-### Fonctionnalités du parser
+### Parser Features
 
-- **Markdown complet** via pulldown-cmark : headings, paragraphes, listes ordonnées et non-ordonnées, listes imbriquées, blockquotes, tables GFM, blocs de code fencés avec langue, code inline, gras, italique, strikethrough, liens, images, règles horizontales, sauts de ligne
-- **JSX** : composants custom avec attributs typés (`text`, `expression`, `boolean`, `ast`), enfants mixtes (texte + inline + blocs), auto-fermeture, imbrication
-- **Attributs JSX complexes** : `title="foo"` → `Text`, `left={<div>}` → `Ast`, `disabled` → `Boolean`, `count={42}` → `Expression`
-- **Math inline** : `$...$` → nœud `InlineMath`
-- **Math display** : `$$...$$` → nœud `BlockMath`
-- **Déduplication de paragraphes** : les JSX block seuls ne sont pas wrappés dans un `<p>`
-- **Dédent automatique** : le contenu indenté dans les composants JSX est normalisé
+- **Full Markdown support** via pulldown-cmark: headings, paragraphs, ordered and unordered lists, nested lists, blockquotes, GFM tables, fenced code blocks with language, inline code, bold, italics, strikethrough, links, images, horizontal lines, line breaks
+- **JSX**: custom components with typed attributes (`text`, `expression`, `boolean`, `ast`), mixed children (text + inline + blocks), auto-closing, nesting
+- **Complex JSX attributes**: `title=“foo”` → `Text`, `left={}` → `Ast`, `disabled` → `Boolean`, `count={42}` → `Expression`
+- **Inline math**: `$...$` → `InlineMath` node
+- **Display math**: `$$...$$` → `BlockMath` node
+- **Paragraph deduplication**: standalone JSX blocks are not wrapped in a ``
+- **Automatic indentation**: indented content within JSX components is normalized
 
 ---
 
-### Bugs corrigés durant le développement
+### Bugs fixed during development
 
-1. **Placeholder `__JSX_N__`** — remplacé par `\x02JSXn\x03` pour éviter les collisions avec le contenu utilisateur
-2. **Panic `bytes[i-1]` sur `i == 0`** — guard sur l'index zéro ajouté dans le lexer
-3. **`<p>` wrappant un JSX seul** — `unwrap_solo_jsx_paragraph` réécrit pour détecter les paragraphes ne contenant qu'un seul nœud block
-4. **`$t > 0$` crashant le lexer** — résolu par le réordonnancement du pipeline (math avant JSX)
-5. **`init()` WASM n'est pas une fonction** — `wasm-bindgen` rendu optionnel, feature `wasm` isolée
-6. **`Unclosed JSX block`** — machine d'état du lexer JSX réécrite pour gérer les balises imbriquées
-7. **`Unexpected token '?'`** — `parse_children` appelait `parse_mdx` récursivement au lieu de `parse_markdown`
-8. **Build wasm-pack échouant** — `wasm-bindgen` extrait en dépendance optionnelle conditionnelle
-9. **Corruption UTF-8** — introduction de `utf8_char_len()` et `from_utf8` pour tous les slices de bytes
-10. **`left={<div>}` rendu comme string** — `parse_html_wrapper` appelle maintenant `parse_markdown` pour les attributs `ast`
-11. **Contenu indenté → `<pre>`** — fonction `dedent()` ajoutée en pré-traitement des enfants JSX
-12. **`<div>` inside `<p>` (erreur d'hydratation React)** — `unwrap_solo_jsx_paragraph` réécrit une seconde fois pour couvrir les cas de BlockMath
-13. **`InlineMath` hissé comme bloc** — `is_block()` exclut explicitement `InlineMath`
+1. **`__JSX_N__` placeholder** — replaced with `\x02JSXn\x03` to avoid conflicts with user content
+2. **`bytes[i-1]` panic when `i == 0`** — zero-index guard added to the lexer
+3. **`` wrapping a single JSX node** — `unwrap_solo_jsx_paragraph` rewritten to detect paragraphs containing only a single block node
+4. **`$t > 0$` causing the lexer to crash** — resolved by reordering the (math before JSX)
+5. **`init()` WASM is not a function** — `wasm-bindgen` made optional, `wasm` feature isolated
+6. **`Unclosed JSX block`** — JSX lexer state machine rewritten to handle nested tags
+7. **`Unexpected token ‘?’`** — `parse_children` was calling `parse_mdx` recursively instead of `parse_markdown`
+8. **wasm-pack build failing** — `wasm-bindgen` extracted as a conditional optional dependency
+9. **UTF-8 corruption** — introduction of `utf8_char_len()` and `from_utf8` for all byte slices
+10. **`left={}` rendered as a string** — `parse_html_wrapper` now calls `parse_markdown` for `ast` attributes
+11. **Indented content → `````** — `dedent()` function added to JSX child preprocessing
+12. **`` inside `` (React hydration error)** — `unwrap_solo_jsx_paragraph` rewritten a second time to cover BlockMath cases
+13. **`InlineMath` promoted to a block** — `is_block()` explicitly excludes `InlineMath`
 
 ---
 
 ### Compilation
 
 ```bash
-# Addon Node.js
+# Node.js add-on
 napi build --platform --release --features node --no-js
 
-# Extension Python
+# Python extension
 maturin develop --release --features python
 
 # WASM
@@ -120,12 +120,12 @@ wasm-pack build --target bundler --features wasm
 
 ---
 
-### Dépendances principales
+### Main Dependencies
 
-| Crate | Rôle |
+| Crate | Role |
 |---|---|
-| `pulldown-cmark` | Parser Markdown (CommonMark + GFM) |
-| `serde` + `serde_json` | Sérialisation AST → JSON |
-| `napi` + `napi-derive` | Bindings Node.js (feature `node`) |
-| `pyo3` | Bindings Python (feature `python`) |
-| `wasm-bindgen` | Bindings WASM (feature `wasm`) |
+| `pulldown-cmark` | Markdown parser (CommonMark + GFM) |
+| `serde` + `serde_json` | AST to JSON serialization |
+| `napi` + `napi-derive` | Node.js bindings (`node` feature) |
+| `pyo3` | Python bindings (`python` feature) |
+| `wasm-bindgen` | WASM bindings (`wasm` feature) |
