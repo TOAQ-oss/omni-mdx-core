@@ -12,6 +12,9 @@ on:
 jobs:
   # ── Build .node par plateforme ────────────────────────────────────────────────
   build-native:
+    permissions:
+      id-token: write
+      contents: read
     strategy:
       fail-fast: true
       matrix:
@@ -62,7 +65,7 @@ jobs:
           cat > "$PKG_DIR/package.json" << PKGJSON
           {
             "name": "$PKG_NAME",
-            "version": "0.2.0",
+            "version": "0.2.1",
             "description": "Native addon for @toaq-oss/mdx-engine (${{ matrix.name }})",
             "license": "MIT",
             "main": "toaq-parser-core.${{ matrix.name }}.node",
@@ -74,10 +77,7 @@ jobs:
 
       - name: Publish platform subpackage
         working-directory: platform-pkg
-        # NPM_CONFIG_USERCONFIG pointe vers le .npmrc de setup-node — on y écrit le token
-        run: |
-          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" >> "${NPM_CONFIG_USERCONFIG}"
-          npm publish --access public
+        run: npm publish --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
