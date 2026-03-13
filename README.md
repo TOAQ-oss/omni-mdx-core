@@ -17,10 +17,9 @@ omni-mdx/
 │   ├── src/
 │   └── bindings/
 ├── packages/
-│   ├── mdx-next/
-│   └── mdx-python/
-└── sandbox/
-    └── next/
+    ├── mdx-next/
+    └── mdx-python/
+
 ```
 
 ##  🛠️ Installation & Development
