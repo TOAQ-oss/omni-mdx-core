@@ -10,6 +10,17 @@ crate-type = ["cdylib", "rlib"]
 [[bin]]
 name = "test_ast"
 path = "src/bin/test_ast.rs"
+required-features = []
+
+[[bin]]
+name = "test_errors"
+path = "src/bin/test_errors.rs"
+required-features = []
+
+[[bin]]
+name = "test_perf"
+path = "src/bin/test_perf.rs"
+required-features = []
 
 [dependencies]
 pulldown-cmark = "0.10"
@@ -17,15 +28,20 @@ regex          = "1"
 serde          = { version = "1", features = ["derive"] }
 serde_json     = "1"
 wasm-bindgen   = { version = "0.2.93", optional = true }
-pyo3 = { version = "0.23", features = ["extension-module"], optional = true }
+pyo3           = { version = "0.23", features = ["extension-module"], optional = true }
+napi           = { version = "2", features = ["napi4"], optional = true }
+napi-derive    = { version = "2", optional = true }
+
+[build-dependencies]
+napi-build = "2"
 
 [features]
 default = []
 wasm    = ["wasm-bindgen"]
-python = ["pyo3"]
+python  = ["pyo3"]
 ffi     = []
+node    = ["napi", "napi-derive"]
 
-# wasm-pack reads this and automatically passes --features wasm at build time.
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = ["-Oz"]
 

@@ -1,22 +1,31 @@
-CORE_DIR = core-parser
-WASM_PKG_DIR = packages/mdx-next/parser-core
-PYTHON_PKG = packages/mdx-python
+CORE_DIR     = core-parser
+MDX_NEXT_DIR = packages/mdx-next
+PYTHON_PKG   = packages/mdx-python
+NATIVE_DIR   = $(MDX_NEXT_DIR)/native
+WASM_DIR     = $(MDX_NEXT_DIR)/wasm
 
-.PHONY: build test build-wasm build-python setup clean
+.PHONY: build test build-node build-wasm build-python build-mdx-next setup clean
 
-build: setup test build-wasm build-python
+build: setup test build-node build-wasm build-mdx-next build-python
 
 test:
 	cd $(CORE_DIR) && cargo test --release
 
+build-node:
+	cd $(CORE_DIR) && napi build --platform --release --features node --no-js
+	mkdir -p $(NATIVE_DIR)
+	cp $(CORE_DIR)/toaq-parser-core.*.node $(NATIVE_DIR)/
+
 build-wasm:
-	cd $(CORE_DIR) && cargo build --release --target wasm32-unknown-unknown
-	mkdir -p $(WASM_PKG_DIR)
-	wasm-bindgen target/wasm32-unknown-unknown/release/mdx_parser.wasm \
-		--out-dir $(WASM_PKG_DIR) \
-		--target bundler \
-		--typescript
-	rm -f $(WASM_PKG_DIR)/.gitignore
+	cd $(CORE_DIR) && wasm-pack build --target bundler --features wasm
+	mkdir -p $(WASM_DIR)
+	cp -r $(CORE_DIR)/pkg/* $(WASM_DIR)/
+	rm -f $(WASM_DIR)/.gitignore
+	rm -f $(WASM_DIR)/package.json
+	rm -f $(WASM_DIR)/README.md
+
+build-mdx-next: build-node build-wasm
+	cd $(MDX_NEXT_DIR) && npm run build
 
 build-python:
 	cd $(CORE_DIR) && maturin develop --release --features python
@@ -26,4 +35,7 @@ setup:
 
 clean:
 	cd $(CORE_DIR) && cargo clean
-	rm -rf $(WASM_PKG_DIR)
+	rm -rf $(NATIVE_DIR)
+	rm -rf $(WASM_DIR)
+	rm -rf $(MDX_NEXT_DIR)/dist
+	rm -rf $(MDX_NEXT_DIR)/node_modules

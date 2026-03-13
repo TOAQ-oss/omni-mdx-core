@@ -84,3 +84,20 @@ fn error_json(msg: &str) -> *mut c_char {
         Err(_) => std::ptr::null_mut(), // Failsafe fallback
     }
 }
+
+/// Module for native Node.js integration via N-API.
+/// This module is compiled only if the “node” feature is enabled.
+#[cfg(feature = "node")]
+mod node {
+    use napi_derive::napi;
+
+    /// Version optimized for Node.js.
+    /// Uses N-API for automatic memory management between Node and Rust.
+    /// Returns a `Promise` (if asynchronous) or throws a JavaScript exception on error.
+    #[napi]
+    pub fn parse(mdx: String) -> napi::Result<String> {
+        crate::parser::parse_mdx(&mdx)
+            .map(|ast| serde_json::to_string(&ast).unwrap())
+            .map_err(|e| napi::Error::from_reason(e.to_string()))
+    }
+}

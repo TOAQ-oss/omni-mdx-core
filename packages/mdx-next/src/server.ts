@@ -1,0 +1,15 @@
+/**
+ * @toaq/mdx-engine/server
+ *
+ * Server-only entry point.
+ * Import this in Server Components, API routes, and generateStaticParams.
+ *
+ * ✅ Next.js App Router RSC
+ * ✅ getStaticProps / getServerSideProps (Pages Router)
+ * ✅ Route Handlers (app/api/...)
+ * ❌ Never import in "use client" files
+ */
+
+export { parseMdx, parseMdxSync, MDXParseError } from "./parse.server";
+export { MDXServerRenderer } from "./MDXServerRenderer";
+export type { AstNode, AttrValueKind, MDXComponents } from "./MDXServerRenderer";
