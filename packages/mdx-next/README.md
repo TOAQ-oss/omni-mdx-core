@@ -97,12 +97,11 @@ The `ast` prop should be computed server-side and passed down, or computed clien
 
 ## Import map
 
-| Import Pat
 |Import path|What you get|Where to use|
 |----|---|----|
-| `@toaq/mdx-engine`|Types + `MDX_COMPONENTS` registry|Anywhere|
-| `@toaq/mdx-engine/server`|`parseMdx`, `MDXServerRenderer`, `MDXParseError` | Server Components only |
-| `@toaq/mdx-engine/client`| `MDXClientRenderer`, `MDXErrorBoundary`| Client Components only |
+|`@toaq/mdx-engine`|Types + `MDX_COMPONENTS` registry|Anywhere|
+|`@toaq/mdx-engine/server`|`parseMdx`, `MDXServerRenderer`, `MDXParseError` |Server Components only|
+|`@toaq/mdx-engine/client`|`MDXClientRenderer`, `MDXErrorBoundary`|Client Components only|
 
 ---
 
