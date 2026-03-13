@@ -68,13 +68,17 @@ jobs:
             "main": "toaq-parser-core.${{ matrix.name }}.node",
             "files": ["toaq-parser-core.${{ matrix.name }}.node"],
             "os": ["$(echo ${{ matrix.name }} | cut -d- -f1)"],
-            "cpu": ["$(echo ${{ matrix.name }} | cut -d- -f2)"]
+            "cpu": ["$(echo ${{ matrix.name }} | cut -d- -f2)"],
+            "repository": {
+              "type": "git",
+              "url": "https://github.com/TOAQ-oss/omni-mdx-core"
+            }
           }
           PKGJSON
 
       - name: Publish platform subpackage
         working-directory: platform-pkg
-        run: npm publish --access public
+        run: npm publish --access public --dry-run
 
       - name: Upload .node artifact
         uses: actions/upload-artifact@v4
@@ -161,4 +165,4 @@ jobs:
 
       - name: Publish @toaq-oss/mdx-engine
         working-directory: packages/mdx-next
-        run: npm publish --access public
+        run: npm publish --access public --dry-run
