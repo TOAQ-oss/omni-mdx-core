@@ -145,13 +145,6 @@ jobs:
           name: wasm
           path: packages/mdx-next/wasm/
 
-      - name: Verify artifacts
-        run: |
-          echo "── native/ ──"
-          ls -la packages/mdx-next/native/
-          echo "── wasm/ ──"
-          ls -la packages/mdx-next/wasm/
-
       - name: Install dependencies
         working-directory: packages/mdx-next
         run: npm install --ignore-scripts
