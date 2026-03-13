@@ -46,6 +46,9 @@ jobs:
       - name: Install napi-rs CLI
         run: npm install -g @napi-rs/cli
 
+      - name: Add Rust target
+        run: rustup target add ${{ matrix.target }}
+ 
       - name: Build native addon
         working-directory: core-parser
         run: napi build --platform --release --features node --target ${{ matrix.target }} --no-js --use-napi-cross
