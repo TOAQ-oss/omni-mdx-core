@@ -10,6 +10,7 @@ on:
   workflow_dispatch:
 
 jobs:
+  # ── Build .node par plateforme ────────────────────────────────────────────────
   build-native:
     strategy:
       fail-fast: true
@@ -31,8 +32,9 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
+
+      - name: Add Rust target
+        run: rustup target add ${{ matrix.target }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -43,18 +45,36 @@ jobs:
       - name: Install napi-rs CLI
         run: npm install -g @napi-rs/cli
 
-      - name: Add Rust target
-        run: rustup target add ${{ matrix.target }}
-
       - name: Build native addon
         working-directory: core-parser
         run: napi build --platform --release --features node --target ${{ matrix.target }} --no-js
 
-      - name: Prepare & publish platform subpackage
-        working-directory: core-parser
+      - name: Create platform subpackage
+        shell: bash
         run: |
-          napi prepublish -t npm
-          npm publish npm/@toaq-oss/mdx-engine-${{ matrix.name }} --access public
+          PKG_NAME="@toaq-oss/mdx-engine-${{ matrix.name }}"
+          PKG_DIR="platform-pkg"
+          NODE_FILE=$(ls core-parser/toaq-parser-core.*.node | head -1)
+
+          mkdir -p "$PKG_DIR"
+          cp "$NODE_FILE" "$PKG_DIR/toaq-parser-core.${{ matrix.name }}.node"
+
+          cat > "$PKG_DIR/package.json" << PKGJSON
+          {
+            "name": "$PKG_NAME",
+            "version": "0.2.0",
+            "description": "Native addon for @toaq-oss/mdx-engine (${{ matrix.name }})",
+            "license": "MIT",
+            "main": "toaq-parser-core.${{ matrix.name }}.node",
+            "files": ["toaq-parser-core.${{ matrix.name }}.node"],
+            "os": ["$(echo ${{ matrix.name }} | cut -d- -f1)"],
+            "cpu": ["$(echo ${{ matrix.name }} | cut -d- -f2)"]
+          }
+          PKGJSON
+
+      - name: Publish platform subpackage
+        working-directory: platform-pkg
+        run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -65,6 +85,7 @@ jobs:
           path: core-parser/toaq-parser-core.*.node
           retention-days: 1
 
+  # ── Build WASM ────────────────────────────────────────────────────────────────
   build-wasm:
     runs-on: ubuntu-latest
     steps:
@@ -95,6 +116,7 @@ jobs:
           path: core-parser/pkg/
           retention-days: 1
 
+  # ── Publish @toaq-oss/mdx-engine ──────────────────────────────────────────────
   publish:
     needs: [build-native, build-wasm]
     runs-on: ubuntu-latest
@@ -142,6 +164,6 @@ jobs:
 
       - name: Publish @toaq-oss/mdx-engine
         working-directory: packages/mdx-next
-        run: npm publish --access public --provenance --dry-run
+        run: npm publish --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
