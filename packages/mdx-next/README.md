@@ -1,4 +1,4 @@
-# @toaq/mdx-engine
+# @toaq-oss/mdx-engine
 
 The React/Next.js visual rendering engine of the TOAQ-oss MDX ecosystem.
 
