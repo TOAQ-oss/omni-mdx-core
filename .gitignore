@@ -5,6 +5,8 @@ target/
 node_modules/
 .next/
 dist/
+native/
+wasm/
 .env*
 *.log
 
