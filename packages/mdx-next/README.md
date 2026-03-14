@@ -17,7 +17,7 @@ Most MDX pipelines (next-mdx-remote, @next/mdx, contentlayer) run at the JS leve
 - Math rendered on the client (flash of unstyled content)
 - Custom components that can't be pure Server Components
 
-`@toaq/mdx-engine` solves this by moving the parse step into Rust and the render step into React Server Components. The result is **zero JS for content** — everything is HTML by the time it reaches the browser.
+`@toaq-oss/mdx-engine` solves this by moving the parse step into Rust and the render step into React Server Components. The result is **zero JS for content** — everything is HTML by the time it reaches the browser.
 
 The WASM build is available as a fallback for Edge runtimes or environments where native addons are not supported.
 
@@ -26,7 +26,7 @@ The WASM build is available as a fallback for Edge runtimes or environments wher
 ## Installation
 
 ```bash
-npm install @toaq/mdx-engine
+npm install @toaq-oss/mdx-engine
 # KaTeX is optional — only needed if your content has math
 npm install katex
 ```
@@ -44,7 +44,7 @@ import "katex/dist/katex.min.css";
 ### Server Component (recommended)
 
 ```tsx
-import { parseMdx, MDXServerRenderer } from "@toaq/mdx-engine/server";
+import { parseMdx, MDXServerRenderer } from "@toaq-oss/mdx-engine/server";
 import { Note, Details }               from "@/components/mdx";
 
 const COMPONENTS = { Note, Details };
@@ -84,7 +84,7 @@ For live MDX previews where the content changes in the browser:
 
 ```tsx
 "use client";
-import { MDXClientRenderer } from "@toaq/mdx-engine/client";
+import { MDXClientRenderer } from "@toaq-oss/mdx-engine/client";
 
 export function LivePreview({ ast, components }) {
   return <MDXClientRenderer ast={ast} components={components} katex />;
@@ -99,9 +99,9 @@ The `ast` prop should be computed server-side and passed down, or computed clien
 
 |Import path|What you get|Where to use|
 |----|---|----|
-|`@toaq/mdx-engine`|Types + `MDX_COMPONENTS` registry|Anywhere|
-|`@toaq/mdx-engine/server`|`parseMdx`, `MDXServerRenderer`, `MDXParseError` |Server Components only|
-|`@toaq/mdx-engine/client`|`MDXClientRenderer`, `MDXErrorBoundary`|Client Components only|
+|`@toaq-oss/mdx-engine`|Types + `MDX_COMPONENTS` registry|Anywhere|
+|`@toaq-oss/mdx-engine/server`|`parseMdx`, `MDXServerRenderer`, `MDXParseError` |Server Components only|
+|`@toaq-oss/mdx-engine/client`|`MDXClientRenderer`, `MDXErrorBoundary`|Client Components only|
 
 ---
 
@@ -134,7 +134,7 @@ Server Components in the registry are rendered on the server with zero client JS
 ### Parse errors
 
 ```tsx
-import { parseMdx, MDXParseError } from "@toaq/mdx-engine/server";
+import { parseMdx, MDXParseError } from "@toaq-oss/mdx-engine/server";
 
 try {
   const ast = await parseMdx(content);
@@ -153,7 +153,7 @@ In `MDXClientRenderer`, every custom component is automatically wrapped in `MDXE
 You can also use `MDXErrorBoundary` directly:
 
 ```tsx
-import { MDXErrorBoundary } from "@toaq/mdx-engine/client";
+import { MDXErrorBoundary } from "@toaq-oss/mdx-engine/client";
 
 <MDXErrorBoundary componentName="Chart">
   <Chart data={maybeNull} />
