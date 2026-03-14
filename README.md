@@ -1,7 +1,7 @@
 # 🦀 Omni-MDX
 ## A fast, cross-platform, cross-language MDX rendering engine powered by Rust.
 
-Omni-MDX is designed to transform complex scientific documents (LaTeX, MDX, interactive components) into a universal data tree (AST). Initially created for the TOAQ platform, this engine allows MDX (Markdown Extended) to be viewed on web, app, and software projects.
+Omni-MDX is designed to transform complex MDX documents into a universal data tree (AST). Initially created for the TOAQ platform, this engine allows MDX (Markdown Extended) to be viewed on web, app, and software projects.
 
 ## 🚀 Project Vision
 Omni-MDX aims to solve the problem of parser fragmentation. Instead of having one parser in JavaScript for the website and another in Python for data processing, Omni-MDX offers a **Single Core in Rust** compiled for each environment.
