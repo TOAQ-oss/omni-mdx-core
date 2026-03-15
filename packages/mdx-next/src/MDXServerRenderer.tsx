@@ -18,6 +18,7 @@
  */
 
 import React, { ReactNode, JSX } from "react";
+import katex from "katex";
 
 // AST types (mirror Rust output exactly)
 
@@ -111,29 +112,43 @@ function renderNode(
     );
   }
 
-  // Math — rendered server-side as semantic HTML
-  // KaTeX processing happens via rehype-katex on the HTML output,
-  // or the client component wraps these with react-katex if needed.
+  // Math — rendu serveur via KaTeX (HTML statique, zéro JS client)
   if (node.node_type === "InlineMath") {
-    return (
-      <span
-        key={key}
-        className="math math-inline"
-        data-math={node.content ?? ""}
-        suppressHydrationWarning
-      />
-    );
+    try {
+      const html = katex.renderToString(node.content ?? "", {
+        displayMode:  false,
+        throwOnError: false,
+        output:       "html",
+      });
+      return (
+        <span
+          key={key}
+          className="math math-inline"
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      );
+    } catch {
+      return <span key={key} className="math math-inline">{node.content}</span>;
+    }
   }
 
   if (node.node_type === "BlockMath") {
-    return (
-      <div
-        key={key}
-        className="math math-display"
-        data-math={node.content ?? ""}
-        suppressHydrationWarning
-      />
-    );
+    try {
+      const html = katex.renderToString(node.content ?? "", {
+        displayMode:  true,
+        throwOnError: false,
+        output:       "html",
+      });
+      return (
+        <div
+          key={key}
+          className="math math-display"
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      );
+    } catch {
+      return <div key={key} className="math math-display">{node.content}</div>;
+    }
   }
 
   // Resolve props from AST attributes

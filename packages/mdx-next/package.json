@@ -1,6 +1,6 @@
 {
   "name": "@toaq-oss/omni-mdx",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "MDX parser + renderer for Next.js \u2014 Rust core, RSC-compatible",
   "license": "MIT",
   "type": "module",
@@ -43,19 +43,17 @@
     "@toaq-oss/omni-mdx-win32-x64-msvc": "0.1.1"
   },
   "peerDependencies": {
-    "katex": ">=0.16.0",
     "react": ">=18.0.0"
   },
-  "peerDependenciesMeta": {
-    "katex": {
-      "optional": true
-    }
-  },
+  "peerDependenciesMeta": {},
   "devDependencies": {
     "@types/katex": "^0.16.0",
     "@types/node": "^25.5.0",
     "@types/react": "^18.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "katex": "^0.16.0"
   }
 }

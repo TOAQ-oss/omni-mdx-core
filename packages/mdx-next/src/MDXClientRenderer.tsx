@@ -16,31 +16,12 @@
  * For the live editor use case, import from '@toaq/omni-mdx/client'.
  */
 
-import React, { ReactNode, createContext, useContext, useEffect, useRef } from "react";
+import React, { ReactNode, useEffect, useRef, useState } from "react";
+import katex from "katex";
 import { MDXErrorBoundary } from "./MDXErrorBoundary";
 import type { AstNode, MDXComponents } from "./MDXServerRenderer";
 
-// KaTeX loader (client-only, dynamic import)
 
-let katexLoaded = false;
-
-async function loadKatex() {
-  if (katexLoaded || typeof window === "undefined") return;
-  try {
-    // Dynamically import KaTeX auto-render (avoids SSR issues)
-    const [{ default: katex }, autoRenderMod] = await Promise.all([
-      import("katex"),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      import("katex/contrib/auto-render") as any,
-    ]);
-    const renderMathInElement = autoRenderMod.default ?? autoRenderMod;
-    katexLoaded = true;
-    return renderMathInElement;
-  } catch {
-    console.warn("[toaq-oss/omni-mdx] KaTeX not available. Install: npm install katex");
-    return null;
-  }
-}
 
 // Attr resolver (client version handles expressions fully)
 
@@ -96,26 +77,22 @@ function renderNode(
     );
   }
 
-  // Math — rendered as semantic spans; KaTeX hydrates them via useEffect
+  // Math — rendu direct via KaTeX (import statique)
   if (node.node_type === "InlineMath") {
-    return (
-      <span
-        key={key}
-        className="math math-inline"
-        data-math={node.content ?? ""}
-        suppressHydrationWarning
-      />
-    );
+    try {
+      const html = katex.renderToString(node.content ?? "", { displayMode: false, throwOnError: false, output: "html" });
+      return <span key={key} className="math math-inline" dangerouslySetInnerHTML={{ __html: html }} />;
+    } catch {
+      return <span key={key} className="math math-inline">{node.content}</span>;
+    }
   }
   if (node.node_type === "BlockMath") {
-    return (
-      <div
-        key={key}
-        className="math math-display"
-        data-math={node.content ?? ""}
-        suppressHydrationWarning
-      />
-    );
+    try {
+      const html = katex.renderToString(node.content ?? "", { displayMode: true, throwOnError: false, output: "html" });
+      return <div key={key} className="math math-display" dangerouslySetInnerHTML={{ __html: html }} />;
+    } catch {
+      return <div key={key} className="math math-display">{node.content}</div>;
+    }
   }
 
   const resolvedProps: Record<string, any> = {};
@@ -170,45 +147,20 @@ interface MDXClientRendererProps {
   ast: AstNode[];
   /** Component registry — same shape as MDX_COMPONENTS. */
   components?: MDXComponents;
-  /** If true, activates KaTeX auto-render after mount. Default: true. */
-  katex?: boolean;
 }
 
 export function MDXClientRenderer({
   ast,
   components = {},
-  katex = true,
 }: MDXClientRendererProps) {
   const rootRef = useRef<HTMLDivElement>(null);
 
-  // Hydrate math after mount
-  useEffect(() => {
-    if (!katex || !rootRef.current) return;
-    loadKatex().then((renderMath) => {
-      if (!renderMath || !rootRef.current) return;
-      renderMath(rootRef.current, {
-        delimiters: [
-          { left: "$$", right: "$$", display: true },
-          { left: "$",  right: "$",  display: false },
-        ],
-      });
-      // Also handle data-math attributes directly
-      rootRef.current.querySelectorAll<HTMLElement>("[data-math]").forEach((el) => {
-        const math = el.getAttribute("data-math") ?? "";
-        const display = el.classList.contains("math-display");
-        try {
-          import("katex").then(({ default: k }) => {
-            el.innerHTML = k.renderToString(math, { displayMode: display, throwOnError: false });
-          });
-        } catch {}
-      });
-    });
-  }, [ast, katex]);
+
 
   if (!ast || !Array.isArray(ast)) return null;
 
   return (
-    <div ref={rootRef} className="omni-mdx-root">
+    <div className="omni-mdx-root">
       <MDXClientContent ast={ast} components={components} />
     </div>
   );
