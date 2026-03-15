@@ -65,7 +65,7 @@ jobs:
           cat > platform-pkg/package.json << PKGJSON
           {
             "name": "$PKG_NAME",
-            "version": "0.1.0",
+            "version": "0.1.1",
             "description": "Native addon for @toaq-oss/omni-mdx (${{ matrix.name }})",
             "license": "MIT",
             "main": "omni-mdx-core.${{ matrix.name }}.node",
@@ -79,9 +79,9 @@ jobs:
           }
           PKGJSON
 
-      # - name: Publish platform subpackage
-      #   working-directory: platform-pkg
-      #   run: npm publish --access public
+      - name: Publish platform subpackage
+        working-directory: platform-pkg
+        run: npm publish --access public
 
       - name: Upload .node artifact
         uses: actions/upload-artifact@v4
@@ -120,43 +120,43 @@ jobs:
           path: core-parser/pkg/
           retention-days: 1
 
-  # publish:
-  #   needs: [build-native, build-wasm]
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     id-token: write
-  #     contents: read
+  publish:
+    needs: [build-native, build-wasm]
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
 
-  #   steps:
-  #     - uses: actions/checkout@v4
+    steps:
+      - uses: actions/checkout@v4
 
-  #     - name: Set up Node.js
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: '24'
-  #         registry-url: 'https://registry.npmjs.org'
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
 
-  #     - name: Download all native .node artifacts
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         pattern: native-*
-  #         path: packages/mdx-next/native/
-  #         merge-multiple: true
+      - name: Download all native .node artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: native-*
+          path: packages/mdx-next/native/
+          merge-multiple: true
 
-  #     - name: Download WASM artifact
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: wasm
-  #         path: packages/mdx-next/wasm/
+      - name: Download WASM artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: wasm
+          path: packages/mdx-next/wasm/
 
-  #     - name: Install dependencies
-  #       working-directory: packages/mdx-next
-  #       run: npm install --ignore-scripts
+      - name: Install dependencies
+        working-directory: packages/mdx-next
+        run: npm install --ignore-scripts
 
-  #     - name: Build JS package
-  #       working-directory: packages/mdx-next
-  #       run: npm run build
+      - name: Build JS package
+        working-directory: packages/mdx-next
+        run: npm run build
 
-  #     - name: Publish @toaq-oss/omni-mdx
-  #       working-directory: packages/mdx-next
-  #       run: npm publish --access public
+      - name: Publish @toaq-oss/omni-mdx
+        working-directory: packages/mdx-next
+        run: npm publish --access public
