@@ -66,7 +66,7 @@ jobs:
           {
             "name": "$PKG_NAME",
             "version": "0.1.0",
-            "description": "Native addon for @toaq-oss/omni-mdx (${ matrix.name })",
+            "description": "Native addon for @toaq-oss/omni-mdx (${{ matrix.name }})",
             "license": "MIT",
             "main": "omni-mdx-core.${{ matrix.name }}.node",
             "files": ["omni-mdx-core.${{ matrix.name }}.node"],
