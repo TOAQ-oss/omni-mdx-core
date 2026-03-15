@@ -1,4 +1,4 @@
-name: Publish @toaq-oss/mdx-engine (JS only)
+name: Publish @toaq-oss/omni-mdx (JS only)
 
 on:
   push:
@@ -55,6 +55,6 @@ jobs:
         working-directory: packages/mdx-next
         run: npm run build
 
-      - name: Publish @toaq-oss/mdx-engine
+      - name: Publish @toaq-oss/omni-mdx
         working-directory: packages/mdx-next
         run: npm publish --access public

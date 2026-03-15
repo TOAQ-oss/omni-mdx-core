@@ -3,8 +3,8 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "toaq-mdx"
-version = "0.1.3"
+name = "omni-mdx"
+version = "0.1.0"
 description = "Ultra-fast MDX rendering engine powered by Rust and WebAssembly."
 readme = "README.md"
 requires-python = ">=3.7"
@@ -16,7 +16,7 @@ keywords = ["mdx", "rust", "parser"]
 "Source Code" = "https://github.com/TOAQ-oss/omni-mdx-core"
 
 [tool.setuptools]
-packages = ["toaq_mdx"]
+packages = ["omni_mdx"]
 
 [tool.setuptools.package-data]
-"toaq_mdx" = ["*.pyd", "*.so", "*.dll"]
+"omni_mdx" = ["*.pyd", "*.so", "*.dll"]

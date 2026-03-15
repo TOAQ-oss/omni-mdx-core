@@ -39,7 +39,7 @@ jobs:
       - name: Install & Build
         run: |
           npm ci
-          npm run build -w @toaq-oss/mdx-engine
+          npm run build -w @toaq-oss/omni-mdx
 
   test-python-package:
     runs-on: ubuntu-latest

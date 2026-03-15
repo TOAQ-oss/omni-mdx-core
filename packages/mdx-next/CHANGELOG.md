@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to `@toaq-oss/mdx-engine` are documented here.
+All notable changes to `@toaq-oss/omni-mdx` are documented here.
 
 ---
 
@@ -25,7 +25,7 @@ The MDX parser is now compiled into a native Node.js add-on using napi-rs. It re
 New server-side rendering component, with no `“use client”`. Compatible with Next.js App Router (RSC), SSG, ISR, and classic SSR.
 
 ```tsx
-import { parseMdx, MDXServerRenderer } from "@toaq-oss/mdx-engine/server";
+import { parseMdx, MDXServerRenderer } from "@toaq-oss/omni-mdx/server";
 
 const ast = await parseMdx(content);
 return <MDXServerRenderer ast={ast} components={COMPONENTS} />;
@@ -37,7 +37,7 @@ HTML is generated entirely on the server — zero MDX runtime in the client bund
 Retained for cases where MDX content changes in the browser (editors, real-time previews). Includes automatic KaTeX hydration via `useEffect`.
 
 ```tsx
-import { MDXClientRenderer } from "@toaq-oss/mdx-engine/client";
+import { MDXClientRenderer } from "@toaq-oss/omni-mdx/client";
 
 <MDXClientRenderer ast={ast} components={COMPONENTS} katex />
 ```
@@ -45,9 +45,9 @@ import { MDXClientRenderer } from "@toaq-oss/mdx-engine/client";
 #### New three-entry import system
 | Import | Usage |
 |---|---|
-| `@toaq-oss/mdx-engine` | Types + `MDX_COMPONENTS` — safe everywhere |
-| `@toaq-oss/mdx-engine/server` | `parseMdx`, `MDXServerRenderer` — Server Components only |
-| `@toaq-oss/mdx-engine/client` | `MDXClientRenderer`, `MDXErrorBoundary` — Client Components only |
+| `@toaq-oss/omni-mdx` | Types + `MDX_COMPONENTS` — safe everywhere |
+| `@toaq-oss/omni-mdx/server` | `parseMdx`, `MDXServerRenderer` — Server Components only |
+| `@toaq-oss/omni-mdx/client` | `MDXClientRenderer`, `MDXErrorBoundary` — Client Components only |
 
 #### Built-in `MDXErrorBoundary`
 Every custom component rendered by `MDXClientRenderer` is automatically isolated within an `MDXErrorBoundary`. If an error occurs in a component (null data, runtime crash), the rest of the document continues to display.
@@ -55,7 +55,7 @@ Every custom component rendered by `MDXClientRenderer` is automatically isolated
 Also exported for direct use:
 
 ```tsx
-import { MDXErrorBoundary } from "@toaq-oss/mdx-engine/client";
+import { MDXErrorBoundary } from "@toaq-oss/omni-mdx/client";
 
 <MDXErrorBoundary componentName="Chart">
   <Chart data={maybeNull} />
@@ -74,7 +74,7 @@ KaTeX populates the `data-math` attributes on the client side.
 Utility function for parsing JSX prop values in custom components (objects, arrays, booleans, numbers from strings).
 
 ```tsx
-import { parseProps } from “@toaq-oss/mdx-engine”;
+import { parseProps } from “@toaq-oss/omni-mdx”;
 
 const data = parseProps(props.data); // “[1,2,3]” → [1, 2, 3]
 ```
@@ -83,10 +83,10 @@ const data = parseProps(props.data); // “[1,2,3]” → [1, 2, 3]
 In production, native add-ons are distributed as independent npm sub-packages. npm/pnpm installs only the package corresponding to the current platform:
 
 ```
-@toaq-oss/mdx-engine-darwin-arm64   ← Mac M1/M2
-@toaq-oss/mdx-engine-darwin-x64     ← Mac Intel
-@toaq-oss/mdx-engine-linux-x64-gnu  ← Linux / Vercel / Docker
-@toaq-oss/mdx-engine-win32-x64-msvc ← Windows
+@toaq-oss/omni-mdx-darwin-arm64   ← Mac M1/M2
+@toaq-oss/omni-mdx-darwin-x64     ← Mac Intel
+@toaq-oss/omni-mdx-linux-x64-gnu  ← Linux / Vercel / Docker
+@toaq-oss/omni-mdx-win32-x64-msvc ← Windows
 ```
 
 No configuration required — detection is automatic at runtime.

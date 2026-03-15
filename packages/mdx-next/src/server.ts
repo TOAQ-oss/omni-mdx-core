@@ -1,5 +1,5 @@
 /**
- * @toaq/mdx-engine/server
+ * @toaq/omni-mdx/server
  *
  * Server-only entry point.
  * Import this in Server Components, API routes, and generateStaticParams.

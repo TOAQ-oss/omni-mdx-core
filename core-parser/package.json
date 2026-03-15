@@ -1,10 +1,10 @@
 {
-  "name": "@toaq-oss/mdx-engine-core",
-  "version": "0.2.0",
-  "description": "Native Rust core for @toaq-oss/mdx-engine",
+  "name": "@toaq-oss/omni-mdx-core",
+  "version": "0.1.0",
+  "description": "Native Rust core for @toaq-oss/omni-mdx",
   "license": "MIT",
   "napi": {
-    "binaryName": "toaq-parser-core",
+    "binaryName": "omni-mdx-core",
     "targets": [
       "aarch64-apple-darwin",
       "x86_64-apple-darwin",
@@ -20,9 +20,9 @@
     "@napi-rs/cli": "^3.0.0"
   },
   "optionalDependencies": {
-    "@toaq-oss/mdx-engine-core-darwin-arm64": "0.2.3",
-    "@toaq-oss/mdx-engine-core-darwin-x64": "0.2.3",
-    "@toaq-oss/mdx-engine-core-linux-x64-gnu": "0.2.3",
-    "@toaq-oss/mdx-engine-core-win32-x64-msvc": "0.2.3"
+    "@toaq-oss/omni-mdx-darwin-arm64": "0.1.0",
+    "@toaq-oss/omni-mdx-darwin-x64": "0.1.0",
+    "@toaq-oss/omni-mdx-linux-x64-gnu": "0.1.0",
+    "@toaq-oss/omni-mdx-win32-x64-msvc": "0.1.0"
   }
 }

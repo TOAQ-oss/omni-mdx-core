@@ -1,4 +1,4 @@
-# @toaq-oss/mdx-engine
+# @toaq-oss/omni-mdx
 
 The React/Next.js visual rendering engine of the TOAQ-oss MDX ecosystem.
 
@@ -17,16 +17,30 @@ Most MDX pipelines (next-mdx-remote, @next/mdx, contentlayer) run at the JS leve
 - Math rendered on the client (flash of unstyled content)
 - Custom components that can't be pure Server Components
 
-`@toaq-oss/mdx-engine` solves this by moving the parse step into Rust and the render step into React Server Components. The result is **zero JS for content** — everything is HTML by the time it reaches the browser.
+`@toaq-oss/omni-mdx` solves this by moving the parse step into Rust and the render step into React Server Components. The result is **zero JS for content** — everything is HTML by the time it reaches the browser.
 
 The WASM build is available as a fallback for Edge runtimes or environments where native addons are not supported.
 
 ---
 
+## Performance & Architecture
+
+`@toaq-oss/omni-mdx` is designed for scale. While traditional parsers block the Node.js main thread, our parser offloads the heavy lifting to a native Rust core via WebAssembly or N-API.
+
+**1. Non-Blocking by Design**
+Parsing complex documents or extracting data from thousands of files for ML datasets won't freeze your server. Node.js remains completely free to handle other HTTP requests while Rust does the work in the background.
+
+**2. Faster than the Standard**
+In a strict end-to-end benchmark (parsing raw text to an exploitable JSX AST) over 1,000 iterations of a complex document:
+- `@toaq-oss/omni-mdx` is consistently **~30% faster** than the official `@mdx-js/mdx` compiler.
+
+**3. Zero Client JS**
+Because the AST is generated on the server and maps directly to React Server Components, the client receives 0 bytes of parsing logic.
+
 ## Installation
 
 ```bash
-npm install @toaq-oss/mdx-engine
+npm install @toaq-oss/omni-mdx
 # KaTeX is optional — only needed if your content has math
 npm install katex
 ```
@@ -44,7 +58,7 @@ import "katex/dist/katex.min.css";
 ### Server Component (recommended)
 
 ```tsx
-import { parseMdx, MDXServerRenderer } from "@toaq-oss/mdx-engine/server";
+import { parseMdx, MDXServerRenderer } from "@toaq-oss/omni-mdx/server";
 import { Note, Details }               from "@/components/mdx";
 
 const COMPONENTS = { Note, Details };
@@ -84,7 +98,7 @@ For live MDX previews where the content changes in the browser:
 
 ```tsx
 "use client";
-import { MDXClientRenderer } from "@toaq-oss/mdx-engine/client";
+import { MDXClientRenderer } from "@toaq-oss/omni-mdx/client";
 
 export function LivePreview({ ast, components }) {
   return <MDXClientRenderer ast={ast} components={components} katex />;
@@ -99,9 +113,9 @@ The `ast` prop should be computed server-side and passed down, or computed clien
 
 |Import path|What you get|Where to use|
 |----|---|----|
-|`@toaq-oss/mdx-engine`|Types + `MDX_COMPONENTS` registry|Anywhere|
-|`@toaq-oss/mdx-engine/server`|`parseMdx`, `MDXServerRenderer`, `MDXParseError` |Server Components only|
-|`@toaq-oss/mdx-engine/client`|`MDXClientRenderer`, `MDXErrorBoundary`|Client Components only|
+|`@toaq-oss/omni-mdx`|Types + `MDX_COMPONENTS` registry|Anywhere|
+|`@toaq-oss/omni-mdx/server`|`parseMdx`, `MDXServerRenderer`, `MDXParseError` |Server Components only|
+|`@toaq-oss/omni-mdx/client`|`MDXClientRenderer`, `MDXErrorBoundary`|Client Components only|
 
 ---
 
@@ -134,7 +148,7 @@ Server Components in the registry are rendered on the server with zero client JS
 ### Parse errors
 
 ```tsx
-import { parseMdx, MDXParseError } from "@toaq-oss/mdx-engine/server";
+import { parseMdx, MDXParseError } from "@toaq-oss/omni-mdx/server";
 
 try {
   const ast = await parseMdx(content);
@@ -153,7 +167,7 @@ In `MDXClientRenderer`, every custom component is automatically wrapped in `MDXE
 You can also use `MDXErrorBoundary` directly:
 
 ```tsx
-import { MDXErrorBoundary } from "@toaq-oss/mdx-engine/client";
+import { MDXErrorBoundary } from "@toaq-oss/omni-mdx/client";
 
 <MDXErrorBoundary componentName="Chart">
   <Chart data={maybeNull} />

@@ -9,8 +9,8 @@ This monorepo contains multiple packages, each with their own changelog.
 | Package | Version | Changelog |
 |---|---|---|
 | `core-parser` — Rust crate | `0.2.0` | [core-parser/CHANGELOG.md](./core-parser/CHANGELOG.md) |
-| `@toaq-oss/mdx-engine` — npm | `0.1.6` | [packages/mdx-next/CHANGELOG.md](./packages/mdx-next/CHANGELOG.md) |
-| `toaq-mdx` — Python | `0.1.2` | [packages/mdx-python/CHANGELOG.md](./packages/mdx-python/CHANGELOG.md) |
+| `@toaq-oss/omni-mdx` — npm | `0.1.6` | [packages/mdx-next/CHANGELOG.md](./packages/mdx-next/CHANGELOG.md) |
+| `omni-mdx` — Python | `0.1.2` | [packages/mdx-python/CHANGELOG.md](./packages/mdx-python/CHANGELOG.md) |
 
 ---
 

@@ -17,10 +17,10 @@ async function getParser(): Promise<(mdx: string) => string> {
   if (_parse) return _parse;
 
   const platformPackages = [
-    "@toaq-oss/mdx-engine-darwin-arm64",
-    "@toaq-oss/mdx-engine-darwin-x64",
-    "@toaq-oss/mdx-engine-linux-x64-gnu",
-    "@toaq-oss/mdx-engine-win32-x64-msvc",
+    "@toaq-oss/omni-mdx-darwin-arm64",
+    "@toaq-oss/omni-mdx-darwin-x64",
+    "@toaq-oss/omni-mdx-linux-x64-gnu",
+    "@toaq-oss/omni-mdx-win32-x64-msvc",
   ];
 
   for (const pkg of platformPackages) {
@@ -57,12 +57,12 @@ async function getParser(): Promise<(mdx: string) => string> {
   } catch { /* native/ absent */ }
 
   throw new Error(
-    `[toaq-oss/mdx-engine] Native parser not found for this platform.\n` +
+    `[toaq-oss/omni-mdx] Native parser not found for this platform.\n` +
     `  Tried npm packages: ${platformPackages.join(", ")}\n` +
     `  ➜ Install the prebuilt package (once published):\n` +
-    `      npm install @toaq-oss/mdx-engine-darwin-arm64   # Mac M1/M2\n` +
-    `      npm install @toaq-oss/mdx-engine-linux-x64-gnu  # Linux/Vercel\n` +
-    `      npm install @toaq-oss/mdx-engine-win32-x64-msvc # Windows\n`
+    `      npm install @toaq-oss/omni-mdx-darwin-arm64   # Mac M1/M2\n` +
+    `      npm install @toaq-oss/omni-mdx-linux-x64-gnu  # Linux/Vercel\n` +
+    `      npm install @toaq-oss/omni-mdx-win32-x64-msvc # Windows\n`
   );
 }
 
@@ -77,12 +77,12 @@ export async function parseMdx(mdx: string): Promise<AstNode[]> {
   try {
     return JSON.parse(json) as AstNode[];
   } catch {
-    throw new Error("[toaq-oss/mdx-engine] Parser returned invalid JSON.");
+    throw new Error("[toaq-oss/omni-mdx] Parser returned invalid JSON.");
   }
 }
 
 export function parseMdxSync(mdx: string): AstNode[] {
-  if (!_parse) throw new Error("[toaq-oss/mdx-engine] parseMdxSync() called before init.");
+  if (!_parse) throw new Error("[toaq-oss/omni-mdx] parseMdxSync() called before init.");
   try {
     return JSON.parse(_parse(mdx)) as AstNode[];
   } catch (err: any) {

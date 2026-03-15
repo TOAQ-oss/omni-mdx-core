@@ -13,7 +13,7 @@
  *   1. You are in a page/layout that is entirely client-side (no RSC)
  *   2. You need live re-rendering (e.g. a live MDX editor/preview)
  *
- * For the live editor use case, import from '@toaq/mdx-engine/client'.
+ * For the live editor use case, import from '@toaq/omni-mdx/client'.
  */
 
 import React, { ReactNode, createContext, useContext, useEffect, useRef } from "react";
@@ -37,7 +37,7 @@ async function loadKatex() {
     katexLoaded = true;
     return renderMathInElement;
   } catch {
-    console.warn("[toaq/mdx-engine] KaTeX not available. Install: npm install katex");
+    console.warn("[toaq-oss/omni-mdx] KaTeX not available. Install: npm install katex");
     return null;
   }
 }
@@ -146,7 +146,7 @@ function renderNode(
   }
 
   if (process.env.NODE_ENV === "development") {
-    console.warn(`[toaq/mdx-engine] Unknown component: <${node.node_type}>`);
+    console.warn(`[toaq-oss/omni-mdx] Unknown component: <${node.node_type}>`);
   }
   return (
     <div key={key} data-missing-component={node.node_type} className="mdx-missing-component">

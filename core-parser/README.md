@@ -43,7 +43,7 @@ make test
 *(Cela exécute les binaires `test_ast`, `test_errors` et `test_perf` situés dans `src/bin/`)*
 
 ### 2. Compiler pour le Web (WASM) :
-Pour générer le binaire `.wasm` ultra-léger et les définitions TypeScript destinées au module `@omni/mdx-engine` :
+Pour générer le binaire `.wasm` ultra-léger et les définitions TypeScript destinées au module `@toaq-oss/omni-mdx` :
 
 ```bash
 make build-web

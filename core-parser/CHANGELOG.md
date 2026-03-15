@@ -8,7 +8,7 @@ All notable changes to the Rust MDX parser crate are documented here.
 
 ### Initial Public Release
 
-First stable version of the MDX parser in Rust. This crate forms the core of the `omni-mdx-core` engine—it is used by the npm package `@toaq-oss/mdx-engine` via napi-rs, by the Python package `toaq-mdx` via PyO3/maturin, and can be compiled to WASM via wasm-bindgen.
+First stable version of the MDX parser in Rust. This crate forms the core of the `omni-mdx-core` engine—it is used by the npm package `@toaq-oss/omni-mdx` via napi-rs, by the Python package `omni-mdx` via PyO3/maturin, and can be compiled to WASM via wasm-bindgen.
 
 ---
 

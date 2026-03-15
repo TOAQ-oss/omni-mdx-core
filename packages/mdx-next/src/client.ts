@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * @toaq/mdx-engine/client
+ * @toaq/omni-mdx/client
  *
  * Client-only entry point.
  * Use for live MDX editors, previews, or any fully client-side rendering.

@@ -40,19 +40,19 @@ jobs:
         working-directory: core-parser
         run: |
           pip install maturin
-          maturin build --release --features python --interpreter python3.11 --out ../packages/mdx-python/toaq_mdx/
+          maturin build --release --features python --interpreter python3.11 --out ../packages/mdx-python/omni_mdx/
 
       - name: Inject Binary (Linux/Mac)
         if: runner.os != 'Windows'
         run: |
           BIN_FILE=$(find . -path "*/release/*" -type f \( -name "*.so" -o -name "*.dylib" \) | head -n 1)
-          cp "$BIN_FILE" packages/mdx-python/toaq_mdx/toaq_parser_core.so
+          cp "$BIN_FILE" packages/mdx-python/omni_mdx/omni_mdx_core.so
 
       - name: Inject Binary (Windows)
         if: runner.os == 'Windows'
         run: |
           $BIN_FILE = Get-ChildItem -Path .\target\release\ -Recurse -Include *.dll, *.pyd | Select-Object -First 1
-          Copy-Item $BIN_FILE.FullName -Destination packages\mdx-python\toaq_mdx\toaq_parser_core.pyd
+          Copy-Item $BIN_FILE.FullName -Destination packages\mdx-python\omni_mdx\omni_mdx_core.pyd
 
       - name: Build Python Wheel
         working-directory: packages/mdx-python

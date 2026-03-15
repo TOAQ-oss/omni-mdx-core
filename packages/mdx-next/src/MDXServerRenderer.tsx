@@ -8,8 +8,8 @@
  *
  * Usage in a Server Component (page.tsx):
  *
- *   import { MDXServerRenderer, parseMdx } from '@toaq/mdx-engine/server';
- *   import { MDX_COMPONENTS } from '@toaq/mdx-engine';
+ *   import { MDXServerRenderer, parseMdx } from '@toaq/omni-mdx/server';
+ *   import { MDX_COMPONENTS } from './MDXComponents';
  *
  *   export default async function Page() {
  *     const ast = await parseMdx(mdxString);
@@ -159,7 +159,7 @@ function renderNode(
       );
     } catch (err) {
       if (process.env.NODE_ENV === "development") {
-        console.error(`[toaq/mdx-engine] Server render failed for <${node.node_type}>:`, err);
+        console.error(`[toaq-oss/omni-mdx] Server render failed for <${node.node_type}>:`, err);
       }
       return (
         <div
@@ -220,7 +220,7 @@ function renderNode(
 
   if (process.env.NODE_ENV === "development") {
     console.warn(
-      `[toaq/mdx-engine] Unknown component: <${node.node_type}>. ` +
+      `[toaq-oss/omni-mdx]Unknown component: <${node.node_type}>. ` +
       `Register it via MDX_COMPONENTS or add it to your components prop.`
     );
   }

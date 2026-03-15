@@ -2,7 +2,7 @@
 toaq_mdx.ast — Python representation of the MDX AST.
 
 AstNode and AttrValue mirror the Rust types exactly so that the JSON
-produced by `toaq_parser_core.parse()` deserialises without surprises.
+produced by `omni_mdx_core.parse()` deserialises without surprises.
 """
 
 from __future__ import annotations
@@ -189,6 +189,6 @@ class AstNode:
 
 
 def parse_ast(json_str: str) -> List[AstNode]:
-    """Deserialise the raw JSON string from ``toaq_parser_core.parse()``."""
+    """Deserialise the raw JSON string from ``omni_mdx_core.parse()``."""
     data = json.loads(json_str)
     return [AstNode.from_dict(node) for node in data]

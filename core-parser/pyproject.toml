@@ -3,8 +3,8 @@ requires = ["maturin>=1.0,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "toaq-parser-core"
-version = "0.1.2"
+name = "omni-mdx-core"
+version = "0.1.0"
 requires-python = ">=3.7"
 classifiers = [
     "Programming Language :: Rust",
@@ -12,5 +12,5 @@ classifiers = [
 ]
 
 [tool.maturin]
-module-name = "toaq_parser_core"
+module-name = "omni_mdx_core"
 features = ["python"]

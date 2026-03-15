@@ -12,7 +12,7 @@ fn py_parse_mdx(input: String) -> PyResult<String> {
 }
 
 #[pymodule]
-fn toaq_parser_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
+fn omni_mdx_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_parse_mdx, m)?)?;
     Ok(())
 }

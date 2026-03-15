@@ -1,10 +1,10 @@
 /**
- * @toaq/mdx-engine
+ * @toaq/omni-mdx
  *
  * Safe entry point — types only; no server/native/wasm imports.
  * To parse and render, use:
- *   import { parseMdx, MDXServerRenderer } from '@toaq/mdx-engine/server'
- *   import { MDXClientRenderer }           from '@toaq/mdx-engine/client'
+ *   import { parseMdx, MDXServerRenderer } from '@toaq/omni-mdx/server'
+ *   import { MDXClientRenderer }           from '@toaq/omni-mdx/client'
  */
 
 import React from "react";

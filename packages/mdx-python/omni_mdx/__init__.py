@@ -1,7 +1,7 @@
 """
 toaq_mdx — Moteur MDX Python + Rust.
 
-Le binaire Rust (toaq_parser_core.pyd) est embarqué directement dans ce
+Le binaire Rust (omni_mdx_core.pyd) est embarqué directement dans ce
 package — un seul pip install suffit, aucune installation séparée.
 
 Quick start
