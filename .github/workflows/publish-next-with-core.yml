@@ -65,7 +65,7 @@ jobs:
           cat > platform-pkg/package.json << PKGJSON
           {
             "name": "$PKG_NAME",
-            "version": "0.2.3",
+            "version": "0.1.0",
             "description": "Native addon for @toaq-oss/omni-mdx (${ matrix.name })",
             "license": "MIT",
             "main": "omni-mdx-core.${{ matrix.name }}.node",
