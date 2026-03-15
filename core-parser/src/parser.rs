@@ -1,6 +1,6 @@
 use crate::ast::{AstNode, ParseError};
 use crate::lexer::extract_jsx;
-use crate::markdown::{extract_math, parse_markdown};
+use crate::markdown::{extract_math, mask_code_blocks, parse_markdown};
 
 /// The primary orchestrator for the entire MDX to AST parsing pipeline.
 ///
@@ -17,8 +17,11 @@ use crate::markdown::{extract_math, parse_markdown};
 ///    through `pulldown-cmark`. As the text events are generated, we expand the placeholders back into 
 ///    fully typed, nested `AstNode` trees.
 pub fn parse_mdx(input: &str) -> Result<Vec<AstNode>, ParseError> {
+    // Step 0 — Protect code blocks (masks < > $ inside ``` and ` before anything else).
+    let protected = mask_code_blocks(input);
+ 
     // Step 1 — Safe math extraction (operates on the raw input).
-    let (after_math, block_math, inline_math) = extract_math(input);
+    let (after_math, block_math, inline_math) = extract_math(&protected);
 
     // Step 2 — Safe JSX extraction (input is now immune to math-symbol collisions).
     let (markdown, jsx_pool) = extract_jsx(&after_math)?;

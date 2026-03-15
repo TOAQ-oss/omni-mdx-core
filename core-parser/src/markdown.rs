@@ -32,6 +32,55 @@ fn make_mathi_placeholder(n: usize) -> String {
     format!("{}{}{}", PFX_MATHI, n, SFX)
 }
 
+/// Masque les `<`, `>` et `$` à l'intérieur des blocs de code fencés et inline
+/// en les remplaçant par \x01 avant que extract_math et extract_jsx ne tournent.
+/// Les positions sont préservées — pulldown-cmark re-parsera le vrai input.
+pub fn mask_code_blocks(input: &str) -> String {
+    let bytes = input.as_bytes();
+    let len = bytes.len();
+    let mut out = bytes.to_vec();
+    let mut i = 0;
+ 
+    while i < len {
+        // Bloc fencé ```...```
+        if i + 2 < len && bytes[i] == b'`' && bytes[i+1] == b'`' && bytes[i+2] == b'`' {
+            i += 3;
+            // Skip la ligne d'info du langage
+            while i < len && bytes[i] != b'\n' { i += 1; }
+            // Masquer jusqu'à la fermeture ```
+            while i < len {
+                if i + 2 < len && bytes[i] == b'`' && bytes[i+1] == b'`' && bytes[i+2] == b'`' {
+                    i += 3;
+                    break;
+                }
+                if out[i] == b'<' || out[i] == b'>' || out[i] == b'$' {
+                    out[i] = b'\x01';
+                }
+                i += 1;
+            }
+            continue;
+        }
+ 
+        // Code inline `...`
+        if bytes[i] == b'`' {
+            i += 1;
+            while i < len && bytes[i] != b'`' {
+                if out[i] == b'<' || out[i] == b'>' || out[i] == b'$' {
+                    out[i] = b'\x01';
+                }
+                i += 1;
+            }
+            if i < len { i += 1; }
+            continue;
+        }
+ 
+        i += 1;
+    }
+ 
+    // Safety: on n'a remplacé que des bytes ASCII par d'autres bytes ASCII (\x01)
+    unsafe { String::from_utf8_unchecked(out) }
+}
+
 /// Extracts LaTeX math blocks before any other parsing occurs.
 ///
 /// # Why do this first?

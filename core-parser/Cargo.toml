@@ -1,10 +1,10 @@
 [package]
-name    = "mdx-parser"
-version = "0.1.0"
+name    = "omni-mdx"
+version = "0.1.1"
 edition = "2021"
 
 [lib]
-name       = "mdx_parser"
+name       = "omni_mdx"
 crate-type = ["cdylib", "rlib"]
 
 [[bin]]
@@ -20,6 +20,11 @@ required-features = ["dev-tools"]
 [[bin]]
 name = "test_perf"
 path = "src/bin/test_perf.rs"
+required-features = ["dev-tools"]
+
+[[bin]]
+name = "test_code"
+path = "src/bin/test_code.rs"
 required-features = ["dev-tools"]
 
 [dependencies]

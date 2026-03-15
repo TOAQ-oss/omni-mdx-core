@@ -143,7 +143,7 @@ $$
         }
     }
 
-    //  5. Complex attribute expressions ─
+    // 5. Complex attribute expressions
     println!("\n[5] Complex attribute expressions");
     {
         let doc = r####"
