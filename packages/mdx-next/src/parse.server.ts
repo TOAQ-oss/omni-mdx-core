@@ -14,7 +14,7 @@ const nativeRequire: NodeRequire =
 
 let _nativeModule: any = null;
 
-async function getNativeModule(): Promise<any> {
+function getNativeModuleSync():any {
   if (_nativeModule) return _nativeModule;
 
   const platformPackages = [
@@ -80,7 +80,7 @@ function getParseFn(native: any): (mdx: string) => any {
 }
 
 export async function parseMdx(mdx: string): Promise<AstNode[]> {
-  const native = await getNativeModule();
+  const native = getNativeModuleSync();
   const parse = getParseFn(native);
   let result: any;
   
@@ -120,7 +120,7 @@ export async function parseMdx(mdx: string): Promise<AstNode[]> {
 }
 
 export function parseMdxSync(mdx: string): AstNode[] {
-  const native = getNativeModule();
+  const native = getNativeModuleSync();
   const parse = getParseFn(native);
 
   let result: any;
@@ -151,7 +151,7 @@ export function parseMdxSync(mdx: string): AstNode[] {
 }
 
 export async function compileToJsx(mdx: string): Promise<string> {
-  const native = await getNativeModule();
+  const native = getNativeModuleSync();
   
   const compileFn = native.compileToJsx || native.compile_to_jsx;
   
