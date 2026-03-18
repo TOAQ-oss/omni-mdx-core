@@ -12,10 +12,10 @@ const nativeRequire: NodeRequire =
     ? __non_webpack_require__
     : _require;
 
-let _parse: ((mdx: string) => string) | null = null;
+let _nativeModule: any = null;
 
-async function getParser(): Promise<(mdx: string) => string> {
-  if (_parse) return _parse;
+async function getNativeModule(): Promise<any> {
+  if (_nativeModule) return _nativeModule;
 
   const platformPackages = [
     "@toaq-oss/omni-mdx-darwin-arm64",
@@ -28,11 +28,11 @@ async function getParser(): Promise<(mdx: string) => string> {
     try {
       const native = nativeRequire(pkg);
       if (typeof native.parseToJson === "function") {
-        _parse = native.parseToJson;
-        return _parse!;
+        _nativeModule = native;
+        return _nativeModule;
       } else if (typeof native.parse_to_json === "function") {
-        _parse = native.parse_to_json;
-        return _parse!;
+        _nativeModule = native;
+        return _nativeModule;
       }
     } catch { /* not installed on this platform */ }
   }
@@ -52,13 +52,11 @@ async function getParser(): Promise<(mdx: string) => string> {
 
       if (match) {
         const native = nativeRequire(resolve(nativeDir, match));
-        
+        _nativeModule = native;
         if (typeof native.parseToJson === "function") {
-          _parse = native.parseToJson;
-          return _parse!;
+          return _nativeModule;
         } else if (typeof native.parse_to_json === "function") {
-          _parse = native.parse_to_json;
-          return _parse!;
+          return _nativeModule;
         }
       }
     }
@@ -74,8 +72,16 @@ async function getParser(): Promise<(mdx: string) => string> {
   );
 }
 
+function getParseFn(native: any): (mdx: string) => any {
+  if (typeof native.parseToJson === "function") return native.parseToJson;
+  if (typeof native.parse_to_json === "function") return native.parse_to_json;
+  if (typeof native.parse === "function") return native.parse;
+  throw new Error("[toaq-oss/omni-mdx] Native parser lacks a valid parse function.");
+}
+
 export async function parseMdx(mdx: string): Promise<AstNode[]> {
-  const parse = await getParser();
+  const native = await getNativeModule();
+  const parse = getParseFn(native);
   let result: any;
   
   try {
@@ -114,11 +120,12 @@ export async function parseMdx(mdx: string): Promise<AstNode[]> {
 }
 
 export function parseMdxSync(mdx: string): AstNode[] {
-  if (!_parse) throw new Error("[toaq-oss/omni-mdx] parseMdxSync() called before init.");
-  
+  const native = getNativeModule();
+  const parse = getParseFn(native);
+
   let result: any;
   try {
-    result = _parse(mdx);
+    result = parse(mdx);
   } catch (err: any) {
     throw new MDXParseError(err?.message ?? String(err), mdx);
   }
@@ -141,6 +148,37 @@ export function parseMdxSync(mdx: string): AstNode[] {
   }
 
   throw new Error("[toaq-oss/omni-mdx] Unrecognized return format from Rust parser.");
+}
+
+export async function compileToJsx(mdx: string): Promise<string> {
+  const native = await getNativeModule();
+  
+  const compileFn = native.compileToJsx || native.compile_to_jsx;
+  
+  if (typeof compileFn !== "function") {
+    throw new Error("[toaq-oss/omni-mdx] compileToJsx is not supported by this native module version.");
+  }
+  
+  try {
+    return compileFn(mdx);
+  } catch (err: any) {
+    throw new MDXParseError(err?.message ?? String(err), mdx);
+  }
+}
+
+export function compileToJsxSync(mdx: string): string {
+  if (!_nativeModule) throw new Error("[toaq-oss/omni-mdx] compileToJsxSync() called before init.");
+  
+  const compileFn = _nativeModule.compileToJsx || _nativeModule.compile_to_jsx;
+  if (typeof compileFn !== "function") {
+    throw new Error("[toaq-oss/omni-mdx] compileToJsx is not supported by this native module version.");
+  }
+  
+  try {
+    return compileFn(mdx);
+  } catch (err: any) {
+    throw new MDXParseError(err?.message ?? String(err), mdx);
+  }
 }
 
 export class MDXParseError extends Error {

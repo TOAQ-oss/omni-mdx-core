@@ -1,6 +1,4 @@
 /**
- * @toaq/omni-mdx/server
- *
  * Server-only entry point.
  * Import this in Server Components, API routes, and generateStaticParams.
  *
@@ -10,6 +8,12 @@
  * ❌ Never import in "use client" files
  */
 
-export { parseMdx, parseMdxSync, MDXParseError } from "./parse.server";
+export {
+    parseMdx,
+    parseMdxSync,
+    compileToJsx,
+    compileToJsxSync,
+    MDXParseError
+} from "./parse.server";
 export { MDXServerRenderer } from "./MDXServerRenderer";
 export type { AstNode, AttrValueKind, MDXComponents } from "./MDXServerRenderer";
