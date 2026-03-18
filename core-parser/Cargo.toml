@@ -1,6 +1,6 @@
 [package]
 name    = "omni-mdx"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
 
 [lib]
@@ -8,24 +8,22 @@ name       = "omni_mdx"
 crate-type = ["cdylib", "rlib"]
 
 [[bin]]
-name = "test_ast"
-path = "src/bin/test_ast.rs"
+name = "benchmark"
+path = "src/bin/benchmark.rs"
 required-features = ["dev-tools"]
 
-[[bin]]
-name = "test_errors"
-path = "src/bin/test_errors.rs"
-required-features = ["dev-tools"]
-
-[[bin]]
+[[test]]
 name = "test_perf"
-path = "src/bin/test_perf.rs"
-required-features = ["dev-tools"]
+path = "tests/test_perf.rs"
 
-[[bin]]
+[[test]]
 name = "test_code"
-path = "src/bin/test_code.rs"
-required-features = ["dev-tools"]
+path = "tests/test_code.rs"
+
+[[test]]
+name = "test_ast"
+path = "tests/test_ast.rs"
+
 
 [dependencies]
 pulldown-cmark = "0.10"

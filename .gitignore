@@ -1,5 +1,6 @@
 # Rust
 target/
+fuzz/
 
 # Node / Next.js
 node_modules/
@@ -27,4 +28,4 @@ Thumbs.db
 .secrets
 
 # Development environment
-tests
+tests-dev

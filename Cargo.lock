@@ -101,21 +101,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "mdx-parser"
-version = "0.1.1"
-dependencies = [
- "napi",
- "napi-build",
- "napi-derive",
- "pulldown-cmark",
- "pyo3",
- "regex",
- "serde",
- "serde_json",
- "wasm-bindgen",
-]
-
-[[package]]
 name = "memchr"
 version = "2.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -185,6 +170,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "427802e8ec3a734331fec1035594a210ce1ff4dc5bc1950530920ab717964ea3"
 dependencies = [
  "libloading",
+]
+
+[[package]]
+name = "omni-mdx"
+version = "0.1.1"
+dependencies = [
+ "napi",
+ "napi-build",
+ "napi-derive",
+ "pulldown-cmark",
+ "pyo3",
+ "regex",
+ "serde",
+ "serde_json",
+ "wasm-bindgen",
 ]
 
 [[package]]

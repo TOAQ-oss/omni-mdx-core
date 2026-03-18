@@ -7,6 +7,8 @@ pub mod jsx;
 pub mod lexer;
 pub mod markdown;
 pub mod parser;
+pub mod binary;
+pub mod compiler;
 
 // WebAssembly Bindings
 

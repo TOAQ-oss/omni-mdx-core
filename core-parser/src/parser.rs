@@ -4,28 +4,24 @@ use crate::markdown::{extract_math, mask_code_blocks, parse_markdown};
 
 /// The primary orchestrator for the entire MDX to AST parsing pipeline.
 ///
-/// The execution order here is strictly deliberate and solves common MDX parsing bugs:
-/// 
-/// 1. **Math Extraction First:** LaTeX math blocks often contain structural symbols like `<` or `>`. 
-///    By extracting math `$…$` and `$$…$$` into placeholders immediately, we guarantee that equations 
-///    like `$x > y$` won't confuse the subsequent JSX lexer into closing a tag prematurely.
-/// 
-/// 2. **JSX Lexing:** Once the math is cloaked, we safely extract custom React components (`<UpperCase…>`).
-///    These are also replaced with placeholders so the underlying Markdown engine doesn't mangle them.
-/// 
-/// 3. **Markdown Parsing & Reassembly:** Finally, we run the text (now just standard markdown + placeholders) 
-///    through `pulldown-cmark`. As the text events are generated, we expand the placeholders back into 
-///    fully typed, nested `AstNode` trees.
-pub fn parse_mdx(input: &str) -> Result<Vec<AstNode>, ParseError> {
-    // Step 0 — Protect code blocks (masks < > $ inside ``` and ` before anything else).
+/// The execution order here is strictly deliberate and solves common MDX parsing bugs.
+
+pub fn parse_mdx(input: &str) -> Result<Vec<AstNode<'static>>, ParseError> {
+    // 1. Code block protection
     let protected = mask_code_blocks(input);
  
-    // Step 1 — Safe math extraction (operates on the raw input).
+    // 2. Extracting the math (LaTeX)
+    // We pass &protected (which is a Cow<str>) to ensure we're working on the hidden text
     let (after_math, block_math, inline_math) = extract_math(&protected);
 
-    // Step 2 — Safe JSX extraction (input is now immune to math-symbol collisions).
+    // 3. Extracting JSX (Components)
+    // We continue the chain with the result from the previous step
     let (markdown, jsx_pool) = extract_jsx(&after_math)?;
 
-    // Step 3 — Markdown parsing and dynamic placeholder expansion.
-    parse_markdown(&markdown, &jsx_pool, &block_math, &inline_math)
+    // 4. Parsing Markdown and expanding placeholders
+    // Here, `parse_markdown` will call `unmask_code` to restore the angle brackets in the ``` and ``` blocks
+    let nodes = parse_markdown(&markdown, &jsx_pool, &block_math, &inline_math)?;
+
+    // 5. Final conversion to ‘static’ to free up local references
+    Ok(nodes.into_iter().map(|n| n.into_static()).collect())
 }
