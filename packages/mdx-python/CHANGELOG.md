@@ -15,7 +15,7 @@ Première version stable du package Python. `toaq-mdx` expose le parser MDX Rust
 ### Architecture
 
 ```
-toaq_mdx/
+omni_mdx/
 ├── __init__.py          ← API publique + instance partagée parse()
 ├── core_interface.py    ← Chargement du binaire Rust (.pyd / .so)
 ├── parser.py            ← MDXParser — wrapping du core Rust
@@ -34,10 +34,10 @@ toaq_mdx/
 #### API fonctionnelle (usage rapide)
 
 ```python
-import toaq_mdx
+import omni_mdx
 
-nodes = toaq_mdx.parse("# Hello\n\n$E = mc^2$")
-html  = toaq_mdx.render_html(nodes)
+nodes = omni_mdx.parse("# Hello\n\n$E = mc^2$")
+html  = omni_mdx.render_html(nodes)
 ```
 
 #### `MDXParser` — parser Rust via PyO3
@@ -45,7 +45,7 @@ html  = toaq_mdx.render_html(nodes)
 Wrapping direct du binaire Rust. Le `.pyd` (Windows) ou `.so` (Linux/macOS) est embarqué dans le package — aucune installation séparée.
 
 ```python
-from toaq_mdx import MDXParser
+from omni_mdx import MDXParser
 
 parser = MDXParser()
 nodes  = parser.parse("# Titre\n\n**gras**")
@@ -56,7 +56,7 @@ nodes  = parser.parse("# Titre\n\n**gras**")
 Orchestration du pipeline parse + render avec support de composants custom.
 
 ```python
-from toaq_mdx import OmniMDX
+from omni_mdx import OmniMDX
 
 engine = OmniMDX(components={"Note": my_note_fn})
 ast    = engine.parse_to_ast(mdx_text)
@@ -75,7 +75,7 @@ Produit du HTML sémantique compatible KaTeX. Les formules sont rendues comme at
 Rendu zéro-HTML pour applications PyQt5. Chaque nœud AST est converti en widget Qt.
 
 ```python
-from toaq_mdx import OmniMDX
+from omni_mdx import OmniMDX
 
 engine = OmniMDX()
 widget = engine.render_qt(nodes, parent=my_window)
@@ -107,10 +107,10 @@ def my_component(node: AstNode, renderer: QtRenderer) -> QWidget:
 #### Exceptions
 
 ```python
-from toaq_mdx import OmniMDXError, MDXSyntaxError, MDXRenderError
+from omni_mdx import OmniMDXError, MDXSyntaxError, MDXRenderError
 
 try:
-    nodes = toaq_mdx.parse(mdx_text)
+    nodes = omni_mdx.parse(mdx_text)
 except MDXSyntaxError as e:
     print(f"Erreur de syntaxe : {e}")
 except MDXRenderError as e:
@@ -122,7 +122,7 @@ except MDXRenderError as e:
 ### Types AST
 
 ```python
-from toaq_mdx import AstNode, AttrValue
+from omni_mdx import AstNode, AttrValue
 
 node.node_type          # str — "h1", "p", "Note", "InlineMath", ...
 node.content            # Optional[str] — contenu texte brut

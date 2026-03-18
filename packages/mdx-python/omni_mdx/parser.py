@@ -1,5 +1,5 @@
 """
-toaq_mdx.parser — Parsing MDX to Python AST.
+omni_mdx.parser — Parsing MDX to Python AST.
 """
 
 from __future__ import annotations

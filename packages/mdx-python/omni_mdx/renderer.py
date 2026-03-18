@@ -1,5 +1,5 @@
 """
-toaq_mdx.renderer — HTML rendering from AST MDX.
+omni_mdx.renderer — HTML rendering from AST MDX.
 
 For web rendering (Next.js, Flask, FastAPI, etc.).
 Mathematical formulas are output with ``data-math`` attributes
@@ -7,7 +7,7 @@ ready for KaTeX on the client side.
 
 Usage
 -----
-    from toaq_mdx.renderer import HtmlRenderer
+    from omni_mdx.renderer import HtmlRenderer
 
     renderer = HtmlRenderer(components={"Note": my_note_fn})
     html = renderer.render(ast_nodes)

@@ -1,5 +1,5 @@
 """
-toaq_mdx.math_render — LaTeX rendering without a browser.
+omni_mdx.math_render — LaTeX rendering without a browser.
 
 InlineMath  → Unicode via symbol table.
 BlockMath   → QPixmap via matplotlib.mathtext (two passes).

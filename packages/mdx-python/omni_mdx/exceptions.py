@@ -1,8 +1,8 @@
-"""toaq_mdx.exceptions — Module exceptions."""
+"""omni_mdx.exceptions — Module exceptions."""
 
 
 class OmniMDXError(Exception):
-    """Base exception for toaq_mdx."""
+    """Base exception for omni_mdx."""
     pass
 
 

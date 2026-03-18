@@ -54,7 +54,7 @@ Each module is published independently on its respective registry:
 |:--|:--|:--|
 | [@toaq-oss/omni-mdx](https://www.npmjs.com/package/@toaq-oss/omni-mdx) | NPM / Next.js | npm install @toaq-oss/omni-mdx |
 | [omni-mdx](https://pypi.org/project/omni-mdx/) | PyPI / Python | pip install omni-mdx |
-| omni_mdx (Soon) | Pub / Dart | pub add toaq_mdx |
+| omni_mdx (Soon) | Pub / Dart | pub add omni_mdx |
 
 ## 📄 License
 This project is licensed under the MIT License. You are free to use, modify, and distribute it.

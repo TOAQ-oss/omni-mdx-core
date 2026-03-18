@@ -1,5 +1,5 @@
 """
-toaq_mdx.core_interface — Loading the Rust binary.
+omni_mdx.core_interface — Loading the Rust binary.
 
 The omni_mdx_core.pyd file is placed directly in the package folder,
 which allows it to be distributed without separate installation.

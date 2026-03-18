@@ -1,8 +1,8 @@
-# toaq-mdx
+# omni-mdx
 
 **A blazingly fast, headless MDX engine for Python, powered by a Rust core.**
 
-`toaq-mdx` provides a bridge between the high-performance `pulldown-cmark` Rust parser and native Python applications. It parses MDX (Markdown + JSX) into a deeply manipulable Abstract Syntax Tree (AST) and offers zero-dependency native rendering solutions for both the Web (HTML/KaTeX) and Desktop (PyQt5/Matplotlib).
+`omni-mdx` provides a bridge between the high-performance `pulldown-cmark` Rust parser and native Python applications. It parses MDX (Markdown + JSX) into a deeply manipulable Abstract Syntax Tree (AST) and offers zero-dependency native rendering solutions for both the Web (HTML/KaTeX) and Desktop (PyQt5/Matplotlib).
 
 
 
@@ -19,15 +19,15 @@
 ## 📦 Installation
 
 ```bash
-pip install toaq-mdx
+pip install omni-mdx
 ```
 
 ## 🛠️ Quick Start
 ### 1. Parsing MDX to AST
-The core feature of toaq-mdx is transforming text into a structured, easily searchable AST.
+The core feature of omni-mdx is transforming text into a structured, easily searchable AST.
 
 ```python
-import toaq_mdx
+import omni_mdx
 
 mdx_content = """
 # Physics 101
@@ -38,7 +38,7 @@ $$E_k = \\frac{1}{2}mv^2$$
 """
 
 # Parse the text into a list of AstNode objects
-nodes = toaq_mdx.parse(mdx_content)
+nodes = omni_mdx.parse(mdx_content)
 
 # Easily search the AST
 math_blocks = [n for n in nodes if n.node_type == "BlockMath"]
@@ -49,7 +49,7 @@ print(math_blocks[0].content) # Output: E_k = \frac{1}{2}mv^2
 Generate clean, highly customizable HTML, perfectly suited for modern web frameworks like Next.js or FastAPI.
 
 ```python
-from toaq_mdx import HtmlRenderer, parse
+from omni_mdx import HtmlRenderer, parse
 
 nodes = parse("<Speaker name='Leon'>Welcome to the show.</Speaker>")
 
@@ -68,7 +68,7 @@ Render MDX content directly into native Qt Widgets. Math equations are seamlessl
 ```python
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout
-from toaq_mdx import OmniMDX, parse
+from omni_mdx import OmniMDX, parse
 
 app = QApplication(sys.argv)
 window = QWidget()
@@ -91,7 +91,7 @@ Because the parser generates a typed AstNode tree, it is an ideal tool for large
 For instance, when processing researcher submissions or generating structured vocal datasets for distinct podcast series, you can programmatically extract specific nodes while ignoring the rest of the document formatting:
 
 ```python
-from toaq_mdx import parse
+from omni_mdx import parse
 
 script = """
 # Episode 4: Quantum Mechanics

@@ -1,5 +1,5 @@
 """
-toaq_mdx.ast — Python representation of the MDX AST.
+omni_mdx.ast — Python representation of the MDX AST.
 
 AstNode and AttrValue mirror the Rust types exactly so that the JSON
 produced by `omni_mdx_core.parse()` deserialises without surprises.

@@ -1,5 +1,5 @@
 """
-toaq_mdx.qt_renderer — AST rendered in native PyQt5 widgets.
+omni_mdx.qt_renderer — AST rendered in native PyQt5 widgets.
 
 No HTML produced. Each AstNode becomes a dedicated Qt widget.
 Mathematical formulas are rendered:
@@ -9,7 +9,7 @@ Mathematical formulas are rendered:
 
 Usage
 -----
-    from toaq_mdx.qt_renderer import QtRenderer
+    from omni_mdx.qt_renderer import QtRenderer
 
     renderer = QtRenderer(components={"Note": my_note_widget_fn})
     widget = renderer.render(ast_nodes, parent=my_parent)

@@ -1,21 +1,21 @@
 """
-toaq_mdx — Moteur MDX Python + Rust.
+omni_mdx — Moteur MDX Python + Rust.
 
 Le binaire Rust (omni_mdx_core.pyd) est embarqué directement dans ce
 package — un seul pip install suffit, aucune installation séparée.
 
 Quick start
 -----------
-    import toaq_mdx
+    import omni_mdx
 
     # Parse
-    nodes = toaq_mdx.parse("# Hello\\n\\n$E = mc^2$")
+    nodes = omni_mdx.parse("# Hello\\n\\n$E = mc^2$")
 
     # Rendu HTML (pour web)
-    html = toaq_mdx.render_html(nodes)
+    html = omni_mdx.render_html(nodes)
 
     # Rendu Qt natif (pour desktop, 0 HTML)
-    from toaq_mdx import OmniMDX
+    from omni_mdx import OmniMDX
     engine = OmniMDX()
     widget = engine.render_qt(nodes, parent=my_parent)
 """

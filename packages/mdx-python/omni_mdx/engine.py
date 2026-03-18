@@ -1,4 +1,5 @@
 from .core_interface import CoreInterface
+from .ast import parse_ast
 
 class OmniMDX:
     def __init__(self, components=None):
@@ -6,7 +7,8 @@ class OmniMDX:
         self._interface = CoreInterface()
 
     def parse_to_ast(self, mdx_text: str):
-        return self._interface.call_rust_parser(mdx_text)
+        raw_json = self._interface.parse_to_json(mdx_text)
+        return parse_ast(raw_json)
 
     def render(self, mdx_text: str):
         ast = self.parse_to_ast(mdx_text)
