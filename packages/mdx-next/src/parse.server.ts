@@ -167,9 +167,9 @@ export async function compileToJsx(mdx: string): Promise<string> {
 }
 
 export function compileToJsxSync(mdx: string): string {
-  if (!_nativeModule) throw new Error("[toaq-oss/omni-mdx] compileToJsxSync() called before init.");
+  const native = getNativeModuleSync();
   
-  const compileFn = _nativeModule.compileToJsx || _nativeModule.compile_to_jsx;
+  const compileFn = native.compileToJsx || native.compile_to_jsx;
   if (typeof compileFn !== "function") {
     throw new Error("[toaq-oss/omni-mdx] compileToJsx is not supported by this native module version.");
   }
