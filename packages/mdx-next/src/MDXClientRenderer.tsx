@@ -77,7 +77,7 @@ function renderNode(
     );
   }
 
-  // Math — rendu direct via KaTeX (import statique)
+  // Math — rendered directly via KaTeX (static import)
   if (node.node_type === "InlineMath") {
     try {
       const html = katex.renderToString(node.content ?? "", { displayMode: false, throwOnError: false, output: "html" });
@@ -97,7 +97,13 @@ function renderNode(
 
   const resolvedProps: Record<string, any> = {};
   if (node.attributes) {
-    for (const [k, v] of Object.entries(node.attributes)) {
+    // 1. Sécurisation : si c'est une string (depuis N-API Rust), on la parse
+    const attrs = typeof node.attributes === "string" 
+      ? JSON.parse(node.attributes) 
+      : node.attributes;
+
+    // 2. Itération sur l'objet parsé
+    for (const [k, v] of Object.entries(attrs)) {
       resolvedProps[k] = resolveAttr(v as AttrValueKind, components);
     }
   }
@@ -154,8 +160,6 @@ export function MDXClientRenderer({
   components = {},
 }: MDXClientRendererProps) {
   const rootRef = useRef<HTMLDivElement>(null);
-
-
 
   if (!ast || !Array.isArray(ast)) return null;
 

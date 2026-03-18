@@ -32,7 +32,8 @@ export interface AstNode {
   node_type:     string;
   content?:      string;
   self_closing?: boolean;
-  attributes?:   Record<string, AttrValueKind>;
+  child_count?:  number; // Rendu optionnel
+  attributes?:   Record<string, AttrValueKind> | string; // Accepte l'objet binaire ou la string
   children?:     AstNode[];
 }
 
@@ -112,7 +113,7 @@ function renderNode(
     );
   }
 
-  // Math — rendu serveur via KaTeX (HTML statique, zéro JS client)
+  // Math — server-side rendering via KaTeX (static HTML, no client-side JavaScript)
   if (node.node_type === "InlineMath") {
     try {
       const html = katex.renderToString(node.content ?? "", {
@@ -154,8 +155,12 @@ function renderNode(
   // Resolve props from AST attributes
   const resolvedProps: Record<string, any> = {};
   if (node.attributes) {
-    for (const [k, v] of Object.entries(node.attributes)) {
-      resolvedProps[k] = resolveAttr(v, components);
+    const attrs = typeof node.attributes === "string" 
+      ? JSON.parse(node.attributes) 
+      : node.attributes;
+
+    for (const [k, v] of Object.entries(attrs)) {
+      resolvedProps[k] = resolveAttr(v as AttrValueKind, components);
     }
   }
 
@@ -235,7 +240,7 @@ function renderNode(
 
   if (process.env.NODE_ENV === "development") {
     console.warn(
-      `[toaq-oss/omni-mdx]Unknown component: <${node.node_type}>. ` +
+      `[toaq-oss/omni-mdx] Unknown component: <${node.node_type}>. ` +
       `Register it via MDX_COMPONENTS or add it to your components prop.`
     );
   }
