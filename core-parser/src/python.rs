@@ -12,6 +12,8 @@ fn py_parse_mdx(input: String) -> PyResult<String> {
 }
 
 #[pymodule]
+#[pymodule]
+#[pyo3(name = "omni_mdx_core")]
 fn omni_mdx_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_parse_mdx, m)?)?;
     Ok(())
