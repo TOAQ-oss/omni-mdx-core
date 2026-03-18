@@ -4,7 +4,19 @@ All notable changes to `@toaq-oss/omni-mdx` are documented here.
 
 ---
 
-## [0.1.8] — 2026-03-13
+## [0.1.4] — 2026-03-18
+
+### 🚀 Performance & Architecture
+
+* **Zero-Copy Binary Protocol Integration:** Added support for decoding highly optimized binary AST buffers (`Uint8Array`) sent directly from the Rust core. The new `MdxBinaryDecoder` reconstructs the AST while bypassing V8's JSON parsing bottleneck entirely.
+* **Robust N-API Module Loading:** Overhauled the OS-specific native module resolution in `parse.server.ts`. The loader now correctly maps N-API's default `camelCase` exports (`parseToBinary`, `parseToJson`) while maintaining `snake_case` fallbacks for local monorepo development.
+
+### 🐛 Bug Fixes
+
+* **React Server Components (RSC) Hydration:** Fixed a critical rendering issue where Next.js Server Components would silently strip N-API C++ class getters (such as `content` and `node_type`). The data flow now strictly enforces JSON or Binary serialization before crossing into React, guaranteeing pure JavaScript object hydration.
+* **Math Node Content Preservation:** Ensured that `InlineMath` and `BlockMath` nodes correctly receive their inner LaTeX strings from the Rust core, preventing empty KaTeX renders on the server side.
+
+## [0.1.3] — 2026-03-13
 
 ### 🚀 Native SSR — Complete Redesign of the Rendering Engine
 
@@ -111,6 +123,6 @@ No configuration required — detection is automatic at runtime.
 
 ---
 
-## [0.1.5] and earlier
+## [0.1.2] and earlier
 
 Client-side JS/WASM pipeline. Parsed using `mdx_parser.wasm`, rendered using `MDXViewer`. See the Git commits for a detailed history.

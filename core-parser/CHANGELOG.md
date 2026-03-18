@@ -4,7 +4,29 @@ All notable changes to the Rust MDX parser crate are documented here.
 
 ---
 
-## [0.2.0] — 2026-03-13
+[0.2.0] — 2026-03-18
+## 🚀 Features & Architecture
+* **Zero-Copy Memory Management:** Eliminated the FFI JSON serialization bottleneck. The AST is now safely stored in Rust memory behind an Arc and accessed lazily from JavaScript via lightweight N-API method calls (MdxAst and MdxNode). Memory is automatically reclaimed when V8 garbage-collects the JS references, dropping the Arc refcount to zero.
+
+* **Optimized Binary Protocol:** Introduced a custom high-performance binary encoder (parse_to_binary) that bypasses V8's JSON parser entirely, returning a highly compressed Uint8Array directly to Node.js.
+
+* **Native JSX Compilation:** Implemented compile_to_jsx to compile MDX directly into a JSX string entirely within Rust. This provides the absolute fastest rendering path for React/Next.js applications.
+
+* **Industrial Fuzz Testing:** Integrated cargo-fuzz (libFuzzer) to bombard the parser with millions of malformed byte sequences, guaranteeing complete panic-resistance and memory safety for unpredictable inputs.
+
+## 🐛 Bug Fixes
+* **LaTeX Content Preservation:** Fixed a critical data-loss issue where InlineMath and BlockMath nodes were structurally recognized but their inner string contents were dropped. The expand_text pipeline now explicitly unmasks and assigns the raw LaTeX string to the content field.
+
+* **React Server Components (RSC) Hydration:** Resolved an issue where Next.js Server Components silently stripped N-API C++ class getters (like content and node_type) during prop passing. Enforced parseToJson (camelCase mapped by napi-rs) as a secure fallback to ensure pure JavaScript object hydration.
+
+* **Trailing Text Masking Leaks:** Patched a vulnerability in expand_text where the final text chunk following the last placeholder skipped the unmask_code pass, potentially leaking raw \x01 bytes into the final AST.
+
+* **Math Detection Edge Cases:** Corrected the has_math flag logic inside extract_math to guarantee STX/ETX placeholders are reliably generated even for short formulas or edge-case string indices.
+
+## 🧪 Testing
+* **AST Integrity:** Added the test_math_content_persistence integration test to strictly verify that formulas survive the entire extraction, unmasking, and serialization pipeline without truncation or mutation.
+
+## [0.1.3] — 2026-03-13
 
 ### Initial Public Release
 
