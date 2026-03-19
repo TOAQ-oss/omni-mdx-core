@@ -35,7 +35,9 @@ sys.exit(app.exec_())
 ```
 
 ---
+
 ## Native Math Rendering
+
 One of the most powerful aspects of the Qt renderer is its handling of mathematical equations. Instead of relying on CSS/JS (KaTeX), the Python engine uses Matplotlib as a backend to convert LaTeX strings into high-quality images (`QPixmap`).
 
 * **Inline Math**: Rendered as small, baseline-aligned images inside text flows.
@@ -44,6 +46,7 @@ One of the most powerful aspects of the Qt renderer is its handling of mathemati
 This ensures that complex formulas like `$$E_k = \frac{1}{2}mv^2$$` look perfect regardless of the user's screen resolution or installed fonts.
 
 ---
+
 ## Custom Component Mapping
 Just like in React, you can map MDX JSX tags to custom Python/Qt logic. This allows you to insert complex interactive widgets (like custom buttons, data tables, or media players) directly into your text flow.
 
