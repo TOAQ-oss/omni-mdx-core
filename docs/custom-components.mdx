@@ -1,0 +1,45 @@
+// app/blog/[slug]/page.tsx
+import { parseMdx, MDXServerRenderer } from "@toaq-oss/omni-mdx/server";
+import { Note }  from "@/components/Note";
+import { Chart } from "@/components/Chart";
+
+// The keys here define what tags are valid in your MDX
+const MDX_COMPONENTS = {
+  Note,
+  Chart
+};
+
+export default async function Page({ params }) {
+  const content = await getArticleContent(params.slug);
+  const ast = await parseMdx(content);
+
+  return <MDXServerRenderer ast={ast} components={MDX_COMPONENTS} />;
+}
+```
+
+---
+
+## Server vs. Client Components
+Omni-MDX embraces the Next.js App Router paradigm fully:
+* **Server Components (Default):** Components like `Note` or `Details` will be rendered entirely on the server. Zero JavaScript is sent to the client. This is the ultimate performance optimization for content-heavy sites.
+* **Client Components:** If a component requires state, hooks, or browser APIs (like the `Chart` component with `"use client"` inside), Next.js will automatically hydrate only that specific component on the frontend.
+
+<Note type="info">
+**Clean Separation:** By keeping the parse step in Rust and the render step in React, you avoid the common pitfall of shipping a heavy markdown compiler bundle to your users.
+</Note>
+
+---
+## Error Boundaries
+When using the `MDXClientRenderer` for live previews or purely client-side applications, Omni-MDX automatically wraps every custom component in an `MDXErrorBoundary`.
+
+If your custom `<Chart />` component throws a JavaScript error due to bad data, the error is isolated. The chart will display a fallback, but the rest of the Markdown document will continue to render normally.
+
+You can also use this boundary explicitly around components that might fail:
+
+```tsx
+import { MDXErrorBoundary } from "@toaq-oss/omni-mdx/client";
+
+<MDXErrorBoundary componentName="Chart">
+  <Chart data={maybeNull} />
+</MDXErrorBoundary>
+```

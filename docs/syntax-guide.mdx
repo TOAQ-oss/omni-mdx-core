@@ -1,0 +1,73 @@
+# Syntax & Capabilities
+
+Omni-MDX is designed to be highly compliant with standard Markdown (CommonMark), while seamlessly natively integrating JSX and mathematical expressions. 
+
+<Note type="info">
+  **Parser Philosophy**: Omni-Core does not render HTML directly. It reads the syntax and generates a pure Abstract Syntax Tree (AST), leaving the styling and rendering implementation entirely up to your frontend or application logic.
+</Note>
+
+## Standard Markdown
+
+All standard Markdown features are parsed natively with zero configuration.
+
+### Text Formatting
+You can use **bold**, *italic*, and `inline code` effortlessly. Strikethrough is also supported using ~~double tildes~~. Blockquotes are structured perfectly in the AST:
+
+> "Knowledge must flow freely to shape the future."
+> — The Omni Philosophy
+
+### Lists
+- Unordered lists use dashes or asterisks.
+- They can be seamlessly nested.
+  - Like this inner node.
+1. Ordered lists are perfectly parsed.
+2. They maintain their numerical sequence and attributes in the AST.
+
+### Code Blocks
+Syntax highlighting is delegated to your renderer, but Omni-MDX will strictly capture the language tag and the raw code string without corrupting indentation.
+
+```rust
+fn main() {
+    println!("Omni-Core parses this instantly.");
+}
+```
+
+---
+
+## JSX Components (MDX)
+This is where Omni-MDX bridges the gap between text and interactive applications. You can interleave React-style components directly within your Markdown. The Rust core strictly validates the JSX tree structure.
+
+### Self-Closing Components
+Use them for simple widgets, charts, or isolated elements:
+```tsx
+<Spacer height="24px" />
+<BenchmarkWidget time="0.045ms" />
+```
+
+### Wrapping Components
+You can wrap standard Markdown inside your custom JSX components. The engine will recursively parse the internal children, allowing for deep, complex layouts:
+```tsx
+<FeatureGrid columns={2}>
+  ### Feature A
+  This text is inside the grid, parsed as standard Markdown.
+
+  ### Feature B
+  You can even put `<SelfClosing />` components inside wrappers!
+</FeatureGrid>
+```
+
+---
+
+## Native Math ($\LaTeX$)
+Unlike standard JavaScript parsers that require external plugins like `remark-math` (which severely degrade performance), Omni-Core understands mathematical boundaries at the lexer level.
+
+### Inline Math
+Wrap your equations in single dollar signs. For example, the mass-energy equivalence equation is captured as a distinct math node natively: `$E=mc^2$`.
+
+### Block Math
+For complex, multi-line equations, use double dollar signs. This is especially useful for rendering heavy academic papers or AI research datasets:
+```
+$$
+f(x) = \int_{-\infty}^\infty \hat f(\xi)\,e^{2 \pi i \xi x} \,d\xi
+$$
+```

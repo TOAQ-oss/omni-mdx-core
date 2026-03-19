@@ -1,0 +1,47 @@
+# Introduction to Omni-Core
+
+Welcome to the official documentation for **omni-mdx**, the high-performance, cross-language MDX engine powered by Rust.
+
+<Note type="info">
+  **Current Version**: v0.2.0
+  Omni-MDX is currently stable for production use in Web (WASM/Next.js) and Python environments.
+</Note>
+
+## The Vision: Solving Parser Fragmentation
+
+Historically, processing rich text and complex components (MDX) meant relying on JavaScript engines like `mdx-js`. While powerful, these engines create a significant bottleneck when you need to parse massive amounts of data, or when you want to use the exact same logic outside of a Node.js ecosystem (like in a Python data pipeline or a native desktop app).
+
+Instead of having one parser in JavaScript for your website, another in Python for your datasets, and yet another for mobile, **Omni-Core** introduces a radical approach: **A Single Core in Rust**.
+
+By centralizing the parsing logic in a hyper-optimized Rust binary, we guarantee identical behavior, memory safety, and native execution speed across all your platforms.
+
+## Key Principles
+
+Omni-MDX was built from the ground up with four core pillars in mind:
+
+### 1. Blazing Fast Native Speed
+Thanks to Rust's zero-cost abstractions and safe memory management (using `Arc` reference counting instead of heavy garbage collection), Omni-MDX parses complex documents up to **30x faster** than traditional JS parsers. Generating an Abstract Syntax Tree (AST) takes fractions of a millisecond.
+
+### 2. Math-Ready by Default
+Stop hacking standard Markdown parsers to support equations. Omni-MDX has native lexing for complex mathematical formulas. Whether it's inline math (`$E=mc^2$`) or block equations, it parses them perfectly, making it the ideal engine for research papers and academic datasets.
+
+### 3. Component Agnostic
+Omni-MDX doesn't care *how* you render your UI. Its job is to identify JSX/MDX components seamlessly and output a pristine AST. It delegates the actual rendering to the host platform. A `<Chart />` tag can become a React component on the web, or a PyQt widget in a native desktop application.
+
+### 4. Universal Multi-Target FFI
+Write once, run everywhere. The single source code compiles down to:
+- **WASM** for the Web (Next.js, React).
+- **PyO3** for Python (Data processing, AI pipelines, PyQt).
+- *Coming soon: Dart/FFI for mobile.*
+
+---
+
+## Architecture Overview
+
+Under the hood, the Omni-Core monorepo is divided into three main layers:
+
+1. **`core-parser/`**: The Rust heart. Contains the Lexer, Parser, Binary Encoder, and AST definitions.
+2. **`packages/mdx-next/`**: The Next.js integration. Decodes the binary AST into JavaScript objects without serialization overhead.
+3. **`packages/mdx-python/`**: The Python engine. Exposes the parser to Python environments for backend data ingestion or Qt rendering.
+
+Ready to see it in action? Head over to the [Installation Guide](/mdx/docs/installation) to get started.

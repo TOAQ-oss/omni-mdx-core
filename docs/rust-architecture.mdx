@@ -1,0 +1,54 @@
+# Rust Core Architecture
+
+At the heart of Omni-MDX lies the `core-parser`, a high-performance engine written in Rust. By leveraging Rust's zero-cost abstractions and memory safety, we achieve parsing speeds that are orders of magnitude faster than traditional JavaScript-based solutions.
+
+## Internal Directory Structure
+
+The `core-parser/src` directory is organized into specialized modules to ensure a clean separation of concerns:
+
+- **`lexer.rs`**: The first stage of the pipeline. It breaks the raw input string into a stream of tokens.
+- **`parser.rs`**: Consumes tokens from the lexer to build the hierarchical Abstract Syntax Tree (AST).
+- **`ast.rs`**: Defines the data structures for nodes and attributes.
+- **`jsx.rs`**: Specialized logic for handling JSX/MDX component syntax.
+- **`markdown.rs`**: Integration with the `pulldown-cmark` library for standard CommonMark parsing.
+- **`binary/`**: Contains the `encoder.rs` responsible for OCP (Omni-Core Protocol) serialization.
+
+---
+
+## The Parsing Pipeline
+
+Omni-MDX uses a multi-stage process to transform text into a usable format:
+
+### 1. Tokenization (Lexing)
+The engine scans the source text to identify boundaries for Markdown elements, JSX tags, and Math blocks. Unlike standard parsers, Omni-Core's lexer is aware of Math (`$` and `$$`) and JSX (`<` and `>`) characters as first-class citizens.
+
+### 2. Tree Construction
+The parser assembles these tokens into a tree of `AstNode` structures. Each node can contain:
+- A `node_type` (e.g., `"h1"`, `"text"`, `"Component"`).
+- A map of attributes (`AttrValue`).
+- A vector of children nodes.
+
+### 3. Binary Encoding
+Once the AST is built, it is encoded into a byte stream using our custom binary protocol. This step is critical for performance, as it allows the AST to be transferred to Node.js or Python without the overhead of JSON serialization.
+
+---
+
+## Memory Management
+
+To maintain performance across language boundaries (FFI), Omni-Core utilizes specific Rust patterns:
+
+- **Arc (Atomic Reference Counting)**: We use `Arc` for managing shared data within the AST nodes. This allows for efficient, thread-safe access to document fragments, especially useful when processing massive datasets in parallel Python workers.
+- **Zero-Copy Intent**: Where possible, the parser avoids unnecessary string allocations by using slices and references during the lexing phase.
+
+---
+
+## Performance Benchmarks
+
+In internal tests located in `tests/test_perf.rs`, the core parser consistently achieves:
+- **Sub-millisecond parsing** for average documentation pages.
+- **Linear scaling** when processing thousands of nodes.
+- **Minimal memory overhead** compared to V8-based MDX compilers.
+
+<Note type="warning">
+  Directly modifying the `core-parser` requires a valid Rust toolchain. Please refer to the [Contributing Guide](https://github.com/TOAQ-oss/omni-mdx-core/blob/main/CONTRIBUTING.md) before submitting PRs.
+</Note>

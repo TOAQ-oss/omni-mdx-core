@@ -1,0 +1,74 @@
+# Native Desktop Rendering (PyQt5)
+
+Omni-MDX provides a unique solution for rendering rich text and interactive layouts in native desktop applications without the overhead of a heavy WebEngine (Chromium) component. By mapping the Rust-generated AST directly to native **PyQt5** widgets, you get a lightweight, high-performance UI that feels native to the OS.
+
+## The Rendering Engine
+
+The desktop rendering is managed by the `OmniMDX` class located in `omni_mdx.engine`. It acts as a coordinator between the Rust parser and the Qt widget factory.
+
+### Basic Implementation
+
+To render MDX in a Qt window, you simply pass the parsed nodes to the `render_qt` method:
+
+```python
+import sys
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout
+from omni_mdx import OmniMDX, parse
+
+app = QApplication(sys.argv)
+window = QWidget()
+layout = QVBoxLayout(window)
+
+# 1. Parse your MDX content
+nodes = parse("# Desktop Portal\nThis is rendered using native QLabels and QWidgets.")
+
+# 2. Initialize the UI Engine
+engine = OmniMDX()
+
+# 3. Generate the native widget tree
+# The engine recursively transforms the AST into a QWidget hierarchy
+content_widget = engine.render_qt(nodes, parent=window)
+
+layout.addWidget(content_widget)
+window.show()
+sys.exit(app.exec_())
+```
+
+---
+## Native Math Rendering
+One of the most powerful aspects of the Qt renderer is its handling of mathematical equations. Instead of relying on CSS/JS (KaTeX), the Python engine uses Matplotlib as a backend to convert LaTeX strings into high-quality images (`QPixmap`).
+
+* **Inline Math**: Rendered as small, baseline-aligned images inside text flows.
+* **Block Math**: Rendered as centered, high-resolution images between paragraphs.
+
+This ensures that complex formulas like `$$E_k = \frac{1}{2}mv^2$$` look perfect regardless of the user's screen resolution or installed fonts.
+
+---
+## Custom Component Mapping
+Just like in React, you can map MDX JSX tags to custom Python/Qt logic. This allows you to insert complex interactive widgets (like custom buttons, data tables, or media players) directly into your text flow.
+
+```python
+from omni_mdx import HtmlRenderer, parse
+
+def render_custom_alert(node, ctx):
+    # node is an AstNode object containing attributes and children
+    level = node.attr_text("level")
+    content = node.text_content()
+    # Return a custom string or logic for the renderer
+    return f"[{level.upper()}] {content}"
+
+renderer = HtmlRenderer(components={"Alert": render_custom_alert})
+```
+
+---
+## Architecture Overview
+The rendering pipeline follows a strict path to ensure stability:
+
+1. `parser.py`: Calls the Rust binary to get the raw AST.
+2. `ast.py`: Converts the result into typed Python `AstNode` objects.
+3. `math_render.py`: Handles the LaTeX-to-QPixmap conversion using Matplotlib.
+4. `qt_renderer.py`: Iterates through the AST and instantiates the corresponding `QLabel`, `QVBoxLayout`, or custom widgets.
+
+<Note type="info">
+This "Zero-HTML" approach significantly reduces memory usage compared to QWebEngineView, making it ideal for resource-constrained environments or high-performance scientific tools.
+</Note>

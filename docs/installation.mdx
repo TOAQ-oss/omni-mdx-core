@@ -1,0 +1,86 @@
+# Installation Guide
+
+Omni-MDX is distributed across different package managers to natively integrate into your preferred environment. Choose the installation method that matches your stack.
+
+## Prerequisites
+
+Before installing the packages or building from source, ensure your system meets the following minimum requirements:
+
+- **Node.js**: v18.0 or newer (for Web/Next.js integrations)
+- **Python**: v3.9 or newer (for Data/AI integrations)
+- **Rust**: Latest stable version (only if building from source)
+- **wasm-pack**: Required for building the WebAssembly core manually
+
+---
+
+## 1. Web & Next.js (`mdx-next`)
+
+If you are building a web application, documentation site, or a Next.js App Router project, install the JavaScript bindings. This package includes the pre-compiled WASM core and the React rendering utilities.
+
+You can install it using your preferred package manager:
+
+```bash
+# Using npm
+npm install @toaq-oss/omni-mdx
+
+# Using yarn
+yarn add @toaq-oss/omni-mdx
+
+# Using pnpm
+pnpm add @toaq-oss/omni-mdx
+```
+
+<Note type="info">
+    **Zero Configuration**: The `@toaq-oss/omni-mdx` package ships with the pre-compiled WebAssembly binary. You do not need to install Rust to use it in your frontend projects.
+</Note>
+
+---
+
+## Python & Data Pipelines (`mdx-python`)
+For backend processing, RAG pipelines, extracting metadata, or rendering MDX in native Qt applications, install the Python package. The Python bindings are powered by PyO3, guaranteeing the exact same Rust execution speed as the web version.
+
+```bash
+pip install omni-mdx
+```
+
+---
+
+## 3. Building from Source (Advanced)
+
+If you want to contribute to the core engine, or compile the binaries for a specific architecture, you can build Omni-MDX directly from the monorepo.
+
+### Clone the Repository
+```bash
+git clone https://github.com/TOAQ-oss/omni-mdx-core.git
+cd omni-mdx-core
+```
+
+### Setup the environment
+We provide a `Makefile` to automate the installation of necessary Rust targets and global dependencies (like `wasm-pack`).
+
+```bash
+make setup
+```
+
+### Compile the Engines
+You can compile the specific engine you need, or build the entire monorepo.
+
+#### To build the WASM package (for Next.js / Web):
+```bash
+make build-web
+```
+*This will compile the Rust core into WebAssembly and output the TypeScript bindings in `packages/mdx-next/`.*
+
+#### To build the Python package:
+```bash
+make build-python
+```
+*This uses `maturin` to compile the PyO3 bindings and makes the module available in your local Python environment.*
+
+---
+
+## Next Steps
+Now that you have the engine installed, let's look at how to use it.
+
+* If you are building for the web, head over to the [Next.js Integration](/nextjs-integration) guide.
+* If you are using Python, check out the [Python API](/python-engine) documentation.

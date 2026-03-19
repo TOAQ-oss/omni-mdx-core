@@ -1,0 +1,61 @@
+# Binary AST Transfer (OCP)
+
+The "secret sauce" behind Omni-MDX's extreme performance on the web is the **Omni-Core Protocol (OCP)**. 
+
+When passing complex data structures (like an Abstract Syntax Tree) from a Rust WebAssembly module to the JavaScript V8 engine, the traditional approach is to serialize the data to a JSON string in Rust, send the string across the bridge, and call `JSON.parse()` in JavaScript. 
+
+For massive documents, this stringification and parsing process blocks the main thread and consumes significant memory, defeating the purpose of using Rust in the first place. Omni-Core solves this by bypassing JSON entirely.
+
+---
+
+## How It Works
+
+Instead of strings, the Rust parser encodes the AST directly into a packed binary buffer (`Vec<u8>`). This byte array is transferred to JavaScript with near-zero overhead and decoded on the fly using a `DataView`.
+
+### The Opcodes
+
+The protocol relies on a strict set of hexadecimal opcodes to identify node and attribute types.
+
+**Node Types:**
+- `0x01` (`NODE_TEXT`): Represents a raw text node.
+- `0x02` (`NODE_ELEMENT`): Represents an MDX/HTML element or component.
+
+**Attribute Types:**
+- `0x10` (`ATTR_TEXT`): A standard string attribute.
+- `0x11` (`ATTR_EXPRESSION`): An evaluated JavaScript expression (e.g., `count={42}`).
+- `0x12` (`ATTR_BOOLEAN`): An implicit boolean attribute (e.g., `disabled`).
+- `0x13` (`ATTR_AST`): An attribute containing a nested MDX subtree (e.g., render props).
+
+---
+
+## The Encoding Pipeline (Rust)
+
+In the `core-parser`, the `encode_ast` function pre-allocates a memory buffer to avoid costly reallocations during parsing. 
+
+It starts by writing the total number of root nodes as a 4-byte `u32` value. Then, it recursively walks the AST. For an MDX element, it encodes data in a strict, predictable sequence:
+1. **Opcode**: Pushes `NODE_ELEMENT` (`0x02`).
+2. **Tag Name**: The length of the string as `u16`, followed by the bytes of the tag name (e.g., "h1" or "Note").
+3. **Self-Closing Flag**: 1 byte (`0` or `1`).
+4. **Attributes**: The count of attributes as `u16`. For each attribute, it writes the key, the attribute opcode, and the corresponding value.
+5. **Children**: The count of child nodes as `u32`, followed by recursive encoding of each child.
+
+---
+
+## The Decoding Pipeline (JavaScript)
+
+On the JavaScript side, the `@toaq-oss/omni-mdx/server` package utilizes the `MdxBinaryDecoder` class. It receives the `Uint8Array` from Rust and reads it sequentially using a `DataView`. 
+
+```typescript
+// Internal decoding logic representation
+const rootCount = this.readU32();
+const nodes = [];
+for (let i = 0; i < rootCount; i++) {
+  nodes.push(this.decodeNode());
+}
+```
+
+The decoder reads the exact exact sequence written by Rust. If it hits an unknown opcode, it throws an error immediately to prevent memory corruption. Strings are rapidly decoded from the buffer segments using the native `TextDecoder("utf-8")`.
+
+## Performance Impact
+
+Because we read integers directly from memory offsets and only allocate strings when strictly necessary, the JavaScript Garbage Collector is barely triggered. This is why Omni-MDX can ingest 10,000 document nodes in sub-millisecond times while keeping the Node.js memory footprint completely flat.

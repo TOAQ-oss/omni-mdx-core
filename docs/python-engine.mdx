@@ -1,0 +1,101 @@
+# Python Engine & API
+
+**Omni-MDX** provides a native Python bridge to the high-performance Rust core. It parses MDX (Markdown + JSX) into a deeply manipulable Abstract Syntax Tree (AST) consisting of pure Python objects.
+
+Because the Rust binary is bundled directly into the Python package as a "Fat Wheel", no Rust toolchain is required for end-users to install and run the engine.
+
+## Installation
+
+```bash
+pip install omni-mdx
+```
+
+---
+
+## 1. Parsing MDX to AST
+The core feature of `omni-mdx` in Python is transforming raw text into a structured, easily searchable AST.
+
+You can initialize the `OmniMDX` engine and call the `parse_to_ast` method:
+```python
+from omni_mdx.engine import OmniMDX
+
+mdx_content = """
+# System Configuration
+The core threshold is defined as:
+$$T_c = \\mu \\times \\nabla$$
+
+<Alert level="critical">Calibration required!</Alert>
+"""
+
+# Initialize the engine
+engine = OmniMDX()
+
+# Parse the text into a list of AstNode objects
+nodes = engine.parse_to_ast(mdx_content)
+```
+
+--- 
+
+## 2. Understanding the AST Structure
+
+The parser generates a typed `AstNode` tree. Each node in the MDX AST is represented by an `AstNode` dataclass, which contains:
+
+* `node_type`: A string representing the tag name (e.g., `"p"`, `"h1"`, `"text"`, `"BlockMath"`, or custom components like `"Alert"`).
+* `content`: Raw text content (for leaf text nodes).
+* `attributes`: A dictionary mapping attribute names to `AttrValue` instances.
+* `children`: A list of nested `AstNode` child nodes.
+* `self_closing`: A boolean indicating if the tag was self-closing (`<Comp />`).
+
+### The `AttrValue` Object
+JSX attributes can be complex. The `AttrValue` class neatly categorizes them by `kind`:
+
+* `text`: Standard string values (`prop="hello"`).
+* `expression`: Raw JavaScript/Python expressions (`prop={someExpr}`).
+* `boolean`: Implicitly true attributes (`disabled`).
+* `ast`: Sub-trees passed as props (`prop={<Component/>}`).
+
+---
+
+## 3. Advanced AST Manipulation
+The Python AST objects come with built-in helper methods to make traversing and extracting data incredibly easy for large-scale text analysis or metadata ingestion pipelines.
+
+Finding Nodes
+Use `find(node_type)` to get the first matching descendant using BFS, or `find_all(node_type)` to retrieve all matches depth-first.
+
+Extracting Text
+The `text_content()` method recursively collects all text content inside a node as a single string, stripping away all MDX tags. The `attr_text(name)` method retrieves the plain-text value of a specific attribute.
+
+### Example: Extracting Component Data
+If you need to programmatically extract specific nodes while ignoring the rest of the document formatting, you can easily iterate over the AST:
+
+```python
+from omni_mdx.engine import OmniMDX
+import json
+
+document = """
+# System Logs
+
+<LogEntry user="admin" status="success">
+Database backup completed successfully.
+</LogEntry>
+
+<LogEntry user="system" status="warning">
+High memory usage detected.
+</LogEntry>
+"""
+
+engine = OmniMDX()
+ast = engine.parse_to_ast(document)
+
+# Extract logs for structured monitoring
+structured_logs = []
+for node in ast:
+    if node.node_type == "LogEntry":
+        structured_logs.append({
+            "user": node.attr_text("user"),
+            "status": node.attr_text("status"),
+            "message": node.text_content().strip()
+        })
+
+print(json.dumps(structured_logs, indent=2))
+```
