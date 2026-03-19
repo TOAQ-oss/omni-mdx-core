@@ -1,3 +1,47 @@
+# Custom Components
+
+One of the most powerful features of MDX is the ability to interleave interactive React components within your Markdown content. Omni-MDX makes this process incredibly efficient by parsing the component tree in Rust and rendering it seamlessly via React Server Components (RSC) or Client Components.
+
+## The Component Registry
+
+When the Rust core parses a JSX tag (e.g., `<Note type="warning">`), it doesn't render HTML. Instead, it adds a `NODE_ELEMENT` to the AST with the tag name `"Note"` and its associated attributes.
+
+To render this node, you pass a "Component Registry" (a standard JavaScript object) to your renderer. The keys in this object must exactly match the JSX tags used in your MDX source.
+
+### 1. Creating your React Components
+
+First, build your components exactly as you would in any standard Next.js application. 
+
+Here is an example of a pure Server Component (`Note.tsx`):
+```tsx
+// components/Note.tsx
+export function Note({ type, children }: { type: 'info' | 'warning', children: React.ReactNode }) {
+  const bg = type === 'warning' ? 'bg-amber-500/10 border-amber-500/20' : 'bg-blue-500/10 border-blue-500/20';
+  
+  return (
+    <div className={`p-4 my-4 border rounded-lg ${bg}`}>
+      {children}
+    </div>
+  );
+}
+
+Here is an example of an interactive Client Component (`Chart.tsx`):
+```tsx
+// components/Chart.tsx
+"use client";
+
+import { useState } from 'react';
+
+export function Chart({ data }: { data: any[] }) {
+  const [active, setActive] = useState(false);
+  return <div onClick={() => setActive(!active)}>Interactive Chart...</div>;
+}
+```
+
+### 2. Mapping the Components
+Next, import these components and pass them to either `MDXServerRenderer` or `MDXClientRenderer` using the `components` prop.
+
+```
 // app/blog/[slug]/page.tsx
 import { parseMdx, MDXServerRenderer } from "@toaq-oss/omni-mdx/server";
 import { Note }  from "@/components/Note";
