@@ -196,6 +196,7 @@ pub fn parse_markdown<'a>(
     let mut root:  Vec<AstNode<'a>> = Vec::new();
     let mut in_code_block = false;
     let mut in_table_head = false;
+    let mut in_table_body = false;
 
     for event in parser {
         match event {
@@ -215,6 +216,23 @@ pub fn parse_markdown<'a>(
                     let cell_type = if in_table_head { "th" } else { "td" };
                     let node = AstNode::element(cell_type, false);
                     stack.push(node);
+                    continue;
+                }
+
+                if let Tag::TableRow = tag {
+                    if !in_table_head {
+                        if !in_table_body {
+                            in_table_body = true;
+                            stack.push(AstNode::element("tbody", false));
+                        }
+                    }
+                    stack.push(AstNode::element("tr", false));
+                    continue;
+                }
+
+                if let Tag::TableCell = tag {
+                    let cell_type = if in_table_head { "th" } else { "td" };
+                    stack.push(AstNode::element(cell_type, false));
                     continue;
                 }
 
@@ -244,6 +262,14 @@ pub fn parse_markdown<'a>(
                 }
                 if let TagEnd::TableHead = tag_end {
                     in_table_head = false;
+                }
+                if let TagEnd::Table = tag_end {
+                    if in_table_body {
+                        in_table_body = false;
+                        if let Some(tbody) = stack.pop() {
+                            push_child(tbody, &mut stack, &mut root);
+                        }
+                    }
                 }
                 if let Some(node) = stack.pop() {
                     let node = unwrap_solo_jsx_paragraph(node);
