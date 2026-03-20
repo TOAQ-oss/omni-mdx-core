@@ -1,0 +1,38 @@
+# The Omni-Core Protocol (OCP)
+
+To achieve sub-millisecond document transfer across language boundaries, Omni-MDX abandons standard string-based formats in favor of a custom binary serialization format: the **Omni-Core Protocol (OCP)**.
+
+While JSON is the industry standard for Abstract Syntax Trees (like Remark or MDX.js), it introduces a massive serialization tax. Converting an AST to a JSON string in Rust, transferring it across the FFI boundary, and parsing it back into an object in V8 (Node.js) or Python blocks the main thread and causes severe memory spikes. OCP is engineered to bypass this bottleneck entirely.
+
+## The Architectural Design
+
+OCP is not a generic serialization format like Protocol Buffers or MessagePack; it is a **schema-aware, byte-aligned stream** specifically optimized for Omni-MDX's node structure. 
+
+### 1. Tag-Length-Value (TLV) Encoding
+Every node in the AST is encoded using a strict TLV structure. The host environment (JavaScript, Python, Dart) reads the Node Type (Tag), instantly knows the byte size of its payload (Length), and reads the data (Value). This allows the consumer to skip entire branches of the AST without parsing them if they are not needed for the current render cycle.
+
+### 2. String Interning (Deduplication)
+MDX documents contain highly repetitive strings: component names (`Note`, `CodeBlock`), attribute keys (`className`, `style`), and standard Markdown tags. 
+Instead of repeating these strings in every node, the Rust core builds a dictionary. Nodes only store lightweight integer pointers (e.g., `Ref: 12`) pointing to the dictionary. This deduplication reduces the overall payload size by up to 60% on complex documents.
+
+## Binary Memory Layout
+
+An OCP payload is structured linearly in memory, divided into three contiguous segments:
+
+| Segment | Purpose | Data Structure |
+| :--- | :--- | :--- |
+| **Magic Header** | Identification & Versioning | `[0x4F, 0x43, 0x50, VERSION_BYTE]` |
+| **String Pool** | Deduplicated dictionary | `[TotalEntries][Length][UTF-8 Bytes]...` |
+| **AST Stream** | Flat, recursive node data | `[NodeID][AttrCount][ChildrenCount][Pointers]` |
+
+<Note type="info">
+  **Endianness**: OCP uses Little-Endian byte order by default, aligning with the native architecture of most modern CPUs (x86_64 and ARM64) to ensure zero-cost integer reading in the target runtime.
+</Note>
+
+## The Zero-Copy Deserialization
+
+When the Rust core finishes parsing, it yields a pointer to the OCP byte array in memory. 
+
+In environments like Node.js or the browser (WASM), we do not copy this memory. Instead, we wrap the pointer in a highly efficient `Uint8Array` or `Buffer` view. The JavaScript rendering engine reads the AST sequentially directly from the Rust-allocated memory space. 
+
+This approach guarantees that rendering a 10,000-word MDX document consumes a predictable, flat amount of RAM, completely eliminating the Garbage Collection (GC) pauses that plague traditional JavaScript parsers.

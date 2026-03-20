@@ -23,10 +23,12 @@
     ]
   },
   {
-    "group": "Core Architecture",
+    "group": "Architecture",
     "items": [
-      { "title": "Rust Core Internals", "slug": "rust-architecture" },
-      { "title": "FFI & Bindings", "slug": "ffi-bindings" }
+      { "title": "Design Philosophy", "slug": "architecture/design-philosophy" },
+      { "title": "OCP Binary Protocol", "slug": "architecture/ocp-protocol" },
+      { "title": "FFI & Memory Model", "slug": "architecture/ffi-memory-model" },
+      { "title": "Benchmarks", "slug": "architecture/benchmarks" }
     ]
   }
 ]

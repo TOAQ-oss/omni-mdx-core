@@ -1,0 +1,47 @@
+# FFI & Memory Model
+
+The true power of Omni-MDX lies in its ability to run a single Rust core across entirely different ecosystems. To achieve this without sacrificing performance, we heavily rely on a **Foreign Function Interface (FFI)** architecture paired with Rust's deterministic memory management.
+
+Crossing the language barrier—moving data from a compiled system language to a garbage-collected runtime like V8 (Node.js) or the Python VM—is historically the most expensive operation in bridging technologies. We solve this through a strict zero-copy memory model.
+
+## The Memory Barrier Problem
+
+When an external C or Rust library passes data to JavaScript or Python, the standard approach is to allocate a string, pass it across the FFI boundary, and force the host language to allocate *new* memory to copy that string. Once parsed, the original string is discarded, triggering the host's Garbage Collector (GC). 
+
+For a framework parsing hundreds of documents per second, this memory thrashing is unacceptable.
+
+## Rust Ownership & Zero-Copy Transfer
+
+Omni-MDX bypasses this entirely by treating the host runtime (Node, Python, Dart) simply as a "viewer" of Rust-allocated memory.
+
+1. **Allocation**: The `core-parser` analyzes the document and serializes the AST into our binary format (OCP), storing it in a contiguous Rust `Vec<u8>`.
+2. **Pointer Handoff**: Instead of copying the array, Rust returns a raw memory pointer (`*const u8`) and its exact byte length across the FFI boundary.
+3. **Memory Views**: 
+   - In **Node.js** (via `napi-rs`), this pointer is wrapped in a `Buffer`.
+   - In **Python** (via `PyO3`), it becomes a `memoryview`.
+   - In **Dart** (via `dart:ffi`), it is mapped to a `Uint8List`.
+
+The host language reads the AST directly from the Rust heap. No data is duplicated.
+
+<Note type="warning">
+  **Safety Guarantee**: Rust's compiler ensures that the memory backing the OCP payload cannot be modified or dropped while the host language holds a reference to the view. 
+</Note>
+
+## Deterministic Deallocation
+
+Because the memory lives in Rust, the host language's Garbage Collector cannot free it directly. If not handled correctly, this would cause massive memory leaks.
+
+Omni-MDX implements a deterministic lifecycle:
+* When the memory view (e.g., the Node.js `Buffer`) is created, we attach a **Finalizer callback** to it.
+* When the host GC eventually sweeps the view out of scope, the finalizer is triggered.
+* The finalizer calls back into the Rust core, securely dropping the underlying `Vec<u8>` and returning the memory to the OS.
+
+## The Platform Bindings
+
+We maintain dedicated, highly optimized bindings for each target to ensure native-like developer ergonomics:
+
+* **Node.js / Edge (`@toaq-oss/omni-mdx`)**: Built with `napi-rs` for native Node.js addons, with a seamless fallback to `wasm-bindgen` for Edge runtimes (Vercel/Cloudflare).
+* **Python (`omni-mdx-py`)**: Built with `maturin` and `PyO3`, enabling direct rendering of MDX in PyQt/PySide or data processing in Pandas.
+* **Dart / Flutter (Preview)**: Utilizing `dart:ffi` for direct struct mapping, allowing 60FPS native document rendering on iOS and Android.
+
+Through this model, Omni-MDX provides the absolute memory safety of Rust combined with the ergonomics of your favorite high-level languages.

@@ -1,0 +1,47 @@
+# Design Philosophy
+
+The modern web is built on a fundamental bottleneck: the assumption that document parsing and rendering must happen in the same runtime, typically a JavaScript engine like V8. Omni-MDX was built from scratch to challenge this assumption. 
+
+Our core philosophy is simple: **Parsing is a systems-level problem; Rendering is a UI-level problem.** By separating the two, we unlock unprecedented performance and true cross-platform portability.
+
+## The Problem with Traditional Parsers
+
+Traditional MDX parsers (like `@mdx-js/mdx`) are written in JavaScript. While highly flexible, they suffer from inherent architectural limitations:
+* **Garbage Collection Overhead**: Parsing large documents creates thousands of short-lived string and object allocations, triggering GC pauses that degrade UI performance.
+* **Ecosystem Lock-in**: A JavaScript parser forces you to run Node.js or a V8 environment. If you want to render that same MDX document in a Python data pipeline or a native Flutter app, you must embed a heavy JS runtime.
+* **Serialization Tax**: Transferring the parsed Abstract Syntax Tree (AST) between threads or processes relies on JSON stringification, wiping out any performance gains.
+
+---
+
+## Principle 1: Strict Separation of Concerns
+
+Omni-MDX delegates the heavy lifting to a **Universal Rust Core**. 
+
+1. **The Rust Engine (The Brain)**: Handles lexing, tokenization, AST construction, and binary serialization. It is memory-safe, highly concurrent, and compiled to native machine code (or WebAssembly).
+2. **The FFI Bindings (The Bridge)**: Exposes the engine to other languages via zero-cost Foreign Function Interfaces (Node-API, PyO3, Dart FFI).
+3. **The Native Renderer (The Canvas)**: The target environment receives the binary AST and maps it directly to its native UI paradigms (React DOM, Qt Widgets, Flutter elements).
+
+<Note type="info">
+  This decoupling ensures that a bug fixed in the Markdown specification immediately benefits the React, Python, and C# ecosystems simultaneously, without rewriting any parsing logic.
+</Note>
+
+---
+
+## Principle 2: The Universal Source of Truth
+
+At the heart of Omni-MDX is the **Immutable AST**. We treat the document structure not as a precursor to HTML, but as a universal data structure.
+
+A `<Heading>` node in our AST has no inherent visual representation. 
+* In **Next.js**, it becomes an `<h1>`.
+* In **Python/Qt**, it becomes a `QLabel` with specific font weights.
+* **The 3D Horizon**: Because the AST is agnostic, it lays the groundwork for spatial computing. Tomorrow, an `<Object3D type="cube">` tag in a markdown file can be parsed by the same Rust core and piped directly into a Unity or Bevy scene graph.
+
+---
+
+## Principle 3: Performance as a Feature, Not an Afterthought
+
+We do not optimize as an afterthought; performance is baked into the architecture:
+* **Zero-Copy Intent**: Our Rust parser borrows string slices (`&str`) from the source document instead of allocating new memory whenever possible.
+* **Binary OCP**: We abandoned JSON entirely in favor of our custom Omni-Core Protocol (OCP), a byte-aligned format that allows the host language to read the AST at memory speed.
+
+By treating the document as a high-performance data stream, Omni-MDX provides the infrastructure needed for the next decade of content rendering.
