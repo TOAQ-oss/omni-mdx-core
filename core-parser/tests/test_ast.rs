@@ -215,7 +215,6 @@ fn test_math_content_persistence() {
     }
     
     assert!(math_node_found, "FAILED : The InlineMath node was not created in the AST");
-    println!("✅ Test of Math persistence : SUCCESS");
 }
 
 #[test]
@@ -226,43 +225,84 @@ fn test_table_ast_contains_row_in_head() {
 | Cell 1   | Cell 2   |
 ";
 
-    // 1. Parse le markdown
-    let ast = parse_mdx(markdown_input).expect("Le parsing du markdown a échoué");
+    let ast = parse_mdx(markdown_input).expect("Markdown parsing failed");
 
-    // 2. Trouver le noeud parent du tableau 
-    // (J'utilise to_lowercase() au cas où ton parseur génère "Table" ou "table")
     let table = ast.iter()
         .find(|n| n.node_type.to_lowercase() == "table")
-        .expect("Tableau introuvable dans l'AST");
+        .expect("Table not found in the AST");
 
-    // 3. Trouver le thead
     let thead = table.children.first()
-        .expect("Le tableau n'a pas d'enfants (thead manquant)");
+        .expect("The table has no children (thead missing)");
     
     assert_eq!(
         thead.node_type.to_lowercase(), 
         "thead", 
-        "Le premier enfant du tableau doit être un thead"
+        "The first child of the table must be a thead"
     );
 
-    // 4. LE TEST CRITIQUE : Le thead DOIT contenir un tr
     let first_head_child = thead.children.first()
-        .expect("Le thead est vide, il manque ses enfants !");
+        .expect("The thead is empty, it is missing its children!");
 
     assert_eq!(
         first_head_child.node_type.to_lowercase(),
         "tr",
-        "🔥 ERREUR D'HYDRATATION : Le thead contient un '{}' au lieu d'un 'tr'. Le parseur omet la ligne d'en-tête !",
+        "The thead contains a '{}' instead of a 'tr'. The parser omits the header row!",
         first_head_child.node_type
     );
 
-    // 5. (Optionnel) Vérifier que le tr contient bien les cellules (th)
     let first_cell = first_head_child.children.first()
-        .expect("Le tr est vide");
+        .expect("The tr is empty");
     
     assert!(
         first_cell.node_type.to_lowercase() == "th" || first_cell.node_type.to_lowercase() == "td",
-        "Le tr doit contenir des cellules (th/td), mais contient '{}'",
+        "The tr must contain cells (th/td), but contains '{}'",
         first_cell.node_type
     );
+}
+
+#[test]
+fn test_table_ast_contains_tbody_with_rows() {
+    let markdown_input = "\
+| Header 1 | Header 2 |
+| -------- | -------- |
+| Cell 1   | Cell 2   |
+| Cell 3   | Cell 4   |
+";
+
+    let ast = parse_mdx(markdown_input).expect("Markdown parsing failed");
+
+    let table = ast.iter()
+        .find(|n| n.node_type.to_lowercase() == "table")
+        .expect("Table not found in the AST");
+
+    let tbody = table.children.iter()
+        .find(|n| n.node_type.to_lowercase() == "tbody")
+        .expect("The table has no 'tbody' node!");
+
+    assert_eq!(
+        tbody.children.len(),
+        2,
+        "The tbody should contain exactly 2 rows (tr)"
+    );
+
+    for (i, row) in tbody.children.iter().enumerate() {
+        assert_eq!(
+            row.node_type.to_lowercase(),
+            "tr",
+            "Child {} of the tbody is a '{}' instead of a 'tr'",
+            i,
+            row.node_type
+        );
+
+        for (j, cell) in row.children.iter().enumerate() {
+            assert_eq!(
+                cell.node_type.to_lowercase(),
+                "td",
+                "Cell {} of row {} is a '{}' instead of a 'td'",
+                j,
+                i,
+                cell.node_type
+            );
+        }
+    }
 }
