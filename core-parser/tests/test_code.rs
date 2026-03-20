@@ -162,7 +162,36 @@ const x = <MDXServerRenderer ast={ast} />;
 "#;
     let ast = parse_mdx(mdx).expect("Le parsing a échoué");
 
-    println!("AST RESTAURÉ : {}", serde_json::to_string_pretty(&ast).unwrap());
-
     check_no_hidden_bytes(&ast);
+}
+
+#[test]
+fn test_code_language_fallbacks() {
+    let markdown_input = "\
+```rust
+fn main() {}
+```
+
+```
+plaintext
+```
+";
+    let ast = parse_mdx(markdown_input).expect("Markdown parsing failed");
+    let pres = find_all(&ast, "pre");
+    assert_eq!(pres.len(), 2, "Should find exactly 2 'pre' blocks");
+
+    let rust_block = pres[0];
+    let rust_attrs = rust_block.attributes.as_ref().expect("First block should have attributes");
+    match rust_attrs.get("className") {
+        Some(AttrValue::Text(t)) => assert_eq!(t, "language-rust", "Should extract 'rust' language"),
+        _ => panic!("Expected className='language-rust'"),
+    }
+
+    let plain_block = pres[1];
+    if let Some(attrs) = &plain_block.attributes {
+        assert!(
+            !attrs.contains_key("className"), 
+            "Second block should NOT have a className attribute (Fallback to plaintext)"
+        );
+    }
 }
