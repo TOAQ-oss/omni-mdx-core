@@ -4,8 +4,8 @@
 /// exactly the nodes, attributes, and children we expect.
 /// Run with: `cargo test --test test_ast --release -- --nocapture`
 
-use omni_mdx::ast::{AstNode, AttrValue};
-use omni_mdx::parser::parse_mdx;
+use omni_mdx_core::ast::{AstNode, AttrValue};
+use omni_mdx_core::parser::parse_mdx;
 
 // Helpers
 
@@ -216,4 +216,53 @@ fn test_math_content_persistence() {
     
     assert!(math_node_found, "FAILED : The InlineMath node was not created in the AST");
     println!("✅ Test of Math persistence : SUCCESS");
+}
+
+#[test]
+fn test_table_ast_contains_row_in_head() {
+    let markdown_input = "\
+| Header 1 | Header 2 |
+| -------- | -------- |
+| Cell 1   | Cell 2   |
+";
+
+    // 1. Parse le markdown
+    let ast = parse_mdx(markdown_input).expect("Le parsing du markdown a échoué");
+
+    // 2. Trouver le noeud parent du tableau 
+    // (J'utilise to_lowercase() au cas où ton parseur génère "Table" ou "table")
+    let table = ast.iter()
+        .find(|n| n.node_type.to_lowercase() == "table")
+        .expect("Tableau introuvable dans l'AST");
+
+    // 3. Trouver le thead
+    let thead = table.children.first()
+        .expect("Le tableau n'a pas d'enfants (thead manquant)");
+    
+    assert_eq!(
+        thead.node_type.to_lowercase(), 
+        "thead", 
+        "Le premier enfant du tableau doit être un thead"
+    );
+
+    // 4. LE TEST CRITIQUE : Le thead DOIT contenir un tr
+    let first_head_child = thead.children.first()
+        .expect("Le thead est vide, il manque ses enfants !");
+
+    assert_eq!(
+        first_head_child.node_type.to_lowercase(),
+        "tr",
+        "🔥 ERREUR D'HYDRATATION : Le thead contient un '{}' au lieu d'un 'tr'. Le parseur omet la ligne d'en-tête !",
+        first_head_child.node_type
+    );
+
+    // 5. (Optionnel) Vérifier que le tr contient bien les cellules (th)
+    let first_cell = first_head_child.children.first()
+        .expect("Le tr est vide");
+    
+    assert!(
+        first_cell.node_type.to_lowercase() == "th" || first_cell.node_type.to_lowercase() == "td",
+        "Le tr doit contenir des cellules (th/td), mais contient '{}'",
+        first_cell.node_type
+    );
 }

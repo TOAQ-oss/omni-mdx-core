@@ -9,7 +9,7 @@
 ///
 /// Run with: `cargo test --test test_perf --release -- --nocapture`
 
-use omni_mdx::parser::parse_mdx;
+use omni_mdx_core::parser::parse_mdx;
 use std::time::{Duration, Instant};
 
 // Helper function for timed parsing assertions

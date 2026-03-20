@@ -1,6 +1,6 @@
 use std::time::Instant;
-use omni_mdx::parser::parse_mdx;
-use omni_mdx::compiler::compile_to_jsx;
+use omni_mdx_core::parser::parse_mdx;
+use omni_mdx_core::compiler::compile_to_jsx;
 
 fn main() {
     let complex_mdx = r#"

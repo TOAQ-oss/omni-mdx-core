@@ -5,9 +5,9 @@
 /// an incorrect result.
 /// Run with: `cargo test --test test_errors --release -- --nocapture`
 
-use omni_mdx::parser::parse_mdx;
+use omni_mdx_core::parser::parse_mdx;
 
-fn assert_err(result: Result<Vec<omni_mdx::ast::AstNode>, omni_mdx::ast::ParseError>, expected_kind: &str) {
+fn assert_err(result: Result<Vec<omni_mdx_core::ast::AstNode>, omni_mdx_core::ast::ParseError>, expected_kind: &str) {
     match result {
         Err(e) => {
             let msg = e.to_string();
@@ -26,7 +26,7 @@ fn assert_err(result: Result<Vec<omni_mdx::ast::AstNode>, omni_mdx::ast::ParseEr
     }
 }
 
-fn has_node_type(nodes: &[omni_mdx::ast::AstNode], node_type: &str) -> bool {
+fn has_node_type(nodes: &[omni_mdx_core::ast::AstNode], node_type: &str) -> bool {
     nodes.iter().any(|n| {
         n.node_type == node_type || has_node_type(&n.children, node_type)
     })

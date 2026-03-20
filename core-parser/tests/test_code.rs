@@ -5,8 +5,8 @@
 ///
 /// Run with: `cargo run --bin test_code --release -- --nocapture`
 
-use omni_mdx::ast::{AstNode, AttrValue};
-use omni_mdx::parser::parse_mdx;
+use omni_mdx_core::ast::{AstNode, AttrValue};
+use omni_mdx_core::parser::parse_mdx;
 
 // Helpers
 
