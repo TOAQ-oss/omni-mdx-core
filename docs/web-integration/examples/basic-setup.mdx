@@ -1,0 +1,45 @@
+# Example: Basic App Router
+
+This example demonstrates the most minimalist integration of Omni-Core within the new Next.js App Router (Next 13+). 
+
+<Note type="info">
+  **Full Source Code:** Find this ready-to-clone example on our official sandbox repository: [omni-mdx-sandbox/next](https://github.com/TOAQ-oss/omni-mdx-sandbox/tree/main/next/basic-setup).
+</Note>
+
+## The Concept
+
+In a Server Components (RSC) architecture, the best practice is to let Omni-Core parse the Markdown document on the server, then transmit the generated AST directly to the client for rendering. 
+
+This ensures that the heavy parsing workload (executed by our Rust engine) never impacts the end-user's JavaScript bundle.
+
+## Implementation (`page.tsx`)
+
+Here is what a basic documentation page looks like:
+
+```tsx
+import { parseMdx, MDXServerRenderer } from '@toaq-oss/omni-mdx/server';
+import { MDX_COMPONENTS } from '@/components/mdx-components';
+
+export default async function Page() {
+  // 1. Retrieve raw Markdown (from a file, a database, or GitHub)
+  const rawMdx = `
+# Hello World
+Here is some text parsed by **Omni-Core**.
+  `;
+
+  // 2. Ultra-fast parsing via the native Rust engine
+  const ast = await parseMdx(rawMdx);
+
+  // 3. Native React rendering
+  return (
+    <div className="prose prose-invert">
+      <MDXServerRenderer 
+        ast={ast} 
+        components={MDX_COMPONENTS} 
+      />
+    </div>
+  );
+}
+``` 
+
+To test this locally, simply clone the sandbox and start the development server!

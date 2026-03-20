@@ -1,0 +1,46 @@
+# Example: Advanced Rendering & Custom Components
+
+The true strength of Omni-Core lies in its ability to interweave rich text with highly interactive React components. This is the perfect approach for rendering complex datasets or experimental protocols.
+
+<Note type="info">
+  **Full Source Code:** Clone and test this environment directly from [omni-mdx-sandbox/next](https://github.com/TOAQ-oss/omni-mdx-sandbox/tree/main/next/advanced-rendering).
+</Note>
+
+## Rendering Specific Components
+
+Imagine you are documenting an experimental protocol and need to display an interactive player linked to a specific vocal dataset. You can map a custom XML tag present in your MDX directly to a heavy, interactive React component.
+
+### 1. The Source MDX File
+
+In your Markdown document, you naturally insert your component:
+
+```mdx
+## Vocal Dataset Analysis (Cohort A)
+
+The following excerpt demonstrates intonation variations during the cognitive load test:
+
+<VocalDatasetPlayer 
+  datasetId="voc-cog-042" 
+  showSpectrogram={true} 
+/>
+2. The React Mapping (mdx-components.tsx)
+On the Next.js side, you intercept this tag to inject your interactive client component:
+
+TypeScript
+"use client";
+
+import { VocalDatasetPlayer } from '@/components/science/VocalDatasetPlayer';
+import { InlineMath, BlockMath } from '@/components/science/MathRenderer';
+
+export const MDX_COMPONENTS = {
+  // Redefining standard HTML tags
+  h1: (props: any) => <h1 className="text-4xl font-bold text-blue-400" {...props} />,
+  
+  // Mapping your custom analysis components
+  VocalDatasetPlayer: (props: any) => <VocalDatasetPlayer {...props} />,
+  
+  // Rendering mathematics (LaTeX) extracted by the AST
+  InlineMath: ({ content }: { content: string }) => <InlineMath math={content} />,
+  BlockMath: ({ content }: { content: string }) => <BlockMath math={content} />,
+};
+Thanks to this strict separation between parsing (Rust) and rendering (React), the engine never slows down, even if your document contains dozens of charts, mathematical equations, or audio samples.

@@ -19,7 +19,14 @@
     "items": [
       { "title": "Next.js Integration", "slug": "nextjs-integration" },
       { "title": "Binary AST Transfer", "slug": "binary-ast-transfer" },
-      { "title": "Custom Components", "slug": "custom-components" }
+      { "title": "Custom Components", "slug": "custom-components" },
+      {
+        "group": "Examples",
+        "items": [
+          { "title": "Basic App Router", "slug": "web-integration/examples/basic-setup" },
+          { "title": "Advanced Rendering", "slug": "web-integration/examples/advanced-rendering" }
+        ]
+      }
     ]
   },
   {
