@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "omni-mdx"
-version = "0.1.5"
+version = "0.1.6"
 description = "Ultra-fast MDX rendering engine powered by Rust and WebAssembly."
 readme = "README.md"
 requires-python = ">=3.7"

@@ -195,11 +195,29 @@ pub fn parse_markdown<'a>(
     let mut stack: Vec<AstNode<'a>> = Vec::new();
     let mut root:  Vec<AstNode<'a>> = Vec::new();
     let mut in_code_block = false;
+    let mut in_table_head = false;
 
     for event in parser {
         match event {
             Event::Start(tag) => {
                 if let Tag::CodeBlock(_) = tag { in_code_block = true; }
+
+                if let Tag::TableHead = tag {
+                    in_table_head = true;
+                    let mut thead_node = AstNode::element("thead", false);
+                    let tr_node = AstNode::element("tr", false);
+                    thead_node.children.push(tr_node);
+                    stack.push(thead_node);
+                    continue;
+                }
+
+                if let Tag::TableCell = tag {
+                    let cell_type = if in_table_head { "th" } else { "td" };
+                    let node = AstNode::element(cell_type, false);
+                    stack.push(node);
+                    continue;
+                }
+
                 let tag_name = map_tag(&tag); 
                 let mut node = AstNode::element(tag_name, false);
                 match &tag {
@@ -224,8 +242,21 @@ pub fn parse_markdown<'a>(
                 if let TagEnd::CodeBlock = tag_end { 
                     in_code_block = false; 
                 }
+                if let TagEnd::TableHead = tag_end {
+                    in_table_head = false;
+                }
                 if let Some(node) = stack.pop() {
                     let node = unwrap_solo_jsx_paragraph(node);
+
+                    if in_table_head && (node.node_type == "th" || node.node_type == "td") {
+                        if let Some(thead) = stack.last_mut() {
+                            if let Some(tr) = thead.children.first_mut() {
+                                tr.children.push(node);
+                                continue;
+                            }
+                        }
+                    }
+                    
                     push_child(node, &mut stack, &mut root);
                 }
             }
