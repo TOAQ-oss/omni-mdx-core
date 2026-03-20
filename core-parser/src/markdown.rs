@@ -252,6 +252,15 @@ pub fn parse_markdown<'a>(
                             attrs.insert("title".into(), AttrValue::Text(Cow::Owned(title.to_string()))); 
                         }
                     }
+                    Tag::CodeBlock(pulldown_cmark::CodeBlockKind::Fenced(lang)) => {
+                        if !lang.is_empty() {
+                            let attrs = node.attributes.get_or_insert_with(HashMap::new);
+                            attrs.insert(
+                                "className".into(), 
+                                AttrValue::Text(Cow::Owned(format!("language-{}", lang)))
+                            );
+                        }
+                    }
                     _ => {}
                 }
                 stack.push(node);
