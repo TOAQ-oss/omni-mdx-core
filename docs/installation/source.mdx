@@ -20,7 +20,7 @@ cd omni-mdx-core
 make setup
 ```
 
-### 2. Compile the Engines
+## 2. Compile the Engines
 We use a root `Makefile` to orchestrate builds across different targets. You can compile the specific engine you need:
 
 Build the Web Package
@@ -30,7 +30,7 @@ make build-web
 *This compiles the Rust core into WebAssembly and outputs the TypeScript bindings in `packages/mdx-next/`.*
 
 Build the Python Package
-```bashh
+```bash
 make build-python
 ```
 *This uses `maturin` to compile the PyO3 bindings and makes the module available in your local Python environment.*
