@@ -1,0 +1,36 @@
+# Building from Source
+
+If you want to contribute to the core engine, add custom AST nodes, or compile the binaries for a specific architecture, you can build Omni-MDX directly from the monorepo.
+
+## Prerequisites
+
+Before building from source, ensure your system meets the following requirements:
+- **Rust**: Latest stable version (via `rustup`)
+- **wasm-pack**: Required for building the WebAssembly core
+- **Make**: For running our build automation scripts
+
+## 1. Clone & Setup
+
+Clone the repository and run the setup command from the root directory to install necessary targets:
+
+```bash
+git clone https://github.com/TOAQ-oss/omni-mdx-core.git
+cd omni-mdx-core
+
+make setup
+```
+
+### 2. Compile the Engines
+We use a root `Makefile` to orchestrate builds across different targets. You can compile the specific engine you need:
+
+Build the Web Package
+```bash
+make build-web
+``` 
+*This compiles the Rust core into WebAssembly and outputs the TypeScript bindings in `packages/mdx-next/`.*
+
+Build the Python Package
+```bashh
+make build-python
+```
+*This uses `maturin` to compile the PyO3 bindings and makes the module available in your local Python environment.*

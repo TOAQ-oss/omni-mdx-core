@@ -1,0 +1,23 @@
+# Python & Data Pipelines
+
+For backend processing, RAG pipelines, extracting metadata, or rendering MDX in native Qt applications, install the Python package (`omni-mdx`). 
+
+The Python bindings are powered by PyO3, bypassing the heavy overhead of standard parsers and guaranteeing the exact same Rust execution speed as the web version.
+
+## Prerequisites
+- **Python**: v3.9 or newer
+
+## Installation
+
+Install the pre-compiled wheel via pip:
+
+```bash
+pip install omni-mdx
+```
+
+<Note type="info">
+Native Performance: Because this package uses PyO3, the heavy lifting is done in native machine code, not in the Python VM. You do not need the Rust toolchain installed to use this package.
+</Note>
+
+## Next Step
+Check out the [Python API](/mdx/docs/python-engine) documentation to start parsing documents.
