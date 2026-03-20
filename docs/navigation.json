@@ -3,7 +3,14 @@
     "group": "Getting Started",
     "items": [
       { "title": "Introduction", "slug": "introduction" },
-      { "title": "Installation", "slug": "installation" },
+      {
+        "group": "Installation",
+        "items": [
+          { "title": "Web & Next.js", "slug": "installation/web" },
+          { "title": "Python Engine", "slug": "installation/python" },
+          { "title": "Build from Source", "slug": "installation/source" }
+        ]
+      },
       { "title": "Syntax Guide", "slug": "syntax-guide" }
     ]
   },
