@@ -1,4 +1,6 @@
 import { defineConfig } from "tsup";
+import { copyFileSync, mkdirSync } from "fs";
+import { resolve } from "path";
 
 export default defineConfig([
   {
@@ -45,6 +47,18 @@ export default defineConfig([
     esbuildOptions(options) {
       options.jsx = "automatic";
       options.loader = { ...options.loader, ".wasm": "empty" };
+    },
+    async onSuccess() {
+      try {
+        mkdirSync("dist", { recursive: true });
+        copyFileSync(
+          resolve("wasm/omni_mdx_core_bg.wasm"),
+          resolve("dist/omni_mdx_core_bg.wasm")
+        );
+        console.log("✓ Copied omni_mdx_core_bg.wasm → dist/");
+      } catch (e) {
+        console.warn("⚠ Could not copy .wasm file:", e);
+      }
     },
   },
 ]);

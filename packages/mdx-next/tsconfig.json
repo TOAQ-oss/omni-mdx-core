@@ -15,7 +15,8 @@
     "skipLibCheck": true,
     "noEmit": true,
     "baseUrl": ".",
-    "verbatimModuleSyntax": false
+    "verbatimModuleSyntax": false,
+    "allowJs": true,
   },
   "include": [
     "src/**/*.ts",

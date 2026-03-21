@@ -9,4 +9,5 @@
 
 export { MDXClientRenderer } from "./MDXClientRenderer";
 export { MDXErrorBoundary } from "./MDXErrorBoundary";
+export { parseMdxClient as parseMdx } from "./parse.client";
 export type { AstNode, MDXComponents } from "./MDXServerRenderer";
