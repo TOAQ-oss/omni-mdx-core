@@ -1,0 +1,62 @@
+# Example: Live Client Editor
+
+While Server-Side Rendering is recommended for static documentation, **Client-Side Rendering** is essential when dealing with user-generated content or building live preview interfaces. 
+
+Because Omni-Core is powered by Rust and compiled to WebAssembly (WASM), it can run directly inside the user's browser at near-native speeds.
+
+<Note type="info">
+  **Full Source Code:** Try the live editor example yourself by cloning [omni-mdx-sandbox/next](https://github.com/TOAQ-oss/omni-mdx-sandbox/tree/main/next/client-rendering).
+</Note>
+
+## The Architecture
+
+To parse MDX on the client, you must use the `"use client"` directive in Next.js. The parsing process is typically wrapped inside a `useEffect` hook to continuously generate the AST whenever the user's input changes.
+
+## Implementation: Live Preview Editor
+
+Here is how you can build a real-time split-pane editor. The user types raw Markdown on the left, and the WASM engine instantly renders the AST on the right.
+
+```tsx
+"use client";
+
+import { useState, useEffect } from 'react';
+import { parseMdx, MDXClientRenderer } from '@toaq-oss/omni-mdx/client';
+import { MDX_COMPONENTS } from '@/components/mdx-components';
+
+export default function LiveEditor() {
+  const [input, setInput] = useState('# Type your MDX here\\n\\nWatch it render instantly!');
+  const [ast, setAst] = useState(null);
+
+  useEffect(() => {
+    // The WebAssembly engine parses the input in real-time
+    const compile = async () => {
+      try {
+        const parsedAst = await parseMdx(input);
+        setAst(parsedAst);
+      } catch (error) {
+        console.error("Parsing error:", error);
+      }
+    };
+    
+    compile();
+  }, [input]);
+
+  return (
+    <div className="flex gap-4">
+      {/* Left Pane: User Input */}
+      <textarea 
+        className="w-1/2 p-4 font-mono bg-zinc-900 text-white"
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+      />
+      
+      {/* Right Pane: Live Omni-Core Rendering */}
+      <div className="w-1/2 p-4 prose prose-invert">
+        {ast && <MDXClientRenderer ast={ast} components={MDX_COMPONENTS} />}
+      </div>
+    </div>
+  );
+}
+```
+
+This approach allows users to write complex documents containing mathematical formulas or custom dataset components, getting immediate visual feedback without ever hitting your server.

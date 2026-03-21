@@ -24,7 +24,8 @@
         "group": "Examples",
         "items": [
           { "title": "Basic App Router", "slug": "web-integration/examples/basic-setup" },
-          { "title": "Advanced Rendering", "slug": "web-integration/examples/advanced-rendering" }
+          { "title": "Advanced Rendering", "slug": "web-integration/examples/advanced-rendering" },
+          { "title": "Live Client Editor", "slug": "web-integration/examples/client-rendering" }
         ]
       }
     ]
