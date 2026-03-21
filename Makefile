@@ -17,12 +17,9 @@ build-node:
 	cp $(CORE_DIR)/toaq-parser-core.*.node $(NATIVE_DIR)/
 
 build-wasm:
-	cd $(CORE_DIR) && wasm-pack build --target bundler --features wasm
+	cd $(CORE_DIR) && wasm-pack build --target web --features wasm
 	mkdir -p $(WASM_DIR)
 	cp -r $(CORE_DIR)/pkg/* $(WASM_DIR)/
-	rm -f $(WASM_DIR)/.gitignore
-	rm -f $(WASM_DIR)/package.json
-	rm -f $(WASM_DIR)/README.md
 
 build-mdx-next: build-node build-wasm
 	cd $(MDX_NEXT_DIR) && npm run build
