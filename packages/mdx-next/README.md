@@ -1,6 +1,6 @@
 # @toaq-oss/omni-mdx
 
-**The high-performance MDX engine for the TOAQ ecosystem.** A unified React & Next.js rendering layer powered by a dual Rust backend (Native Node.js + WebAssembly).
+**The high-performance MDX engine.** A unified React & Next.js rendering layer powered by a dual Rust backend (Native Node.js + WebAssembly).
 
 [![GitHub](https://img.shields.io/badge/GitHub-TOAQ--oss-181717?logo=github)](https://github.com/toaq-oss)
 [![Documentation](https://img.shields.io/badge/Docs-omni--core.org-blue)](https://omni-core.org/mdx)
@@ -54,9 +54,12 @@ export default nextConfig;
 ---
 
 ## 🚀 Usage
-
 ### 1. Server-Side Rendering (RSC)
 Recommended for documentation, blogs, and research papers.
+
+> Full example available here :
+> * Basic setup: [TOAQ-oss/omni-core-sandox](https://github.com/TOAQ-oss/omni-mdx-sandbox/tree/main/next/basic-setup)
+> * Advanced rendering : [TOAQ-oss/omni-core-sandox](https://github.com/TOAQ-oss/omni-mdx-sandbox/tree/main/next/advanced-rendering)
 
 ```tsx
 import { parseMdx, MDXServerRenderer } from "@toaq-oss/omni-mdx/server";
@@ -77,6 +80,8 @@ export default async function Page({ content }) {
 
 ###  2. Live Client Editor (WASM)
 Perfect for real-time previews or CMS interfaces.
+
+> Full example available here : [TOAQ-oss/omni-core-sandox](https://github.com/TOAQ-oss/omni-mdx-sandbox/tree/main/next/client-rendering)
 
 ```tsx
 "use client";
