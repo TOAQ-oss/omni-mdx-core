@@ -42,7 +42,7 @@ export function Chart({ data }: { data: any[] }) {
 ### 2. Mapping the Components
 Next, import these components and pass them to either `MDXServerRenderer` or `MDXClientRenderer` using the `components` prop.
 
-```
+```tsx
 // app/blog/[slug]/page.tsx
 import { parseMdx, MDXServerRenderer } from "@toaq-oss/omni-mdx/server";
 import { Note }  from "@/components/Note";
