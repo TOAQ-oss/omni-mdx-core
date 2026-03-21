@@ -23,10 +23,12 @@ The following excerpt demonstrates intonation variations during the cognitive lo
   datasetId="voc-cog-042" 
   showSpectrogram={true} 
 />
-2. The React Mapping (mdx-components.tsx)
+```
+
+###  2. The React Mapping (mdx-components.tsx)
 On the Next.js side, you intercept this tag to inject your interactive client component:
 
-TypeScript
+```tsx
 "use client";
 
 import { VocalDatasetPlayer } from '@/components/science/VocalDatasetPlayer';
@@ -43,4 +45,6 @@ export const MDX_COMPONENTS = {
   InlineMath: ({ content }: { content: string }) => <InlineMath math={content} />,
   BlockMath: ({ content }: { content: string }) => <BlockMath math={content} />,
 };
+```
+
 Thanks to this strict separation between parsing (Rust) and rendering (React), the engine never slows down, even if your document contains dozens of charts, mathematical equations, or audio samples.
