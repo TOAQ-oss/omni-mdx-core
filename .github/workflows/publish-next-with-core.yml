@@ -111,7 +111,7 @@ jobs:
 
       - name: Clean wasm-pack generated files
         working-directory: core-parser/pkg
-        run: rm -f .gitignore package.json README.md
+        run: rm -f package.json README.md
 
       - name: Upload WASM artifact
         uses: actions/upload-artifact@v4
