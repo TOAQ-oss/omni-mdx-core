@@ -36,6 +36,8 @@ export async function parseMdxClient(mdx: string | Uint8Array): Promise<AstNode[
     const decoder = new MdxBinaryDecoder(binaryAst);
     return decoder.decode();
   } catch (err) {
-    throw new Error("[toaq-oss/omni-mdx] Syntax error in MDX: " + (err as Error).message);
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    
+    throw new Error(`Syntax error in MDX: ${errorMessage}`);
   }
 }
