@@ -289,7 +289,8 @@ pub fn parse_markdown<'a>(
                         }
                     }
                     Tag::CodeBlock(pulldown_cmark::CodeBlockKind::Fenced(lang))
-                        if !lang.is_empty() => {
+                        if !lang.is_empty() =>
+                    {
                         let attrs = node.attributes.get_or_insert_with(HashMap::new);
                         attrs.insert(
                             "className".into(),

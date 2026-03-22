@@ -79,10 +79,10 @@ fn error_json(msg: &str) -> *mut c_char {
 mod node {
     use super::*;
     use crate::ast::{AstNode, AttrValue};
-    use std::sync::Arc;
     use napi::bindgen_prelude::*;
     use napi_derive::napi;
     use std::collections::HashMap;
+    use std::sync::Arc;
 
     // MdxNode
     //
