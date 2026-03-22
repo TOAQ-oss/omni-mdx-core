@@ -10,7 +10,37 @@ on:
   workflow_dispatch:
 
 jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version_changed: ${{ steps.check.outputs.version_changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check if package version changed
+        id: check
+        run: |
+          # Supporte pyproject.toml (PEP 517) — adapte le grep si tu utilises setup.cfg
+          extract_version() {
+            git show "$1:packages/mdx-python/pyproject.toml" 2>/dev/null \
+              | grep -E '^version\s*=' | head -1 | sed 's/.*=\s*"\(.*\)"/\1/' \
+              || echo "none"
+          }
+          CURRENT=$(extract_version HEAD)
+          PREVIOUS=$(extract_version HEAD~1)
+          echo "Current version : $CURRENT"
+          echo "Previous version: $PREVIOUS"
+          if [ "$CURRENT" != "$PREVIOUS" ]; then
+            echo "version_changed=true"  >> "$GITHUB_OUTPUT"
+          else
+            echo "version_changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
   build-wheels:
+    needs: check-version
+    if: needs.check-version.outputs.version_changed == 'true'
     name: Build on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -71,7 +101,6 @@ jobs:
           else
             OS_TAG=$(python -c "import sysconfig; print(sysconfig.get_platform().replace('-', '_').replace('.', '_'))")
           fi
-          
           python -m wheel tags --platform-tag $OS_TAG dist/*any.whl
           rm dist/*any.whl
 
@@ -82,9 +111,7 @@ jobs:
           pip install wheel
           $WHEEL_FILE = Get-ChildItem dist\*any.whl | Select-Object -ExpandProperty FullName
           $OS_TAG = python -c "import sysconfig; print(sysconfig.get_platform().replace('-', '_').replace('.', '_'))"
-          
           python -m wheel tags --platform-tag $OS_TAG $WHEEL_FILE
-          
           Remove-Item $WHEEL_FILE
 
       - name: Upload Wheels
@@ -95,7 +122,10 @@ jobs:
 
   publish:
     name: Publish to PyPI
-    needs: build-wheels
+    needs: [check-version, build-wheels]
+    if: |
+      needs.check-version.outputs.version_changed == 'true' &&
+      needs.build-wheels.result == 'success'
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
