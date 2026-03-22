@@ -28,8 +28,11 @@ fn encode_node(node: &AstNode, buffer: &mut Vec<u8>) {
         // 1. Tag name (ex: "h1", "Note")
         write_string_u16(buffer, &node.node_type);
         
+        let has_injected_content = node.content.is_some();
+
         // 2. Self closing flag (1 octet: 0 or 1)
-        buffer.push(if node.self_closing { 1 } else { 0 });
+        let is_self_closing = node.self_closing && !has_injected_content;
+        buffer.push(if is_self_closing { 1 } else { 0 });
         
         // 3. Attributes
         if let Some(attrs) = &node.attributes {
@@ -62,7 +65,14 @@ fn encode_node(node: &AstNode, buffer: &mut Vec<u8>) {
         }
         
         // 4. Children
-        write_u32(buffer, node.children.len() as u32);
+        let total_children = node.children.len() as u32 + if has_injected_content { 1 } else { 0 };
+        write_u32(buffer, total_children);
+
+        if let Some(content_str) = &node.content {
+            buffer.push(NODE_TEXT);
+            write_string_u32(buffer, content_str);
+        }
+        
         for child in &node.children {
             encode_node(child, buffer);
         }

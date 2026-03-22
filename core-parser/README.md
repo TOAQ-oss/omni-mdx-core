@@ -1,72 +1,72 @@
-# 🦀 Omni MDX : Core Parser
+# 🦀 Omni MDX: Core Parser
 
-Bienvenue dans le moteur de parsing officiel de l'écosystème Omni MDX.
+Welcome to the official parsing engine of the Omni MDX ecosystem.
 
-Écrit entièrement en Rust pour des performances maximales et une sécurité mémoire absolue, ce module est chargé d'ingérer les soumissions des chercheurs (fichiers Markdown étendus avec du JSX et des mathématiques) et de les transformer en un Arbre Syntaxique Abstrait (AST) universel au format JSON.
+Written entirely in Rust for maximum performance and absolute memory safety, this module is responsible for ingesting submissions from researchers (Markdown files extended with JSX and math) and transforming them into a universal Abstract Syntax Tree (AST) in JSON format.
 
-Ce parseur garantit que le texte, les métadonnées et la structure des épisodes de podcasts soient parfaitement qualifiés avant d'être envoyés vers le front-end (React) ou le pipeline de machine learning (Python) du dataset vocal.
+This parser ensures that the text, metadata, and structure of podcast episodes are fully validated before being sent to the front-end (React) or the machine learning pipeline (Python) for the voice dataset.
 
-## ✨ Fonctionnalités Clés
-* **Surgical JSX Cloaking :** Les balises personnalisées (comme `<Speaker>` ou `<DataChart>`) sont temporairement masquées au moteur Markdown standard pour éviter qu'elles ne soient accidentellement enveloppées dans des paragraphes `<p>`.
+## ✨ Key Features
+* **Surgical JSX Cloaking:** Custom tags (such as `<Speaker>` or `<DataChart>`) are temporarily hidden from the standard Markdown engine to prevent them from being accidentally wrapped in `` paragraphs.
 
-* **Sanctuarisation des Mathématiques :** Les équations LaTeX (`$` et `$$`) sont extraites avant le parsing. Un signe `>` dans une équation mathématique ne cassera jamais la structure du document.
+* **Math Sanitization:** LaTeX equations (`$` and `$$`) are extracted before parsing. A `>` character in a math equation will never break the document structure.
 
-* **Typage Dynamique des Attributs :** Le parseur identifie si une prop JSX est une chaîne de caractères (`name="Dr. Laurent"`), une expression évaluée (`data={[1, 2, 3]}`) ou un booléen.
+* **Dynamic Attribute Typing:** The parser identifies whether a JSX prop is a string (`name=“Dr. Laurent”`), an evaluated expression (`data={[1, 2, 3]}`), or a boolean.
 
-* **Zéro Panique :** L'architecture gère les erreurs de syntaxe de manière gracieuse. Si une balise n'a pas été fermé, le moteur renvoie un nœud d'erreur propre au lieu de faire crasher l'application.
+* **Zero Panic:** The architecture handles syntax errors gracefully. If a tag has not been closed, the engine returns a clean error node instead of crashing the application.
 
-* **Multi-Cibles :** Le code est conçu pour être compilé en **WebAssembly (WASM)** pour le web, et exposé via **C-FFI** pour l'écosystème Python.
+* **Multi-Target:** The code is designed to be compiled into **WebAssembly (WASM)** for the web, and exposed via **C-FFI** for the Python ecosystem.
 
-## 🏗️ Architecture Interne
+## 🏗️ Internal Architecture
 
-Le code source (`src/`) est divisé en plusieurs modules spécialisés :
+The source code (`src/`) is divided into several specialized modules:
 
-* `lexer.rs` : Analyse syntaxique primaire. Gère le masquage des blocs mathématiques et l'identification des composants JSX.
+* `lexer.rs`: Primary parser. Handles the wrapping of math blocks and the identification of JSX components.
 
-* `jsx.rs` : Moteur de parsing spécifique aux balises personnalisées et à l'extraction de leurs attributs complexes.
+* `jsx.rs`: Parsing engine specifically designed for custom tags and the extraction of their complex attributes.
 
-* `markdown.rs` : Gère l'intégration avec `pulldown-cmark` pour la spécification CommonMark standard.
+* `markdown.rs`: Handles integration with `pulldown-cmark` for the CommonMark standard specification.
 
-* `ast.rs` : Définition des structures de données (les nœuds et les types d'attributs) qui seront sérialisées en JSON.
+* `ast.rs`: Defines the data structures (nodes and attribute types) that will be serialized to JSON.
 
-* `lib.rs` / `ffi.rs` : Les points d'entrée publics pour l'exportation WASM (`wasm-bindgen`) et Python (`extern "C"`).
+* `lib.rs` / `ffi.rs`: The public entry points for WASM (`wasm-bindgen`) and Python (`extern “C”`) exports.
 
-## 🚀 Compilation & Tests
-Le cycle de vie du parseur est géré par le `Makefile` situé à la racine du monorepo.
+## 🚀 Compilation & Testing
+The parser's lifecycle is managed by the `Makefile` located at the root of the monorepo.
 
-### 1. Lancer la suite de tests Rust :
-Assurez-vous que le parseur gère correctement les erreurs, l'AST et les performances :
+### 1. Run the Rust test suite:
+Ensure that the parser correctly handles errors, the AST, and performance:
 
 ```bash
 make test
 ```
-*(Cela exécute les binaires `test_ast`, `test_errors` et `test_perf` situés dans `src/bin/`)*
+*(This runs the `test_ast`, `test_errors`, and `test_perf` binaries located in `src/bin/`)*
 
-### 2. Compiler pour le Web (WASM) :
-Pour générer le binaire `.wasm` ultra-léger et les définitions TypeScript destinées au module `@toaq-oss/omni-mdx` :
+### 2. Compile for the Web (WASM):
+To generate the ultra-lightweight `.wasm` binary and TypeScript definitions for the `@toaq-oss/omni-mdx` module:
 
 ```bash
 make build-web
 ```
-*(Les fichiers compilés seront automatiquement copiés dans `packages/mdx-next/omni-core/`)*
+*(The compiled files will be automatically copied to `packages/mdx-next/omni-core/`)*
 
-### 3. Nettoyer les artefacts de build :
+### 3. Clean up build artifacts:
 
 ```bash
 make clean
 ```
 
-## 🌳 Structure de l'AST Généré
-Le parseur transforme n'importe quel script MDX en un flux JSON strict. Voici à quoi ressemble l'output standardisé :
+## 🌳 Structure of the Generated AST
+The parser transforms any MDX script into a strict JSON stream. Here is what the standardized output looks like:
 
-**Entrée (MDX) :**
+**Input (MDX):**
 
 ```mdx
 <Speaker name="Dr. Dupont" time="00:15">
-  L'énergie est $E = mc^2$.
+  Energy is $E = mc^2$.
 </Speaker>
 ```
-Sortie (JSON AST) :
+Output (JSON AST):
 
 ```json
 [
@@ -94,13 +94,13 @@ Sortie (JSON AST) :
 ]
 ```
 
-## 🛡️ Gestion des Erreurs
-La philosophie du `core-parser` est de toujours fournir un retour exploitable. Si le document contient du JSX mal formé, le parser injectera un nœud d'erreur spécifique directement dans l'AST :
+## 🛡️ Error Handling
+The philosophy of `core-parser` is to always provide actionable feedback. If the document contains malformed JSX, the parser will inject a specific error node directly into the AST:
 
 ```
 {
-  "node_type": "error",
-  "content": "Unexpected token near '<Speaker name=\"...'"
+  “node_type”: “error”,
+  “content”: “Unexpected token near ‘<Speaker name=\”...’"
 }
 ```
-Cela permet aux interfaces clientes d'afficher des "Error Boundaries" localisées sans détruire le reste de la page ou du script.
+This allows client-side interfaces to display localized “Error Boundaries” without breaking the rest of the page or script.
