@@ -37,6 +37,7 @@ export async function parseMdxClient(mdx: string | Uint8Array): Promise<AstNode[
     return decoder.decode();
   } catch (err) {
     console.error("[omni-mdx] WASM client parse error:", err);
-    return [];
+    
+    throw err;
   }
 }
