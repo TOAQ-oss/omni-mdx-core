@@ -1,6 +1,6 @@
 {
   "name": "@toaq-oss/omni-mdx",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "description": "MDX parser + renderer for Next.js \u2014 Rust core, RSC-compatible",
   "license": "MIT",
   "type": "module",
