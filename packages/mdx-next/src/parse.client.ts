@@ -36,8 +36,6 @@ export async function parseMdxClient(mdx: string | Uint8Array): Promise<AstNode[
     const decoder = new MdxBinaryDecoder(binaryAst);
     return decoder.decode();
   } catch (err) {
-    console.error("[omni-mdx] WASM client parse error:", err);
-    
-    throw err;
+    throw new Error("[toaq-oss/omni-mdx] Syntax error in MDX: " + (err as Error).message);
   }
 }

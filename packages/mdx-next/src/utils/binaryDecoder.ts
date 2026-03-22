@@ -85,7 +85,7 @@ export class MdxBinaryDecoder {
       };
     }
 
-    throw new Error(`[Omni-Core] Unknown binary opcode: ${type} at offset ${this.offset}`);
+    throw new Error(`[@toaq-oss/omni-mdx] Unknown binary opcode: ${type} at offset ${this.offset}`);
   }
 
   private readU8(): number {
