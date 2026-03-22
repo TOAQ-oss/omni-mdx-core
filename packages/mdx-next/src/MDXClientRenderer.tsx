@@ -51,6 +51,12 @@ function resolveAttr(
   }
 }
 
+function extractText(node: AstNode): string {
+  if (node.node_type === "text") return node.content ?? "";
+  if (node.content) return node.content;
+  return (node.children ?? []).map(extractText).join("");
+}
+
 const HTML_TAGS = new Set([
   "a","abbr","article","aside","b","blockquote","br","caption","cite","code",
   "col","colgroup","dd","del","details","dfn","div","dl","dt","em","figcaption",
@@ -79,19 +85,21 @@ function renderNode(
 
   // Math — rendered directly via KaTeX (static import)
   if (node.node_type === "InlineMath") {
+    const formula = extractText(node);
     try {
-      const html = katex.renderToString(node.content ?? "", { displayMode: false, throwOnError: false, output: "html" });
+      const html = katex.renderToString(formula, { displayMode: false, throwOnError: false, output: "html" });
       return <span key={key} className="math math-inline" dangerouslySetInnerHTML={{ __html: html }} />;
     } catch {
-      return <span key={key} className="math math-inline">{node.content}</span>;
+      return <span key={key} className="math math-inline">{formula}</span>;
     }
   }
   if (node.node_type === "BlockMath") {
+    const formula = extractText(node);
     try {
-      const html = katex.renderToString(node.content ?? "", { displayMode: true, throwOnError: false, output: "html" });
+      const html = katex.renderToString(formula, { displayMode: true, throwOnError: false, output: "html" });
       return <div key={key} className="math math-display" dangerouslySetInnerHTML={{ __html: html }} />;
     } catch {
-      return <div key={key} className="math math-display">{node.content}</div>;
+      return <div key={key} className="math math-display">{formula}</div>;
     }
   }
 
