@@ -13,6 +13,7 @@ export class MdxBinaryDecoder {
   private buffer: Uint8Array;
   private offset: number = 0;
   private decoder = new TextDecoder("utf-8");
+  private stringCache = new Map<string, string>();
 
   constructor(buffer: Uint8Array) {
     this.buffer = buffer;
@@ -109,6 +110,10 @@ export class MdxBinaryDecoder {
     const len = this.readU16();
     const str = this.decoder.decode(this.buffer.subarray(this.offset, this.offset + len));
     this.offset += len;
+
+    let cached = this.stringCache.get(str);
+    if (cached) return cached;
+    this.stringCache.set(str, str);
     return str;
   }
 

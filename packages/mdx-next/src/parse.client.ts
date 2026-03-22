@@ -5,10 +5,11 @@
 // Never runs on the server — returns [] immediately if called server-side.
 
 import type { AstNode } from "./MDXServerRenderer";
+import { MdxBinaryDecoder } from "./utils/binaryDecoder";
 
-let _parseClient: ((mdx: string) => string) | null = null;
+let _parseClient: ((mdx: Uint8Array) => Uint8Array) | null = null;
 
-async function getClientParser(): Promise<(mdx: string) => string> {
+async function getClientParser(): Promise<(mdx: Uint8Array) => Uint8Array> {
   if (_parseClient) return _parseClient;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -19,17 +20,21 @@ async function getClientParser(): Promise<(mdx: string) => string> {
     await wasm.default(wasmUrl);
   }
 
-  _parseClient = (mdx: string): string => wasm.parse_mdx_to_json(mdx);
+  _parseClient = (mdx: Uint8Array): Uint8Array => wasm.parse_to_binary(mdx);
   return _parseClient!;
 }
 
-export async function parseMdxClient(mdx: string): Promise<AstNode[]> {
+export async function parseMdxClient(mdx: string | Uint8Array): Promise<AstNode[]> {
   if (typeof window === "undefined") return [];
 
   try {
     const parse = await getClientParser();
-    const json  = parse(mdx);
-    return JSON.parse(json) as AstNode[];
+    const inputBuffer = typeof mdx === "string" 
+      ? new TextEncoder().encode(mdx) 
+      : mdx;
+    const binaryAst = parse(inputBuffer);
+    const decoder = new MdxBinaryDecoder(binaryAst);
+    return decoder.decode();
   } catch (err) {
     console.error("[omni-mdx] WASM client parse error:", err);
     return [];

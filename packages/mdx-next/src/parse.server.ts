@@ -27,10 +27,12 @@ function getNativeModuleSync():any {
   for (const pkg of platformPackages) {
     try {
       const native = nativeRequire(pkg);
-      if (typeof native.parseToJson === "function") {
-        _nativeModule = native;
-        return _nativeModule;
-      } else if (typeof native.parse_to_json === "function") {
+      if (
+        typeof native.parseToBinary === "function" ||
+        typeof native.parse_to_binary === "function" ||
+        typeof native.parseToJson === "function" ||
+        typeof native.parse_to_json === "function"
+      ) {
         _nativeModule = native;
         return _nativeModule;
       }
@@ -72,14 +74,17 @@ function getNativeModuleSync():any {
   );
 }
 
-function getParseFn(native: any): (mdx: string) => any {
+function getParseFn(native: any): (mdx: string | Buffer | Uint8Array) => any {
+  if (typeof native.parseToBinary === "function") return native.parseToBinary;
+  if (typeof native.parse_to_binary === "function") return native.parse_to_binary;
+  if (typeof native.parse === "function") return native.parse;
   if (typeof native.parseToJson === "function") return native.parseToJson;
   if (typeof native.parse_to_json === "function") return native.parse_to_json;
-  if (typeof native.parse === "function") return native.parse;
+
   throw new Error("[toaq-oss/omni-mdx] Native parser lacks a valid parse function.");
 }
 
-export async function parseMdx(mdx: string): Promise<AstNode[]> {
+export async function parseMdx(mdx: string | Buffer | Uint8Array): Promise<AstNode[]> {
   const native = getNativeModuleSync();
   const parse = getParseFn(native);
   let result: any;
@@ -87,8 +92,10 @@ export async function parseMdx(mdx: string): Promise<AstNode[]> {
   try {
     result = parse(mdx);
   } catch (err: any) {
-    throw new MDXParseError(err?.message ?? String(err), mdx);
+    const sourceSnippet = typeof mdx === 'string' ? mdx.slice(0, 50) : "Binary Data";
+    throw new MDXParseError(err?.message ?? String(err), sourceSnippet);
   }
+  
 
   if (result instanceof Uint8Array || Buffer.isBuffer(result)) {
     const decoder = new MdxBinaryDecoder(result);
@@ -119,7 +126,7 @@ export async function parseMdx(mdx: string): Promise<AstNode[]> {
   throw new Error("[toaq-oss/omni-mdx] Unrecognized return format from Rust parser. Available properties: " + Object.keys(result.__proto__ || result).join(", "));
 }
 
-export function parseMdxSync(mdx: string): AstNode[] {
+export function parseMdxSync(mdx: string | Buffer | Uint8Array): AstNode[] {
   const native = getNativeModuleSync();
   const parse = getParseFn(native);
 
@@ -127,7 +134,8 @@ export function parseMdxSync(mdx: string): AstNode[] {
   try {
     result = parse(mdx);
   } catch (err: any) {
-    throw new MDXParseError(err?.message ?? String(err), mdx);
+    const sourceSnippet = typeof mdx === 'string' ? mdx.slice(0, 50) : "Binary Data";
+    throw new MDXParseError(err?.message ?? String(err), sourceSnippet);
   }
 
   if (result instanceof Uint8Array || Buffer.isBuffer(result)) {
