@@ -1,8 +1,6 @@
-use crate::ast::{AstNode, AttrValue};
 use crate::parser::parse_mdx;
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
-use std::sync::Arc;
 
 /// Parses a raw MDX string from the host environment (e.g., JavaScript/WASM or C)
 /// and returns a serialized JSON representation of the AST.
@@ -80,6 +78,8 @@ fn error_json(msg: &str) -> *mut c_char {
 #[cfg(feature = "node")]
 mod node {
     use super::*;
+    use crate::ast::{AstNode, AttrValue};
+    use std::sync::Arc;
     use napi::bindgen_prelude::*;
     use napi_derive::napi;
     use std::collections::HashMap;

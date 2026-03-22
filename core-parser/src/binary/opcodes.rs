@@ -1,5 +1,4 @@
-/// Opcodes for the Omni-Core Binary Protocol (OCP)
-
+// Opcodes for the Omni-Core Binary Protocol (OCP)
 // Node Types
 pub const NODE_TEXT: u8 = 0x01;
 pub const NODE_ELEMENT: u8 = 0x02;

@@ -65,6 +65,7 @@ pub fn parse_jsx<'a>(
 /// 2. `HashMap<String, AttrValue>`: The extracted attributes.
 /// 3. `bool`: True if the tag is self-closing (`/>`).
 /// 4. `usize`: The byte offset immediately following the closing `>`.
+#[allow(clippy::type_complexity)]
 fn parse_open_tag<'a>(
     input: &'a str,
     block_math: &'a [String],

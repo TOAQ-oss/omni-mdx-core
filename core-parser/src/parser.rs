@@ -2,10 +2,9 @@ use crate::ast::{AstNode, ParseError};
 use crate::lexer::extract_jsx;
 use crate::markdown::{extract_math, mask_code_blocks, parse_markdown};
 
-/// The primary orchestrator for the entire MDX to AST parsing pipeline.
-///
+// The primary orchestrator for the entire MDX to AST parsing pipeline.
+//
 /// The execution order here is strictly deliberate and solves common MDX parsing bugs.
-
 pub fn parse_mdx(input: &str) -> Result<Vec<AstNode<'static>>, ParseError> {
     // 1. Code block protection
     let protected = mask_code_blocks(input);

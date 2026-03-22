@@ -245,11 +245,9 @@ pub fn parse_markdown<'a>(
                 }
 
                 if let Tag::TableRow = tag {
-                    if !in_table_head {
-                        if !in_table_body {
-                            in_table_body = true;
-                            stack.push(AstNode::element("tbody", false));
-                        }
+                    if !in_table_head && !in_table_body {
+                        in_table_body = true;
+                        stack.push(AstNode::element("tbody", false));
                     }
                     stack.push(AstNode::element("tr", false));
                     continue;
@@ -290,14 +288,13 @@ pub fn parse_markdown<'a>(
                             );
                         }
                     }
-                    Tag::CodeBlock(pulldown_cmark::CodeBlockKind::Fenced(lang)) => {
-                        if !lang.is_empty() {
-                            let attrs = node.attributes.get_or_insert_with(HashMap::new);
-                            attrs.insert(
-                                "className".into(),
-                                AttrValue::Text(Cow::Owned(format!("language-{}", lang))),
-                            );
-                        }
+                    Tag::CodeBlock(pulldown_cmark::CodeBlockKind::Fenced(lang))
+                        if !lang.is_empty() => {
+                        let attrs = node.attributes.get_or_insert_with(HashMap::new);
+                        attrs.insert(
+                            "className".into(),
+                            AttrValue::Text(Cow::Owned(format!("language-{}", lang))),
+                        );
                     }
                     _ => {}
                 }
@@ -485,7 +482,7 @@ fn unwrap_solo_jsx_paragraph<'a>(mut node: AstNode<'a>) -> AstNode<'a> {
         if is_block(&child) {
             if !inline_buf.is_empty() {
                 let mut p = AstNode::element("p", false);
-                p.children = inline_buf.drain(..).collect();
+                p.children = std::mem::take(&mut inline_buf);
                 fragments.push(p);
             }
             fragments.push(child);
