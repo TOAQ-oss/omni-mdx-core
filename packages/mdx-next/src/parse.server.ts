@@ -39,7 +39,7 @@ function getNativeModuleSync():any {
     } catch { /* not installed on this platform */ }
   }
 
-  // Fallback local
+  // Local Fallback
   try {
     const __dir    = dirname(fileURLToPath(import.meta.url));
     const nativeDir = resolve(__dir, "../native");

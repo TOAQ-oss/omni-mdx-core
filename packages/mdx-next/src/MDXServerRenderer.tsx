@@ -32,8 +32,8 @@ export interface AstNode {
   node_type:     string;
   content?:      string;
   self_closing?: boolean;
-  child_count?:  number; // Rendu optionnel
-  attributes?:   Record<string, AttrValueKind> | string; // Accepte l'objet binaire ou la string
+  child_count?:  number;
+  attributes?:   Record<string, AttrValueKind> | string;
   children?:     AstNode[];
 }
 

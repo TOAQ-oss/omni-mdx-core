@@ -105,12 +105,10 @@ function renderNode(
 
   const resolvedProps: Record<string, any> = {};
   if (node.attributes) {
-    // 1. Sécurisation : si c'est une string (depuis N-API Rust), on la parse
     const attrs = typeof node.attributes === "string" 
       ? JSON.parse(node.attributes) 
       : node.attributes;
 
-    // 2. Itération sur l'objet parsé
     for (const [k, v] of Object.entries(attrs)) {
       resolvedProps[k] = resolveAttr(v as AttrValueKind, components);
     }
