@@ -1,22 +1,17 @@
 name: Publish @toaq-oss/omni-mdx
 
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
     branches:
       - main
-    paths:
-      - 'packages/mdx-next/**'
-      - 'core-parser/**'
-  workflow_dispatch:
-    inputs:
-      build_core:
-        description: 'Force native core build (even if core-parser/ unchanged)'
-        type: boolean
-        default: false
+    types:
+      - completed
 
 jobs:
   check-version:
     runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
     outputs:
       version_changed: ${{ steps.check.outputs.version_changed }}
       build_core: ${{ steps.core.outputs.build_core }}
@@ -41,10 +36,8 @@ jobs:
       - name: Decide whether to build native core
         id: core
         run: |
-          # True when: forced via dispatch input  OR  core-parser/ files changed in this push
-          FORCED="${{ github.event.inputs.build_core }}"
           CORE_CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -c '^core-parser/' || true)
-          if [ "$FORCED" = "true" ] || [ "$CORE_CHANGED" -gt "0" ]; then
+          if [ "$CORE_CHANGED" -gt "0" ]; then
             echo "build_core=true"  >> "$GITHUB_OUTPUT"
           else
             echo "build_core=false" >> "$GITHUB_OUTPUT"

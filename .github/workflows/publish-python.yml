@@ -1,17 +1,17 @@
 name: Python PyPI Publish
 
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
     branches:
       - main
-    paths:
-      - 'packages/mdx-python/**'
-      - 'core-parser/**'
-  workflow_dispatch:
+    types:
+      - completed
 
 jobs:
   check-version:
     runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
     outputs:
       version_changed: ${{ steps.check.outputs.version_changed }}
     steps:
@@ -22,7 +22,6 @@ jobs:
       - name: Check if package version changed
         id: check
         run: |
-          # Supporte pyproject.toml (PEP 517) — adapte le grep si tu utilises setup.cfg
           extract_version() {
             git show "$1:packages/mdx-python/pyproject.toml" 2>/dev/null \
               | grep -E '^version\s*=' | head -1 | sed 's/.*=\s*"\(.*\)"/\1/' \
@@ -58,8 +57,7 @@ jobs:
             ~/.cargo/git
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+          restore-keys: ${{ runner.os }}-cargo-
 
       - name: Set up Python
         uses: actions/setup-python@v5
