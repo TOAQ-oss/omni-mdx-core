@@ -3,5 +3,8 @@
   "private": true,
   "workspaces": [
     "packages/*"
-  ]
+  ],
+  "dependencies": {
+    "vitest": "^4.1.0"
+  }
 }
