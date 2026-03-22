@@ -33,7 +33,8 @@
   ],
   "scripts": {
     "build": "tsup",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "optionalDependencies": {
     "@toaq-oss/omni-mdx-darwin-arm64": "0.2.7",
