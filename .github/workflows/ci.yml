@@ -45,13 +45,13 @@ jobs:
 
       - name: Clippy
         working-directory: core-parser
-        run: cargo clippy --features node,wasm -- -D warnings
+        run: cargo clippy -- -D warnings
         env:
           PYO3_PYTHON: python3.13
 
       - name: Tests
         working-directory: core-parser
-        run: cargo test --features node,wasm
+        run: cargo test --release
         env:
           PYO3_PYTHON: python3.13
 
