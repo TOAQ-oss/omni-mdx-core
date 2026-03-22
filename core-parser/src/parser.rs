@@ -9,7 +9,7 @@ use crate::markdown::{extract_math, mask_code_blocks, parse_markdown};
 pub fn parse_mdx(input: &str) -> Result<Vec<AstNode<'static>>, ParseError> {
     // 1. Code block protection
     let protected = mask_code_blocks(input);
- 
+
     // 2. Extracting the math (LaTeX)
     // We pass &protected (which is a Cow<str>) to ensure we're working on the hidden text
     let (after_math, block_math, inline_math) = extract_math(&protected);

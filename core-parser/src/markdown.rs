@@ -1,18 +1,18 @@
 use pulldown_cmark::{Event, Options, Parser, Tag, TagEnd};
 use regex::Regex;
-use std::sync::OnceLock;
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::sync::OnceLock;
 
 use crate::ast::{AstNode, AttrValue, ParseError};
 use crate::jsx::parse_jsx;
 
-// To prevent the standard Markdown parser (`pulldown-cmark`) from destroying or 
-// misinterpreting our custom JSX and LaTeX math blocks, we temporarily replace them 
+// To prevent the standard Markdown parser (`pulldown-cmark`) from destroying or
+// misinterpreting our custom JSX and LaTeX math blocks, we temporarily replace them
 // with placeholders.
 //
 // We use ASCII control characters STX (\x02) and ETX (\x03) as delimiters.
-// Unlike `_` or `$`, these control characters trigger absolutely no Markdown formatting 
+// Unlike `_` or `$`, these control characters trigger absolutely no Markdown formatting
 // rules (like emphasis or code blocks) and are safely passed through as raw text.
 //
 // Namespaces:
@@ -28,10 +28,10 @@ fn get_ph_re() -> &'static Regex {
     })
 }
 
-const PFX_JSX:    &str = "\x02JSX";
-const PFX_MATHB:  &str = "\x02MATHB";
-const PFX_MATHI:  &str = "\x02MATHI";
-const SFX:        &str = "\x03";
+const PFX_JSX: &str = "\x02JSX";
+const PFX_MATHB: &str = "\x02MATHB";
+const PFX_MATHI: &str = "\x02MATHI";
+const SFX: &str = "\x03";
 
 pub(crate) fn make_placeholder(n: usize) -> String {
     format!("{}{}{}", PFX_JSX, n, SFX)
@@ -54,23 +54,29 @@ pub fn mask_code_blocks(input: &str) -> Cow<'_, str> {
 
     while i < len {
         // --- Fenced Blocks ``` ---
-        if i + 2 < len && bytes[i] == b'`' && bytes[i+1] == b'`' && bytes[i+2] == b'`' {
+        if i + 2 < len && bytes[i] == b'`' && bytes[i + 1] == b'`' && bytes[i + 2] == b'`' {
             i += 3;
             // Skip the language identifier (e.g., ```html)
-            while i < len && bytes[i] != b'\n' { i += 1; }
-            
+            while i < len && bytes[i] != b'\n' {
+                i += 1;
+            }
+
             while i < len {
                 // Look for closing fence
-                if i + 2 < len && bytes[i] == b'`' && bytes[i+1] == b'`' && bytes[i+2] == b'`' {
+                if i + 2 < len && bytes[i] == b'`' && bytes[i + 1] == b'`' && bytes[i + 2] == b'`' {
                     i += 3;
                     break;
                 }
-                
+
                 // MASK EVERYTHING inside the fence
                 if bytes[i] == b'<' || bytes[i] == b'>' || bytes[i] == b'$' {
-                    if out.is_none() { out = Some(bytes.to_vec()); }
+                    if out.is_none() {
+                        out = Some(bytes.to_vec());
+                    }
                     let masked = match bytes[i] {
-                        b'<' => 0x01, b'>' => 0x04, b'$' => 0x05,
+                        b'<' => 0x01,
+                        b'>' => 0x04,
+                        b'$' => 0x05,
                         _ => bytes[i],
                     };
                     out.as_mut().unwrap()[i] = masked;
@@ -85,16 +91,22 @@ pub fn mask_code_blocks(input: &str) -> Cow<'_, str> {
             i += 1;
             while i < len && bytes[i] != b'`' {
                 if bytes[i] == b'<' || bytes[i] == b'>' || bytes[i] == b'$' {
-                    if out.is_none() { out = Some(bytes.to_vec()); }
+                    if out.is_none() {
+                        out = Some(bytes.to_vec());
+                    }
                     let masked = match bytes[i] {
-                        b'<' => 0x01, b'>' => 0x04, b'$' => 0x05,
+                        b'<' => 0x01,
+                        b'>' => 0x04,
+                        b'$' => 0x05,
                         _ => bytes[i],
                     };
                     out.as_mut().unwrap()[i] = masked;
                 }
                 i += 1;
             }
-            if i < len { i += 1; }
+            if i < len {
+                i += 1;
+            }
             continue;
         }
         i += 1;
@@ -122,9 +134,9 @@ fn unmask_code(s: String) -> String {
 /// Extracts LaTeX math blocks before any other parsing occurs.
 ///
 /// # Why do this first?
-/// Math expressions frequently contain characters that conflict with HTML/JSX, 
-/// most notably the greater-than sign (e.g., in `$t > 0$`). If we don't extract 
-/// the math first, the JSX lexer might see the `>` and mistakenly assume it 
+/// Math expressions frequently contain characters that conflict with HTML/JSX,
+/// most notably the greater-than sign (e.g., in `$t > 0$`). If we don't extract
+/// the math first, the JSX lexer might see the `>` and mistakenly assume it
 /// closes a JSX tag, causing fatal parsing errors.
 ///
 /// # Returns
@@ -133,10 +145,10 @@ fn unmask_code(s: String) -> String {
 /// 2. A `Vec<String>` (pool) of block math formulas (`$$`).
 /// 3. A `Vec<String>` (pool) of inline math formulas (`$`).
 pub fn extract_math(input: &str) -> (Cow<'_, str>, Vec<String>, Vec<String>) {
-    let mut block_pool:  Vec<String> = Vec::new();
+    let mut block_pool: Vec<String> = Vec::new();
     let mut inline_pool: Vec<String> = Vec::new();
     let mut has_math = false;
-    
+
     // First, we check whether we need to allocate a new string
     if !input.contains('$') {
         return (Cow::Borrowed(input), block_pool, inline_pool);
@@ -151,49 +163,60 @@ pub fn extract_math(input: &str) -> (Cow<'_, str>, Vec<String>, Vec<String>) {
         if i + 1 < len && chars[i] == '$' && chars[i + 1] == '$' {
             let start = i + 2;
             let mut j = start;
-            while j + 1 < len && !(chars[j] == '$' && chars[j + 1] == '$') { j += 1; }
+            while j + 1 < len && !(chars[j] == '$' && chars[j + 1] == '$') {
+                j += 1;
+            }
             if j + 1 < len {
                 let math: String = chars[start..j].iter().collect();
                 out.push_str(&make_mathb_placeholder(block_pool.len()));
                 block_pool.push(math);
-                i = j + 2; has_math = true; continue;
+                i = j + 2;
+                has_math = true;
+                continue;
             }
         }
         if chars[i] == '$' && (i == 0 || chars[i - 1] != '$') {
             let start = i + 1;
             let mut j = start;
-            while j < len && chars[j] != '$' { j += 1; }
+            while j < len && chars[j] != '$' {
+                j += 1;
+            }
             if j < len && j > start {
                 let math: String = chars[start..j].iter().collect();
                 out.push_str(&make_mathi_placeholder(inline_pool.len()));
                 inline_pool.push(math);
-                i = j + 1; has_math = true; continue;
+                i = j + 1;
+                has_math = true;
+                continue;
             }
         }
         out.push(chars[i]);
         i += 1;
     }
 
-    if has_math { (Cow::Owned(out), block_pool, inline_pool) } 
-    else { (Cow::Borrowed(input), block_pool, inline_pool) }
+    if has_math {
+        (Cow::Owned(out), block_pool, inline_pool)
+    } else {
+        (Cow::Borrowed(input), block_pool, inline_pool)
+    }
 }
 
 /// Converts a pre-processed Markdown string into a flattened Abstract Syntax Tree (AST).
 ///
 /// This function drives the `pulldown-cmark` event loop. It intercepts Markdown events,
-/// translates them into our custom `AstNode` structures, and dynamically expands the 
+/// translates them into our custom `AstNode` structures, and dynamically expands the
 /// placeholders back into their original JSX or Math components.
 pub fn parse_markdown<'a>(
-    text:        &'a str,
-    jsx:         &'a [String],
-    block_math:  &'a [String],
+    text: &'a str,
+    jsx: &'a [String],
+    block_math: &'a [String],
     inline_math: &'a [String],
 ) -> Result<Vec<AstNode<'a>>, ParseError> {
     let parser = Parser::new_ext(text, Options::all());
     let ph_re = get_ph_re();
 
     let mut stack: Vec<AstNode<'a>> = Vec::new();
-    let mut root:  Vec<AstNode<'a>> = Vec::new();
+    let mut root: Vec<AstNode<'a>> = Vec::new();
     let mut in_code_block = false;
     let mut in_table_head = false;
     let mut in_table_body = false;
@@ -201,7 +224,9 @@ pub fn parse_markdown<'a>(
     for event in parser {
         match event {
             Event::Start(tag) => {
-                if let Tag::CodeBlock(_) = tag { in_code_block = true; }
+                if let Tag::CodeBlock(_) = tag {
+                    in_code_block = true;
+                }
 
                 if let Tag::TableHead = tag {
                     in_table_head = true;
@@ -236,28 +261,41 @@ pub fn parse_markdown<'a>(
                     continue;
                 }
 
-                let tag_name = map_tag(&tag); 
+                let tag_name = map_tag(&tag);
                 let mut node = AstNode::element(tag_name, false);
                 match &tag {
-                    Tag::Link { dest_url, title: _, .. } => {
+                    Tag::Link {
+                        dest_url, title: _, ..
+                    } => {
                         let attrs = node.attributes.get_or_insert_with(HashMap::new);
-                        attrs.insert("href".into(), AttrValue::Text(Cow::Owned(dest_url.to_string())));
+                        attrs.insert(
+                            "href".into(),
+                            AttrValue::Text(Cow::Owned(dest_url.to_string())),
+                        );
                     }
-                    Tag::Image { dest_url, title, .. } => {
+                    Tag::Image {
+                        dest_url, title, ..
+                    } => {
                         let attrs = node.attributes.get_or_insert_with(HashMap::new);
-                        if !dest_url.is_empty() { 
-                            attrs.insert("src".into(), AttrValue::Text(Cow::Owned(dest_url.to_string()))); 
+                        if !dest_url.is_empty() {
+                            attrs.insert(
+                                "src".into(),
+                                AttrValue::Text(Cow::Owned(dest_url.to_string())),
+                            );
                         }
-                        if !title.is_empty() { 
-                            attrs.insert("title".into(), AttrValue::Text(Cow::Owned(title.to_string()))); 
+                        if !title.is_empty() {
+                            attrs.insert(
+                                "title".into(),
+                                AttrValue::Text(Cow::Owned(title.to_string())),
+                            );
                         }
                     }
                     Tag::CodeBlock(pulldown_cmark::CodeBlockKind::Fenced(lang)) => {
                         if !lang.is_empty() {
                             let attrs = node.attributes.get_or_insert_with(HashMap::new);
                             attrs.insert(
-                                "className".into(), 
-                                AttrValue::Text(Cow::Owned(format!("language-{}", lang)))
+                                "className".into(),
+                                AttrValue::Text(Cow::Owned(format!("language-{}", lang))),
                             );
                         }
                     }
@@ -266,8 +304,8 @@ pub fn parse_markdown<'a>(
                 stack.push(node);
             }
             Event::End(tag_end) => {
-                if let TagEnd::CodeBlock = tag_end { 
-                    in_code_block = false; 
+                if let TagEnd::CodeBlock = tag_end {
+                    in_code_block = false;
                 }
                 if let TagEnd::TableHead = tag_end {
                     in_table_head = false;
@@ -291,7 +329,7 @@ pub fn parse_markdown<'a>(
                             }
                         }
                     }
-                    
+
                     push_child(node, &mut stack, &mut root);
                 }
             }
@@ -302,7 +340,15 @@ pub fn parse_markdown<'a>(
                     let cleaned = unmask_code(owned_text);
                     push_child(AstNode::text(cleaned), &mut stack, &mut root);
                 } else {
-                    expand_text(&owned_text, ph_re, jsx, block_math, inline_math, &mut stack, &mut root)?;
+                    expand_text(
+                        &owned_text,
+                        ph_re,
+                        jsx,
+                        block_math,
+                        inline_math,
+                        &mut stack,
+                        &mut root,
+                    )?;
                 }
             }
             Event::Code(code) => {
@@ -312,10 +358,22 @@ pub fn parse_markdown<'a>(
             }
             Event::Html(html_cow) => {
                 let owned_html = html_cow.into_string();
-                expand_text(&owned_html, ph_re, jsx, block_math, inline_math, &mut stack, &mut root)?;
+                expand_text(
+                    &owned_html,
+                    ph_re,
+                    jsx,
+                    block_math,
+                    inline_math,
+                    &mut stack,
+                    &mut root,
+                )?;
             }
-            Event::SoftBreak | Event::HardBreak => { push_child(AstNode::element("br", true), &mut stack, &mut root); }
-            Event::Rule => { push_child(AstNode::element("hr", true), &mut stack, &mut root); }
+            Event::SoftBreak | Event::HardBreak => {
+                push_child(AstNode::element("br", true), &mut stack, &mut root);
+            }
+            Event::Rule => {
+                push_child(AstNode::element("hr", true), &mut stack, &mut root);
+            }
             _ => {}
         }
     }
@@ -323,16 +381,16 @@ pub fn parse_markdown<'a>(
 }
 
 /// Scans text nodes for STX/ETX control character placeholders and reinjects the raw data.
-/// If a JSX placeholder is found, it triggers the recursive `parse_jsx` function to 
+/// If a JSX placeholder is found, it triggers the recursive `parse_jsx` function to
 /// build the sub-tree on the fly.
 fn expand_text<'a>(
-    text:        &str,
-    ph_re:       &Regex,
-    jsx:         &'a [String],
-    block_math:  &'a [String],
+    text: &str,
+    ph_re: &Regex,
+    jsx: &'a [String],
+    block_math: &'a [String],
     inline_math: &'a [String],
-    stack:       &mut Vec<AstNode<'a>>,
-    root:        &mut Vec<AstNode<'a>>,
+    stack: &mut Vec<AstNode<'a>>,
+    root: &mut Vec<AstNode<'a>>,
 ) -> Result<(), ParseError> {
     let mut last = 0usize;
     for cap in ph_re.captures_iter(text) {
@@ -344,20 +402,17 @@ fn expand_text<'a>(
         let kind = &cap[1];
         let idx: usize = cap[2].parse().unwrap_or(0);
         let node_option: Option<Result<AstNode<'a>, ParseError>> = match kind {
-            "JSX" => jsx.get(idx)
-                .map(|s| parse_jsx(s, block_math, inline_math)),
-            "MATHB" => block_math.get(idx)
-                .map(|s| {
-                    let mut n = AstNode::element("BlockMath", true);
-                    n.content = Some(Cow::Owned(unmask_code(s.trim().to_string()))); 
-                    Ok(n)
-                }),
-            "MATHI" => inline_math.get(idx)
-                .map(|s| {
-                    let mut n = AstNode::element("InlineMath", true);
-                    n.content = Some(Cow::Owned(unmask_code(s.trim().to_string()))); 
-                    Ok(n)
-                }),
+            "JSX" => jsx.get(idx).map(|s| parse_jsx(s, block_math, inline_math)),
+            "MATHB" => block_math.get(idx).map(|s| {
+                let mut n = AstNode::element("BlockMath", true);
+                n.content = Some(Cow::Owned(unmask_code(s.trim().to_string())));
+                Ok(n)
+            }),
+            "MATHI" => inline_math.get(idx).map(|s| {
+                let mut n = AstNode::element("InlineMath", true);
+                n.content = Some(Cow::Owned(unmask_code(s.trim().to_string())));
+                Ok(n)
+            }),
             _ => None,
         };
 
@@ -371,9 +426,9 @@ fn expand_text<'a>(
 
         last = m.end();
     }
-    if last < text.len() { 
+    if last < text.len() {
         let final_text = unmask_code(text[last..].to_string());
-        push_child(AstNode::text(final_text), stack, root); 
+        push_child(AstNode::text(final_text), stack, root);
     }
     Ok(())
 }
@@ -381,28 +436,43 @@ fn expand_text<'a>(
 /// Attaches a newly parsed node to the AST tree, flattening synthetic "fragment" nodes.
 fn push_child<'a>(node: AstNode<'a>, stack: &mut Vec<AstNode<'a>>, root: &mut Vec<AstNode<'a>>) {
     if node.node_type == "fragment" {
-        for child in node.children { push_child(child, stack, root); }
+        for child in node.children {
+            push_child(child, stack, root);
+        }
         return;
     }
-    if let Some(parent) = stack.last_mut() { parent.children.push(node); } 
-    else { root.push(node); }
+    if let Some(parent) = stack.last_mut() {
+        parent.children.push(node);
+    } else {
+        root.push(node);
+    }
 }
 
 /// Validates and fixes the hierarchy of Paragraph `<p>` nodes.
 ///
 /// React strictly forbids rendering block-level elements (like `<div>` or custom components)
-/// inside an inline `<p>` tag (Warning: `validateDOMNesting`). Because Markdown parsers 
+/// inside an inline `<p>` tag (Warning: `validateDOMNesting`). Because Markdown parsers
 /// aggressively wrap loose text in `<p>` tags, this function performs post-processing to fix the tree.
 fn unwrap_solo_jsx_paragraph<'a>(mut node: AstNode<'a>) -> AstNode<'a> {
-    if node.node_type != "p" || node.children.is_empty() { return node; }
+    if node.node_type != "p" || node.children.is_empty() {
+        return node;
+    }
 
     let is_block = |n: &AstNode| -> bool {
-        if n.node_type == "InlineMath" { return false; }
-        n.node_type.chars().next().map(|c| c.is_ascii_uppercase()).unwrap_or(false)
+        if n.node_type == "InlineMath" {
+            return false;
+        }
+        n.node_type
+            .chars()
+            .next()
+            .map(|c| c.is_ascii_uppercase())
+            .unwrap_or(false)
     };
 
     let has_block = node.children.iter().any(is_block);
-    if !has_block { return node; }
+    if !has_block {
+        return node;
+    }
 
     if node.children.len() == 1 && is_block(&node.children[0]) {
         return node.children.pop().unwrap();

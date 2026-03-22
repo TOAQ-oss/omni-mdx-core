@@ -1,6 +1,6 @@
-use std::time::Instant;
-use omni_mdx_core::parser::parse_mdx;
 use omni_mdx_core::compiler::compile_to_jsx;
+use omni_mdx_core::parser::parse_mdx;
+use std::time::Instant;
 
 fn main() {
     let complex_mdx = r#"
@@ -30,7 +30,10 @@ fn main() {
 "#;
 
     let iterations = 1000;
-    println!("🚀 Lancement du benchmark Rust pur ({} itérations)...", iterations);
+    println!(
+        "🚀 Lancement du benchmark Rust pur ({} itérations)...",
+        iterations
+    );
 
     let _ = parse_mdx(complex_mdx);
 
@@ -47,6 +50,9 @@ fn main() {
 
     println!("-----------------------------------");
     println!("⏱️ Total time : {:.2} ms", total_ms);
-    println!("⚡ Average per file : {:.4} ms", total_ms / iterations as f64);
+    println!(
+        "⚡ Average per file : {:.4} ms",
+        total_ms / iterations as f64
+    );
     println!("-----------------------------------");
 }

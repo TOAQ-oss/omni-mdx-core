@@ -1,6 +1,6 @@
-use std::collections::HashMap;
-use std::borrow::Cow;
 use crate::ast::{AstNode, AttrValue, ParseError};
+use std::borrow::Cow;
+use std::collections::HashMap;
 
 /// Parses a raw JSX source block (isolated by the lexer) into an [`AstNode`].
 ///
@@ -32,7 +32,8 @@ pub fn parse_jsx<'a>(
     }
 
     // 1. Parse the opening tag to extract the name, attributes, and self-closing status.
-    let (tag_name, attrs, self_closing, after_open) = parse_open_tag(input, block_math, inline_math)?;
+    let (tag_name, attrs, self_closing, after_open) =
+        parse_open_tag(input, block_math, inline_math)?;
 
     let mut node = AstNode::element(tag_name.clone(), self_closing);
     if !attrs.is_empty() {
@@ -68,7 +69,15 @@ fn parse_open_tag<'a>(
     input: &'a str,
     block_math: &'a [String],
     inline_math: &'a [String],
-) -> Result<(Cow<'a, str>, HashMap<Cow<'a, str>, AttrValue<'a>>, bool, usize), ParseError> {
+) -> Result<
+    (
+        Cow<'a, str>,
+        HashMap<Cow<'a, str>, AttrValue<'a>>,
+        bool,
+        usize,
+    ),
+    ParseError,
+> {
     let bytes = input.as_bytes();
     let len = bytes.len();
     let mut i = 1; // skip `<`
@@ -88,7 +97,9 @@ fn parse_open_tag<'a>(
         }
 
         if i >= len {
-            return Err(ParseError::UnclosedTag { name: tag_name.to_string() });
+            return Err(ParseError::UnclosedTag {
+                name: tag_name.to_string(),
+            });
         }
 
         if bytes[i] == b'>' {
@@ -108,12 +119,17 @@ fn parse_open_tag<'a>(
             i += 1;
         }
         if i == attr_start {
-            return Err(ParseError::UnexpectedToken { pos: i, got: bytes[i] as char });
+            return Err(ParseError::UnexpectedToken {
+                pos: i,
+                got: bytes[i] as char,
+            });
         }
         // Zero-Copy: Attribute name
         let attr_name = Cow::Borrowed(&input[attr_start..i]);
 
-        while i < len && bytes[i] == b' ' { i += 1; }
+        while i < len && bytes[i] == b' ' {
+            i += 1;
+        }
 
         if i >= len || bytes[i] != b'=' {
             attrs.insert(attr_name, AttrValue::Boolean);
@@ -121,7 +137,9 @@ fn parse_open_tag<'a>(
         }
 
         i += 1; // skip `=`
-        while i < len && bytes[i] == b' ' { i += 1; }
+        while i < len && bytes[i] == b' ' {
+            i += 1;
+        }
 
         let value = match bytes[i] {
             b'"' | b'\'' => {
@@ -148,16 +166,23 @@ fn parse_open_tag<'a>(
                 for (byte_pos, ch) in input[brace_start_byte..].char_indices() {
                     let abs = brace_start_byte + byte_pos;
                     if let Some(q) = inner_quote {
-                        if ch == q { inner_quote = None; }
+                        if ch == q {
+                            inner_quote = None;
+                        }
                         end_byte = abs + ch.len_utf8();
                         continue;
                     }
                     match ch {
-                        '"' | '\'' | '`' => { inner_quote = Some(ch); }
+                        '"' | '\'' | '`' => {
+                            inner_quote = Some(ch);
+                        }
                         '{' => depth += 1,
                         '}' => {
                             depth -= 1;
-                            if depth == 0 { end_byte = abs; break; }
+                            if depth == 0 {
+                                end_byte = abs;
+                                break;
+                            }
                         }
                         _ => {}
                     }
@@ -172,13 +197,18 @@ fn parse_open_tag<'a>(
                     // Optimized recursion
                     match parse_jsx(expr, block_math, inline_math) {
                         Ok(node) => AttrValue::Ast(vec![node]),
-                        Err(_)   => AttrValue::Expression(Cow::Borrowed(expr)),
+                        Err(_) => AttrValue::Expression(Cow::Borrowed(expr)),
                     }
                 } else {
                     AttrValue::Expression(Cow::Borrowed(expr))
                 }
             }
-            other => return Err(ParseError::UnexpectedToken { pos: i, got: other as char }),
+            other => {
+                return Err(ParseError::UnexpectedToken {
+                    pos: i,
+                    got: other as char,
+                })
+            }
         };
 
         attrs.insert(attr_name, value);
@@ -211,7 +241,9 @@ fn parse_children<'a>(
         } else {
             let start = i;
             while i < len {
-                if bytes[i] == b'<' && i + 1 < len && (bytes[i + 1] as char).is_ascii_uppercase() { break; }
+                if bytes[i] == b'<' && i + 1 < len && (bytes[i + 1] as char).is_ascii_uppercase() {
+                    break;
+                }
                 i += 1;
             }
             let text = &src[start..i];
@@ -236,23 +268,29 @@ fn strip_closing_tag<'a>(rest: &'a str, tag_name: &str) -> Result<&'a str, Parse
     let close = format!("</{tag_name}>");
     match rest.rfind(&close) {
         Some(pos) => Ok(&rest[..pos]),
-        None => Err(ParseError::UnclosedTag { name: tag_name.to_string() }),
+        None => Err(ParseError::UnclosedTag {
+            name: tag_name.to_string(),
+        }),
     }
 }
 
 /// Determines if a byte is a valid character for an HTML/JSX tag name.
-fn is_tag_name_char(b: u8) -> bool { b.is_ascii_alphanumeric() || b == b'.' || b == b'-' || b == b'_' }
+fn is_tag_name_char(b: u8) -> bool {
+    b.is_ascii_alphanumeric() || b == b'.' || b == b'-' || b == b'_'
+}
 
 /// Determines if a byte is a valid character for an HTML/JSX attribute name.
-fn is_attr_name_char(b: u8) -> bool { b.is_ascii_alphanumeric() || b == b'-' || b == b'_' || b == b':' }
+fn is_attr_name_char(b: u8) -> bool {
+    b.is_ascii_alphanumeric() || b == b'-' || b == b'_' || b == b':'
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
     // Helper: parse JSX with no math pools (for tests that don't involve math).
-    fn p<'a>(src: &'a str) -> AstNode<'a> { 
-        parse_jsx(src, &[], &[]).unwrap() 
+    fn p<'a>(src: &'a str) -> AstNode<'a> {
+        parse_jsx(src, &[], &[]).unwrap()
     }
 
     #[test]
@@ -298,10 +336,7 @@ mod tests {
     fn math_placeholder_in_children() {
         // Simulate what parse_mdx passes: placeholder already substituted.
         let inline_pool = vec!["E = mc^2".to_string()];
-        let node = parse_jsx(
-            "<Note>\x02MATHI0\x03</Note>",
-            &[], &inline_pool
-        ).unwrap();
+        let node = parse_jsx("<Note>\x02MATHI0\x03</Note>", &[], &inline_pool).unwrap();
         assert_eq!(node.children[0].node_type, "InlineMath");
         assert_eq!(node.children[0].content.as_deref(), Some("E = mc^2"));
     }

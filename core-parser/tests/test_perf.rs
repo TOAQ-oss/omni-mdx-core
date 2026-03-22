@@ -8,7 +8,6 @@
 ///   - Attribute expressions with complex JS literals
 ///
 /// Run with: `cargo test --test test_perf --release -- --nocapture`
-
 use omni_mdx_core::parser::parse_mdx;
 use std::time::{Duration, Instant};
 
@@ -83,7 +82,10 @@ fn test_utf8_stress() {
         !json.contains("\u{00c3}\u{00a9}") && !json.contains("\u{00c3}\u{00a0}"),
         "UTF-8 corruption detected in output"
     );
-    assert!(json.contains("T\u{00ed}tre"), "Title not found in JSON round-trip");
+    assert!(
+        json.contains("T\u{00ed}tre"),
+        "Title not found in JSON round-trip"
+    );
 }
 
 #[test]
@@ -111,8 +113,14 @@ $$
     let inline_count = json.matches("InlineMath").count();
     let block_count = json.matches("BlockMath").count();
 
-    assert!(inline_count >= 4, "Expected >= 4 InlineMath, got {inline_count}");
-    assert!(block_count >= 3, "Expected >= 3 BlockMath, got {block_count}");
+    assert!(
+        inline_count >= 4,
+        "Expected >= 4 InlineMath, got {inline_count}"
+    );
+    assert!(
+        block_count >= 3,
+        "Expected >= 3 BlockMath, got {block_count}"
+    );
 }
 
 #[test]

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::borrow::Cow;
+use std::collections::HashMap;
 
 /// Represents all possible errors that can occur during MDX parsing or AST serialization.
 #[derive(Debug)]
@@ -114,7 +114,8 @@ impl<'a> AstNode<'a> {
             node_type: Cow::Owned(self.node_type.into_owned()),
             content: self.content.map(|c| Cow::Owned(c.into_owned())),
             attributes: self.attributes.map(|attrs| {
-                attrs.into_iter()
+                attrs
+                    .into_iter()
                     .map(|(k, v)| (Cow::Owned(k.into_owned()), v.into_static()))
                     .collect()
             }),
@@ -130,7 +131,9 @@ impl<'a> AttrValue<'a> {
             AttrValue::Text(s) => AttrValue::Text(Cow::Owned(s.into_owned())),
             AttrValue::Expression(s) => AttrValue::Expression(Cow::Owned(s.into_owned())),
             AttrValue::Boolean => AttrValue::Boolean,
-            AttrValue::Ast(nodes) => AttrValue::Ast(nodes.into_iter().map(|n| n.into_static()).collect()),
+            AttrValue::Ast(nodes) => {
+                AttrValue::Ast(nodes.into_iter().map(|n| n.into_static()).collect())
+            }
         }
     }
 }

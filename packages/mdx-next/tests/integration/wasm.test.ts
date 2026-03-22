@@ -1,47 +1,59 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { readFile } from 'fs/promises'
 import { resolve } from 'path'
 
-let wasmModule: WebAssembly.Exports | null = null
+// Ce fichier vit dans packages/mdx-next/tests/integration/
+// => remonter 2 niveaux donne packages/mdx-next/  puis /wasm
+const WASM_DIR = resolve(__dirname, '../../wasm')
+
+// Le module JS généré par wasm-pack expose une fonction default() = init()
+// qui charge le .wasm depuis le même dossier automatiquement.
+let wasm: Record<string, unknown> | null = null
 
 beforeAll(async () => {
-  const wasmPath = resolve(__dirname, '../../../packages/mdx-next/wasm/omni_mdx_core_bg.wasm')
-  const bytes = await readFile(wasmPath)
-  const { instance } = await WebAssembly.instantiate(bytes)
-  wasmModule = instance.exports
-
-  // Si tu utilises l'init JS généré par wasm-pack :
-  // const init = (await import('../../../packages/mdx-next/wasm/omni_mdx_core.js')).default
-  // await init()
+  try {
+    const mod = await import(/* @vite-ignore */ `${WASM_DIR}/omni_mdx_core.js`)
+    await mod.default()  // init() — initialise le WASM
+    wasm = mod
+  } catch (e) {
+    console.warn('WASM module not found — skipping integration tests:', e)
+  }
 })
+
+function requireWasm() {
+  if (!wasm) throw new Error('WASM not loaded — run wasm-pack build first')
+}
 
 describe('WASM module – integration', () => {
   it('loads without error', () => {
-    expect(wasmModule).not.toBeNull()
+    expect(wasm).not.toBeNull()
   })
 
   it('exports expected functions', () => {
-    // Adapte aux fonctions que ton core expose réellement
-    // expect(typeof (wasmModule as any).parse).toBe('function')
+    requireWasm()
+    // Adapte aux fonctions exposées par ton #[wasm_bindgen]
+    // expect(typeof (wasm as any).parse_to_json).toBe('function')
+    // expect(typeof (wasm as any).parse_to_binary).toBe('function')
     expect(true).toBe(true) // placeholder
   })
 
   it('produces consistent output for the same input', () => {
-    // const a = (wasmModule as any).parse('# Hello')
-    // const b = (wasmModule as any).parse('# Hello')
+    requireWasm()
+    // const a = (wasm as any).parse_to_json('# Hello')
+    // const b = (wasm as any).parse_to_json('# Hello')
     // expect(a).toEqual(b)
     expect(true).toBe(true)
   })
 
   it('handles unicode input', () => {
-    // const result = (wasmModule as any).parse('こんにちは 🌸')
-    // expect(result).toBeDefined()
+    requireWasm()
+    // expect(() => (wasm as any).parse_to_json('こんにちは 🌸 مرحبا')).not.toThrow()
     expect(true).toBe(true)
   })
 
   it('handles large input without crashing', () => {
-    // const big = '# heading\n'.repeat(10_000)
-    // expect(() => (wasmModule as any).parse(big)).not.toThrow()
+    requireWasm()
+    // const big = '# heading\n\nparagraph.\n\n'.repeat(10_000)
+    // expect(() => (wasm as any).parse_to_json(big)).not.toThrow()
     expect(true).toBe(true)
   })
 })

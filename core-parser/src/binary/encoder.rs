@@ -5,14 +5,14 @@ use crate::binary::opcodes::*;
 pub fn encode_ast(nodes: &[AstNode]) -> Vec<u8> {
     // We pre-allocate a small amount of memory to avoid costly reallocations
     let mut buffer = Vec::with_capacity(nodes.len() * 64);
-    
+
     // We encode the total number of root nodes (as a 4-byte value / u32)
     write_u32(&mut buffer, nodes.len() as u32);
-    
+
     for node in nodes {
         encode_node(node, &mut buffer);
     }
-    
+
     buffer
 }
 
@@ -24,16 +24,16 @@ fn encode_node(node: &AstNode, buffer: &mut Vec<u8>) {
         write_string_u32(buffer, content);
     } else {
         buffer.push(NODE_ELEMENT);
-        
+
         // 1. Tag name (ex: "h1", "Note")
         write_string_u16(buffer, &node.node_type);
-        
+
         let has_injected_content = node.content.is_some();
 
         // 2. Self closing flag (1 octet: 0 or 1)
         let is_self_closing = node.self_closing && !has_injected_content;
         buffer.push(if is_self_closing { 1 } else { 0 });
-        
+
         // 3. Attributes
         if let Some(attrs) = &node.attributes {
             write_u16(buffer, attrs.len() as u16);
@@ -63,7 +63,7 @@ fn encode_node(node: &AstNode, buffer: &mut Vec<u8>) {
         } else {
             write_u16(buffer, 0); // 0 attributes
         }
-        
+
         // 4. Children
         let total_children = node.children.len() as u32 + if has_injected_content { 1 } else { 0 };
         write_u32(buffer, total_children);
@@ -72,7 +72,7 @@ fn encode_node(node: &AstNode, buffer: &mut Vec<u8>) {
             buffer.push(NODE_TEXT);
             write_string_u32(buffer, content_str);
         }
-        
+
         for child in &node.children {
             encode_node(child, buffer);
         }

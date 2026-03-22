@@ -3,7 +3,6 @@
 /// Parses a realistic MDX document and asserts that the output AST contains
 /// exactly the nodes, attributes, and children we expect.
 /// Run with: `cargo test --test test_ast --release -- --nocapture`
-
 use omni_mdx_core::ast::{AstNode, AttrValue};
 use omni_mdx_core::parser::parse_mdx;
 
@@ -27,7 +26,8 @@ fn find_all<'a>(nodes: &'a [AstNode], node_type: &str) -> Vec<&'a AstNode<'a>> {
 }
 
 fn text_content(node: &AstNode) -> String {
-    node.children.iter()
+    node.children
+        .iter()
         .filter(|c| c.node_type == "text")
         .filter_map(|c| c.content.as_deref())
         .collect::<Vec<_>>()
@@ -80,15 +80,15 @@ $$
 #[test]
 fn test_markdown_headers_and_paragraphs() {
     let ast = parse_mdx(MDX).expect("parse_mdx failed");
-    
+
     let h1 = find(&ast, "h1").expect("h1 missing");
     assert_eq!(text_content(h1), "Titre principal");
-    
+
     assert!(find(&ast, "h2").is_some());
-    
+
     let paras = find_all(&ast, "p");
     assert!(paras.len() >= 2);
-    
+
     let first_p = paras[0];
     assert!(first_p.children.iter().any(|c| c.node_type == "strong"));
     assert!(first_p.children.iter().any(|c| c.node_type == "em"));
@@ -103,30 +103,43 @@ fn test_jsx_note_component_with_inline_math() {
     assert_eq!(attr_text(note, "title"), Some("Point de vigilance"));
 
     // Inline Math Check
-    let math = note.children.iter().find(|c| c.node_type == "InlineMath")
+    let math = note
+        .children
+        .iter()
+        .find(|c| c.node_type == "InlineMath")
         .expect("InlineMath inside Note missing");
     assert_eq!(math.content.as_deref(), Some("t > 0"));
 
     // Checking for non-wrapping (hoisting)
-    let is_wrapped = note.children.iter()
+    let is_wrapped = note
+        .children
+        .iter()
         .filter(|c| c.node_type == "p")
         .any(|p| p.children.iter().any(|c| c.node_type == "InlineMath"));
-    assert!(!is_wrapped, "InlineMath should not be wrapped in <p> inside JSX");
+    assert!(
+        !is_wrapped,
+        "InlineMath should not be wrapped in <p> inside JSX"
+    );
 }
 
 #[test]
 fn test_jsx_details_with_block_math() {
     let ast = parse_mdx(MDX).expect("parse_mdx failed");
     let details = find(&ast, "Details").expect("Details missing");
-    
+
     assert_eq!(attr_text(details, "title"), Some("Démonstration"));
 
-    let bmath = details.children.iter().find(|c| c.node_type == "BlockMath")
+    let bmath = details
+        .children
+        .iter()
+        .find(|c| c.node_type == "BlockMath")
         .expect("BlockMath inside Details missing");
     assert_eq!(bmath.content.as_deref(), Some("E = mc^2"));
 
     // No <p> around BlockMath
-    let is_wrapped = details.children.iter()
+    let is_wrapped = details
+        .children
+        .iter()
         .filter(|c| c.node_type == "p")
         .any(|p| p.children.iter().any(|c| c.node_type == "BlockMath"));
     assert!(!is_wrapped, "BlockMath should not be wrapped in <p>");
@@ -151,15 +164,22 @@ fn test_jsx_table_expression_attributes() {
 fn test_root_level_block_math() {
     let ast = parse_mdx(MDX).expect("parse_mdx failed");
     let bmaths = find_all(&ast, "BlockMath");
-    
+
     assert!(bmaths.len() >= 2, "Should find at least 2 BlockMath nodes");
 
     let has_math = bmaths.iter().any(|n| {
-        n.content.as_deref().map_or(false, |c| c.contains("int") || c.contains("sum"))
+        n.content
+            .as_deref()
+            .map_or(false, |c| c.contains("int") || c.contains("sum"))
     });
 
-    assert!(has_math, "Root-level math not found. Available BlockMath contents: {:?}", 
-        bmaths.iter().map(|n| n.content.as_deref().unwrap_or("")).collect::<Vec<_>>()
+    assert!(
+        has_math,
+        "Root-level math not found. Available BlockMath contents: {:?}",
+        bmaths
+            .iter()
+            .map(|n| n.content.as_deref().unwrap_or(""))
+            .collect::<Vec<_>>()
     );
 }
 
@@ -175,16 +195,19 @@ fn test_markdown_lists() {
 fn test_utf8_and_mojibake_protection() {
     let ast = parse_mdx(MDX).expect("parse_mdx failed");
     let json = serde_json::to_string(&ast).unwrap();
-    
+
     // Mojibake Test (C3 A9 -> é)
-    assert!(!json.contains("\u{00c3}\u{00a9}"), "Mojibake detected in JSON");
+    assert!(
+        !json.contains("\u{00c3}\u{00a9}"),
+        "Mojibake detected in JSON"
+    );
     assert!(json.contains('é'), "UTF-8 character 'é' corrupted");
 }
 
 #[test]
 fn test_markdown_links() {
     let ast = parse_mdx(MDX).expect("parse_mdx failed");
-    
+
     let links = find_all(&ast, "a");
     let link = links.get(0).expect("Link (a) node missing in AST");
 
@@ -195,26 +218,38 @@ fn test_markdown_links() {
 #[test]
 fn test_math_content_persistence() {
     let mdx = "Note with formula : $e = mc^2$";
-    
+
     let ast = parse_mdx(mdx).expect("parse_mdx failed");
-    
+
     let mut math_node_found = false;
-    
+
     for node in &ast {
         for child in &node.children {
             if child.node_type == "InlineMath" {
                 math_node_found = true;
-                
-                assert!(child.content.is_some(), "FAILED : 'content' is None for InlineMath");
-                
+
+                assert!(
+                    child.content.is_some(),
+                    "FAILED : 'content' is None for InlineMath"
+                );
+
                 let content = child.content.as_ref().unwrap();
-                assert!(!content.is_empty(), "FAILED : The 'content' field is an empty string");
-                assert_eq!(content, "e = mc^2", "FAILED : The formula content is altered");
+                assert!(
+                    !content.is_empty(),
+                    "FAILED : The 'content' field is an empty string"
+                );
+                assert_eq!(
+                    content, "e = mc^2",
+                    "FAILED : The formula content is altered"
+                );
             }
         }
     }
-    
-    assert!(math_node_found, "FAILED : The InlineMath node was not created in the AST");
+
+    assert!(
+        math_node_found,
+        "FAILED : The InlineMath node was not created in the AST"
+    );
 }
 
 #[test]
@@ -227,20 +262,25 @@ fn test_table_ast_contains_row_in_head() {
 
     let ast = parse_mdx(markdown_input).expect("Markdown parsing failed");
 
-    let table = ast.iter()
+    let table = ast
+        .iter()
         .find(|n| n.node_type.to_lowercase() == "table")
         .expect("Table not found in the AST");
 
-    let thead = table.children.first()
+    let thead = table
+        .children
+        .first()
         .expect("The table has no children (thead missing)");
-    
+
     assert_eq!(
-        thead.node_type.to_lowercase(), 
-        "thead", 
+        thead.node_type.to_lowercase(),
+        "thead",
         "The first child of the table must be a thead"
     );
 
-    let first_head_child = thead.children.first()
+    let first_head_child = thead
+        .children
+        .first()
         .expect("The thead is empty, it is missing its children!");
 
     assert_eq!(
@@ -250,9 +290,8 @@ fn test_table_ast_contains_row_in_head() {
         first_head_child.node_type
     );
 
-    let first_cell = first_head_child.children.first()
-        .expect("The tr is empty");
-    
+    let first_cell = first_head_child.children.first().expect("The tr is empty");
+
     assert!(
         first_cell.node_type.to_lowercase() == "th" || first_cell.node_type.to_lowercase() == "td",
         "The tr must contain cells (th/td), but contains '{}'",
@@ -271,11 +310,14 @@ fn test_table_ast_contains_tbody_with_rows() {
 
     let ast = parse_mdx(markdown_input).expect("Markdown parsing failed");
 
-    let table = ast.iter()
+    let table = ast
+        .iter()
         .find(|n| n.node_type.to_lowercase() == "table")
         .expect("Table not found in the AST");
 
-    let tbody = table.children.iter()
+    let tbody = table
+        .children
+        .iter()
         .find(|n| n.node_type.to_lowercase() == "tbody")
         .expect("The table has no 'tbody' node!");
 

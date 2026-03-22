@@ -3,9 +3,9 @@ use crate::markdown::make_placeholder;
 
 /// Scans the input string to extract top-level JSX blocks, cloaking them from the Markdown parser.
 ///
-/// Markdown parsers natively struggle with complex JSX (especially nested components, 
+/// Markdown parsers natively struggle with complex JSX (especially nested components,
 /// expressions in braces `{...}`, and multi-line attributes). This function acts as a pre-processor:
-/// it finds JSX blocks, lifts them into a secondary `pool`, and replaces the original text 
+/// it finds JSX blocks, lifts them into a secondary `pool`, and replaces the original text
 /// with a safe, alphanumeric placeholder (e.g., `\x02JSX0\x03`).
 ///
 /// # Arguments
@@ -30,10 +30,7 @@ pub fn extract_jsx(input: &str) -> Result<(String, Vec<String>), ParseError> {
     while i < len {
         // Detect the start of a custom JSX block: `<` followed strictly by an ASCII uppercase letter.
         // This explicitly avoids cloaking standard HTML tags (like `<div>` or `<p>`), leaving them for the Markdown parser.
-        if bytes[i] == b'<'
-            && i + 1 < len
-            && (bytes[i + 1] as char).is_ascii_uppercase()
-        {
+        if bytes[i] == b'<' && i + 1 < len && (bytes[i + 1] as char).is_ascii_uppercase() {
             let start = i;
 
             // Advance `i` to the end of the JSX block using the state machine.
@@ -66,8 +63,8 @@ pub fn extract_jsx(input: &str) -> Result<(String, Vec<String>), ParseError> {
 
 // Core state machine to traverse a JSX block and find its strict boundary.
 ///
-/// This function operates directly on `&[u8]` for maximum performance, avoiding the overhead 
-/// of UTF-8 boundary checks at every step. It intelligently handles quotes, nested braces, 
+/// This function operates directly on `&[u8]` for maximum performance, avoiding the overhead
+/// of UTF-8 boundary checks at every step. It intelligently handles quotes, nested braces,
 /// and self-closing tags to determine exactly where the root component ends.
 ///
 /// # State Variables
@@ -91,7 +88,9 @@ pub(crate) fn scan_jsx_block_pub(bytes: &[u8], i: &mut usize, len: usize) -> Res
 
         // 1. If we are inside a string literal, ignore all structural characters until the closing quote.
         if let Some(q) = quote {
-            if c == q { quote = None; }
+            if c == q {
+                quote = None;
+            }
             *i += 1;
             continue;
         }
@@ -101,7 +100,12 @@ pub(crate) fn scan_jsx_block_pub(bytes: &[u8], i: &mut usize, len: usize) -> Res
             match c {
                 b'"' | b'\'' | b'`' => quote = Some(c),
                 b'{' => brace += 1,
-                b'}' => { brace -= 1; if brace < 0 { brace = 0; } }
+                b'}' => {
+                    brace -= 1;
+                    if brace < 0 {
+                        brace = 0;
+                    }
+                }
                 b'/' if brace == 0 => last_slash = true,
                 b'>' if brace == 0 => {
                     in_tag = false;
@@ -111,10 +115,18 @@ pub(crate) fn scan_jsx_block_pub(bytes: &[u8], i: &mut usize, len: usize) -> Res
                     }
                     // If we closed the root tag, the block scan is complete.
                     last_slash = false;
-                    if depth == 0 { *i += 1; return Ok(()); }
+                    if depth == 0 {
+                        *i += 1;
+                        return Ok(());
+                    }
                 }
-                b' ' | b'\t' | b'\n' | b'\r' => { /* Whitespace doesn't negate a preceding slash */ }
-                _ => { if brace == 0 { last_slash = false; } }
+                b' ' | b'\t' | b'\n' | b'\r' => { /* Whitespace doesn't negate a preceding slash */
+                }
+                _ => {
+                    if brace == 0 {
+                        last_slash = false;
+                    }
+                }
             }
         } else {
             // 3. We are scanning children/text outside of tag brackets.
@@ -124,10 +136,15 @@ pub(crate) fn scan_jsx_block_pub(bytes: &[u8], i: &mut usize, len: usize) -> Res
                     if next == b'/' {
                         // Found a closing tag `</...>` — consume it until `>`.
                         *i += 2;
-                        while *i < len && bytes[*i] != b'>' { *i += 1; }
+                        while *i < len && bytes[*i] != b'>' {
+                            *i += 1;
+                        }
                         depth -= 1;
                         // Root block fully closed.
-                        if depth == 0 { *i += 1; return Ok(()); }
+                        if depth == 0 {
+                            *i += 1;
+                            return Ok(());
+                        }
                     } else if (next as char).is_ascii_alphabetic() || next == b'_' {
                         // Found a new opening tag `<Child>`.
                         depth += 1;
@@ -149,8 +166,8 @@ pub(crate) fn scan_jsx_block_pub(bytes: &[u8], i: &mut usize, len: usize) -> Res
 
 /// Determines the byte length of a UTF-8 character based on its leading byte.
 ///
-/// This prevents the lexer from getting stuck or panicking when encountering multi-byte 
-/// characters (like accents or emojis) by advancing the exact number of bytes required 
+/// This prevents the lexer from getting stuck or panicking when encountering multi-byte
+/// characters (like accents or emojis) by advancing the exact number of bytes required
 /// to consume the full codepoint.
 #[inline]
 fn utf8_char_len(first_byte: u8) -> usize {
@@ -159,7 +176,7 @@ fn utf8_char_len(first_byte: u8) -> usize {
         0xC0..=0xDF => 2, // Latin accents, etc.
         0xE0..=0xEF => 3, // Asian scripts, complex symbols
         0xF0..=0xF7 => 4, // Emojis and rare symbols
-        _           => 1, // Fallback for continuation bytes to prevent infinite loops
+        _ => 1,           // Fallback for continuation bytes to prevent infinite loops
     }
 }
 

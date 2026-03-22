@@ -1,15 +1,15 @@
+use crate::ast::{AstNode, AttrValue};
+use crate::parser::parse_mdx;
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 use std::sync::Arc;
-use crate::ast::{AstNode, AttrValue};
-use crate::parser::parse_mdx;
 
-/// Parses a raw MDX string from the host environment (e.g., JavaScript/WASM or C) 
+/// Parses a raw MDX string from the host environment (e.g., JavaScript/WASM or C)
 /// and returns a serialized JSON representation of the AST.
 ///
 /// # Safety
 /// * `input` must be a valid, non-null, null-terminated UTF-8 C string.
-/// * The returned pointer is heap-allocated by Rust. The host **must** free this 
+/// * The returned pointer is heap-allocated by Rust. The host **must** free this
 ///   pointer by calling [`mdx_free`] after consuming the string.
 #[no_mangle]
 pub unsafe extern "C" fn mdx_parse(input: *const c_char) -> *mut c_char {
@@ -94,7 +94,7 @@ mod node {
     #[napi]
     pub struct MdxNode {
         /// Shared ownership of the root AST — keeps memory alive.
-        ast:  Arc<Vec<AstNode<'static>>>,
+        ast: Arc<Vec<AstNode<'static>>>,
         /// Path from root to this node, e.g. [2, 0, 1] means
         /// root[2].children[0].children[1].
         path: Vec<usize>,
@@ -141,7 +141,8 @@ mod node {
         /// The raw text content. Only populated for leaf nodes of type `"text"`.
         #[napi(getter)]
         pub fn content(&self) -> Option<String> {
-            self.resolve().and_then(|n| n.content.as_ref().map(|c| c.to_string()))
+            self.resolve()
+                .and_then(|n| n.content.as_ref().map(|c| c.to_string()))
         }
 
         /// Whether the tag was self-closing in the source MDX (e.g., `<Chart />`).
@@ -153,9 +154,7 @@ mod node {
         /// The number of direct children of this node.
         #[napi(getter)]
         pub fn child_count(&self) -> u32 {
-            self.resolve()
-                .map(|n| n.children.len() as u32)
-                .unwrap_or(0)
+            self.resolve().map(|n| n.children.len() as u32).unwrap_or(0)
         }
 
         /// Returns all direct children as MdxNode instances.
@@ -185,10 +184,10 @@ mod node {
             let mut map = HashMap::with_capacity(attrs.len());
             for (key, val) in attrs {
                 let js_val = match val {
-                    AttrValue::Text(s)       => serde_json::Value::String(s.to_string()),
+                    AttrValue::Text(s) => serde_json::Value::String(s.to_string()),
                     AttrValue::Expression(s) => serde_json::Value::String(s.to_string()),
-                    AttrValue::Boolean       => serde_json::Value::Bool(true),
-                    AttrValue::Ast(nodes)    => {
+                    AttrValue::Boolean => serde_json::Value::Bool(true),
+                    AttrValue::Ast(nodes) => {
                         // Nested AST attribute — serialize to JSON for JS consumption.
                         serde_json::to_value(nodes).unwrap_or(serde_json::Value::Null)
                     }
@@ -202,10 +201,10 @@ mod node {
         /// Useful for AI processing pipelines or debug tooling.
         #[napi]
         pub fn to_json(&self) -> napi::Result<String> {
-            let node = self.resolve()
+            let node = self
+                .resolve()
                 .ok_or_else(|| napi::Error::from_reason("Invalid node path"))?;
-            serde_json::to_string(node)
-                .map_err(|e| napi::Error::from_reason(e.to_string()))
+            serde_json::to_string(node).map_err(|e| napi::Error::from_reason(e.to_string()))
         }
     }
 
@@ -276,9 +275,10 @@ mod node {
     /// JavaScript references are garbage collected, Rust frees the allocation.
     #[napi]
     pub fn parse(mdx: String) -> napi::Result<MdxAst> {
-        let ast = parse_mdx(&mdx)
-            .map_err(|e| napi::Error::from_reason(e.to_string()))?;
-        Ok(MdxAst { inner: Arc::new(ast) })
+        let ast = parse_mdx(&mdx).map_err(|e| napi::Error::from_reason(e.to_string()))?;
+        Ok(MdxAst {
+            inner: Arc::new(ast),
+        })
     }
 
     /// Legacy compatibility: parses MDX and returns the full AST as a JSON string.
@@ -303,7 +303,7 @@ mod node {
 
         let ast = crate::parser::parse_mdx(mdx_str)
             .map_err(|e| napi::Error::from_reason(e.to_string()))?;
-        
+
         let binary_data = crate::binary::encode_ast(&ast);
         Ok(binary_data.into())
     }
@@ -318,7 +318,7 @@ mod node {
 
         let ast = crate::parser::parse_mdx(mdx_str)
             .map_err(|e| napi::Error::from_reason(e.to_string()))?;
-        
+
         let jsx_string = crate::compiler::compile_to_jsx(&ast);
         Ok(jsx_string)
     }
