@@ -115,8 +115,10 @@ function renderNode(
 
   // Math — server-side rendering via KaTeX (static HTML, no client-side JavaScript)
   if (node.node_type === "InlineMath") {
+    const formula = extractText(node);
+
     try {
-      const html = katex.renderToString(node.content ?? "", {
+      const html = katex.renderToString(formula, {
         displayMode:  false,
         throwOnError: false,
         output:       "html",
@@ -129,13 +131,15 @@ function renderNode(
         />
       );
     } catch {
-      return <span key={key} className="math math-inline">{node.content}</span>;
+      return <span key={key} className="math math-inline">{formula}</span>;
     }
   }
 
   if (node.node_type === "BlockMath") {
+    const formula = extractText(node);
+
     try {
-      const html = katex.renderToString(node.content ?? "", {
+      const html = katex.renderToString(formula, {
         displayMode:  true,
         throwOnError: false,
         output:       "html",
@@ -148,7 +152,7 @@ function renderNode(
         />
       );
     } catch {
-      return <div key={key} className="math math-display">{node.content}</div>;
+      return <div key={key} className="math math-display">{formula}</div>;
     }
   }
 
