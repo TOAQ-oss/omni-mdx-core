@@ -1,0 +1,218 @@
+name: Publish @toaq-oss/omni-mdx
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'packages/mdx-next/**'
+      - 'core-parser/**'
+  workflow_dispatch:
+    inputs:
+      build_core:
+        description: 'Force native core build (even if core-parser/ unchanged)'
+        type: boolean
+        default: false
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version_changed: ${{ steps.check.outputs.version_changed }}
+      build_core: ${{ steps.core.outputs.build_core }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check if package version changed
+        id: check
+        run: |
+          CURRENT=$(git show HEAD:packages/mdx-next/package.json | jq -r '.version')
+          PREVIOUS=$(git show HEAD~1:packages/mdx-next/package.json 2>/dev/null | jq -r '.version' || echo "none")
+          echo "Current version : $CURRENT"
+          echo "Previous version: $PREVIOUS"
+          if [ "$CURRENT" != "$PREVIOUS" ]; then
+            echo "version_changed=true"  >> "$GITHUB_OUTPUT"
+          else
+            echo "version_changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Decide whether to build native core
+        id: core
+        run: |
+          # True when: forced via dispatch input  OR  core-parser/ files changed in this push
+          FORCED="${{ github.event.inputs.build_core }}"
+          CORE_CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -c '^core-parser/' || true)
+          if [ "$FORCED" = "true" ] || [ "$CORE_CHANGED" -gt "0" ]; then
+            echo "build_core=true"  >> "$GITHUB_OUTPUT"
+          else
+            echo "build_core=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  build-native:
+    needs: check-version
+    if: |
+      needs.check-version.outputs.version_changed == 'true' &&
+      needs.check-version.outputs.build_core == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            name: darwin-arm64
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            name: linux-x64-gnu
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            name: win32-x64-msvc
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Add Rust target
+        run: rustup target add ${{ matrix.target }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install napi-rs CLI
+        run: npm install -g @napi-rs/cli
+
+      - name: Build native addon
+        working-directory: core-parser
+        run: napi build --platform --release --features node --target ${{ matrix.target }} --no-js
+
+      - name: Read version from core-parser/package.json
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(jq -r '.version' core-parser/package.json)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Create platform subpackage
+        shell: bash
+        run: |
+          PKG_NAME="@toaq-oss/omni-mdx-${{ matrix.name }}"
+          VERSION="${{ steps.version.outputs.version }}"
+          NODE_FILE=$(ls core-parser/omni-mdx-core.*.node | head -1)
+          mkdir -p platform-pkg
+          cp "$NODE_FILE" "platform-pkg/omni-mdx-core.${{ matrix.name }}.node"
+          cat > platform-pkg/package.json << PKGJSON
+          {
+            "name": "$PKG_NAME",
+            "version": "$VERSION",
+            "description": "Native addon for @toaq-oss/omni-mdx (${{ matrix.name }})",
+            "license": "MIT",
+            "main": "omni-mdx-core.${{ matrix.name }}.node",
+            "files": ["omni-mdx-core.${{ matrix.name }}.node"],
+            "os": ["$(echo ${{ matrix.name }} | cut -d- -f1)"],
+            "cpu": ["$(echo ${{ matrix.name }} | cut -d- -f2)"],
+            "repository": {
+              "type": "git",
+              "url": "git+https://github.com/TOAQ-oss/omni-mdx-core.git"
+            }
+          }
+          PKGJSON
+
+      - name: Publish platform subpackage
+        working-directory: platform-pkg
+        run: npm publish --access public
+
+      - name: Upload .node artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-${{ matrix.name }}
+          path: core-parser/omni-mdx-core.*.node
+          retention-days: 1
+
+  build-wasm:
+    needs: check-version
+    if: needs.check-version.outputs.version_changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Install wasm-pack
+        uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: 'latest'
+
+      - name: Build WASM
+        working-directory: core-parser
+        run: wasm-pack build --target web --features wasm
+
+      - name: Clean wasm-pack generated files
+        working-directory: core-parser/pkg
+        run: rm -f package.json README.md
+
+      - name: Upload WASM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm
+          path: core-parser/pkg/
+          retention-days: 1
+
+  publish:
+    needs: [check-version, build-native, build-wasm]
+    if: |
+      always() &&
+      needs.check-version.outputs.version_changed == 'true' &&
+      needs.build-wasm.result == 'success' &&
+      (needs.build-native.result == 'success' || needs.build-native.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Download native .node artifacts
+        if: needs.build-native.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          pattern: native-*
+          path: packages/mdx-next/native/
+          merge-multiple: true
+
+      - name: Download WASM artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: wasm
+          path: packages/mdx-next/wasm/
+
+      - name: Install dependencies
+        working-directory: packages/mdx-next
+        run: npm install --ignore-scripts
+
+      - name: Build JS package
+        working-directory: packages/mdx-next
+        run: npm run build
+
+      - name: Publish @toaq-oss/omni-mdx
+        working-directory: packages/mdx-next
+        run: npm publish --access public
