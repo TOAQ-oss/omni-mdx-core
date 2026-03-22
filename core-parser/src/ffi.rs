@@ -295,23 +295,28 @@ mod node {
     /// Parses MDX and returns the AST serialized as a highly optimized binary buffer.
     /// This bypasses V8's JSON parser entirely, returning a Uint8Array to JavaScript.
     #[napi]
-    pub fn parse_to_binary(mdx: String) -> napi::Result<Buffer> {
-        // 1. We parse the MDX text into a standard Rust AST
-        let ast = crate::parser::parse_mdx(&mdx)
+    pub fn parse_to_binary(mdx_buffer: Buffer) -> napi::Result<Buffer> {
+        let raw_bytes: &[u8] = mdx_buffer.as_ref();
+
+        let mdx_str = std::str::from_utf8(raw_bytes)
+            .map_err(|e| napi::Error::from_reason(format!("Invalid UTF-8: {}", e)))?;
+
+        let ast = crate::parser::parse_mdx(mdx_str)
             .map_err(|e| napi::Error::from_reason(e.to_string()))?;
         
-        // 2. We compress the AST into a byte array using our new encoder
         let binary_data = crate::binary::encode_ast(&ast);
-        
-        // 3. We return the entire buffer as a Node.js Buffer (zero-copy)
         Ok(binary_data.into())
     }
 
     /// Parses MDX and compiles it directly to a JSX string in Rust.
     /// This is the absolute fastest path for React/Next.js web rendering.
     #[napi]
-    pub fn compile_to_jsx(mdx: String) -> napi::Result<String> {
-        let ast = crate::parser::parse_mdx(&mdx)
+    pub fn compile_to_jsx(mdx_buffer: Buffer) -> napi::Result<String> {
+        let raw_bytes: &[u8] = mdx_buffer.as_ref();
+        let mdx_str = std::str::from_utf8(raw_bytes)
+            .map_err(|e| napi::Error::from_reason(format!("Invalid UTF-8: {}", e)))?;
+
+        let ast = crate::parser::parse_mdx(mdx_str)
             .map_err(|e| napi::Error::from_reason(e.to_string()))?;
         
         let jsx_string = crate::compiler::compile_to_jsx(&ast);
