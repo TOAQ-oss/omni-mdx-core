@@ -140,33 +140,11 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Build Rust extension (Linux/Mac)
-        if: runner.os != 'Windows'
+      - name: Build and install Rust extension
         working-directory: core-parser
         run: |
           pip install maturin
-          maturin build --release --features python \
-            --interpreter python${{ matrix.python-version }} \
-            --out ../packages/mdx-python/omni_mdx/
-
-      - name: Build Rust extension (Windows)
-        if: runner.os == 'Windows'
-        working-directory: core-parser
-        run: |
-          pip install maturin
-          maturin build --release --features python --interpreter python${{ matrix.python-version }} --out ../packages/mdx-python/omni_mdx/
-
-      - name: Inject Binary (Linux/Mac)
-        if: runner.os != 'Windows'
-        run: |
-          BIN_FILE=$(find . -path "*/release/*" -type f \( -name "*.so" -o -name "*.dylib" \) | head -n 1)
-          cp "$BIN_FILE" packages/mdx-python/omni_mdx/omni_mdx_core.so
-
-      - name: Inject Binary (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          $BIN_FILE = Get-ChildItem -Path .\target\release\ -Recurse -Include *.dll,*.pyd | Select-Object -First 1
-          Copy-Item $BIN_FILE.FullName -Destination packages\mdx-python\omni_mdx\omni_mdx_core.pyd
+          maturin develop --features python --release
 
       - name: Install Python dependencies
         working-directory: packages/mdx-python
