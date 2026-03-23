@@ -1,5 +1,7 @@
 # Design Philosophy
 
+*Last Updated March 22, 2025*
+
 The modern web is built on a fundamental bottleneck: the assumption that document parsing and rendering must happen in the same runtime, typically a JavaScript engine like V8. Omni-MDX was built from scratch to challenge this assumption. 
 
 Our core philosophy is simple: **Parsing is a systems-level problem; Rendering is a UI-level problem.** By separating the two, we unlock unprecedented performance and true cross-platform portability.

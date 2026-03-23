@@ -1,5 +1,7 @@
 # FFI & Memory Model
 
+*Last Updated March 22, 2025*
+
 The true power of Omni-MDX lies in its ability to run a single Rust core across entirely different ecosystems. To achieve this without sacrificing performance, we heavily rely on a **Foreign Function Interface (FFI)** architecture paired with Rust's deterministic memory management.
 
 Crossing the language barrier—moving data from a compiled system language to a garbage-collected runtime like V8 (Node.js) or the Python VM—is historically the most expensive operation in bridging technologies. We solve this through a strict zero-copy memory model.

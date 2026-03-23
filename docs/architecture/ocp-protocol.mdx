@@ -1,5 +1,7 @@
 # The Omni-Core Protocol (OCP)
 
+*Last Updated March 22, 2025*
+
 To achieve sub-millisecond document transfer across language boundaries, Omni-MDX abandons standard string-based formats in favor of a custom binary serialization format: the **Omni-Core Protocol (OCP)**.
 
 While JSON is the industry standard for Abstract Syntax Trees (like Remark or MDX.js), it introduces a massive serialization tax. Converting an AST to a JSON string in Rust, transferring it across the FFI boundary, and parsing it back into an object in V8 (Node.js) or Python blocks the main thread and causes severe memory spikes. OCP is engineered to bypass this bottleneck entirely.

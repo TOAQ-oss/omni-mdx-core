@@ -1,5 +1,7 @@
 # Binary AST Transfer (OCP)
 
+*Last Updated March 22, 2025*
+
 The "secret sauce" behind Omni-MDX's extreme performance on the web is the **Omni-Core Protocol (OCP)**. 
 
 When passing complex data structures (like an Abstract Syntax Tree) from a Rust WebAssembly module to the JavaScript V8 engine, the traditional approach is to serialize the data to a JSON string in Rust, send the string across the bridge, and call `JSON.parse()` in JavaScript. 
