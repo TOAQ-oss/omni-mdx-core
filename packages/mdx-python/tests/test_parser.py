@@ -1,48 +1,64 @@
 """
-Tests unitaires pour omni_mdx (Python).
-Le module Rust est compilé et injecté avant que pytest tourne.
+Tests unitaires pour le parser omni_mdx (Python).
+Vérifie la communication avec le moteur Rust et la construction de l'AST.
 """
 import pytest
-
-# Adapte cet import à ton API réelle
-# from omni_mdx import parse, render
-
+import omni_mdx
+from omni_mdx.ast import AstNode
 
 class TestParser:
     def test_empty_string(self):
-        """Un string vide ne doit pas lever d'exception."""
-        # result = parse("")
-        # assert result is not None
-        assert True  # placeholder
+        """Un string vide doit renvoyer une liste vide, sans planter."""
+        result = omni_mdx.parse("")
+        assert isinstance(result, list)
+        assert len(result) == 0
 
-    def test_valid_input_returns_ast(self):
-        """Un input valide retourne un AST avec un type racine."""
-        # result = parse("# Hello")
-        # assert result["type"] == "root"
-        assert True
+    def test_valid_markdown_returns_ast(self):
+        """Un input valide doit retourner l'arbre AST correct."""
+        nodes = omni_mdx.parse("# Titre Principal\nUn paragraphe.")
+        
+        assert len(nodes) == 2
+        # Vérification du H1
+        assert nodes[0].node_type == "h1"
+        assert nodes[0].text_content() == "Titre Principal"
+        # Vérification du paragraphe
+        assert nodes[1].node_type == "p"
+        assert nodes[1].text_content() == "Un paragraphe."
 
     def test_invalid_type_raises(self):
-        """Passer autre chose qu'un str doit lever TypeError."""
-        # with pytest.raises(TypeError):
-        #     parse(None)
-        assert True
+        """Passer autre chose qu'une chaîne de caractères doit lever une erreur."""
+        with pytest.raises(TypeError):
+            omni_mdx.parse(None)
+        with pytest.raises(TypeError):
+            omni_mdx.parse(123)
 
-    def test_deterministic_output(self):
-        """Le même input doit toujours produire le même output."""
-        # a = parse("# Hello")
-        # b = parse("# Hello")
-        # assert a == b
-        assert True
+    def test_jsx_component_parsing(self):
+        """Le parser doit extraire correctement les composants JSX et leurs attributs."""
+        mdx = '<Note type="warning" alert>Attention</Note>'
+        nodes = omni_mdx.parse(mdx)
+        
+        assert len(nodes) == 1
+        note = nodes[0]
+        
+        assert note.node_type == "Note"
+        assert note.is_component is True
+        
+        # Test des attributs (texte et booléen)
+        assert note.attr_text("type") == "warning"
+        assert note.attr("alert").is_boolean is True
+        
+        # Test de l'extraction récursive du texte
+        assert note.text_content() == "Attention"
 
-
-class TestRenderer:
-    def test_heading_to_html(self):
-        """Un nœud heading doit être rendu en <h1>."""
-        # html = render({"type": "heading", "depth": 1, "value": "Hello"})
-        # assert "<h1>" in html
-        assert True
-
-    def test_empty_ast_to_empty_string(self):
-        # html = render({"type": "root", "children": []})
-        # assert html == ""
-        assert True
+    def test_ast_find_methods(self):
+        """Les méthodes find() et find_all() doivent parcourir l'arbre correctement."""
+        # On utilise des composants JSX (Majuscule) pour garantir que le parser
+        # crée un véritable arbre AST imbriqué (et non un bloc HTML brut).
+        nodes = omni_mdx.parse("<Box><Item>A</Item><Badge>B</Badge><Item>C</Item></Box>")
+        box = nodes[0]
+        
+        # find() renvoie le premier trouvé
+        assert box.find("Item").text_content() == "A"
+        # find_all() renvoie tous les nœuds correspondants
+        assert len(box.find_all("Item")) == 2
+        assert len(box.find_all("Badge")) == 1

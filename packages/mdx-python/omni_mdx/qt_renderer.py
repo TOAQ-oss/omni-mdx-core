@@ -302,7 +302,7 @@ class QtRenderer:
         layout.setContentsMargins(16, 12, 16, 12)
         layout.setAlignment(Qt.AlignCenter)
 
-        latex = node.content or ""
+        latex = node.text_content() or ""
 
         pixmap: Optional[QPixmap] = None
         if latex_to_pixmap_available():
@@ -356,9 +356,9 @@ class QtRenderer:
         layout = QVBoxLayout(w)
         layout.setContentsMargins(0, 4, 0, 4)
         layout.setAlignment(Qt.AlignCenter)
-        lbl = InlineLabel(latex_to_unicode(node.content or ""), math_inline=True)
+        lbl = InlineLabel(latex_to_unicode(node.text_content() or ""), math_inline=True)
         lbl.setAlignment(Qt.AlignCenter)
-        lbl.setToolTip(f"LaTeX : {node.content}")
+        lbl.setToolTip(f"LaTeX : {node.text_content()}")
         layout.addWidget(lbl)
         return w
 
