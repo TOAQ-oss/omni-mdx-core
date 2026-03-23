@@ -144,15 +144,17 @@ jobs:
         working-directory: core-parser
         run: |
           pip install maturin
-          maturin develop --features python --release
-
+          maturin build --features python --release --out /tmp/maturin-wheels
+          pip install --force-reinstall /tmp/maturin-wheels/*.whl
+ 
       - name: Install Python dependencies
         working-directory: packages/mdx-python
         run: |
           pip install --upgrade pip
           pip install pytest
           pip install -e ".[dev]"
-
+ 
       - name: Run pytest
         working-directory: packages/mdx-python
         run: pytest tests/ -v --tb=short
+ 
