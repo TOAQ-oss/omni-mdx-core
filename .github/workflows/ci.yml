@@ -140,12 +140,22 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Build and install Rust extension
+      - name: Build and install Rust extension (Linux/Mac)
+        if: runner.os != 'Windows'
         working-directory: core-parser
         run: |
           pip install maturin
           maturin build --features python --release --out /tmp/maturin-wheels
           pip install --force-reinstall /tmp/maturin-wheels/*.whl
+ 
+      - name: Build and install Rust extension (Windows)
+        if: runner.os == 'Windows'
+        working-directory: core-parser
+        run: |
+          pip install maturin
+          maturin build --features python --release --out C:\tmp\maturin-wheels
+          $wheel = Get-ChildItem C:\tmp\maturin-wheels\*.whl | Select-Object -First 1
+          pip install --force-reinstall $wheel.FullName
  
       - name: Install Python dependencies
         working-directory: packages/mdx-python
