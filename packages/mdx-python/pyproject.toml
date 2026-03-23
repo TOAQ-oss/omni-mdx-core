@@ -1,13 +1,13 @@
 [build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
 
 [project]
 name = "omni-mdx"
 version = "0.1.8"
 description = "Ultra-fast MDX rendering engine powered by Rust and WebAssembly."
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 keywords = ["mdx", "rust", "parser"]
 
 [project.urls]
@@ -15,11 +15,11 @@ keywords = ["mdx", "rust", "parser"]
 "Bug Tracker" = "https://github.com/TOAQ-oss/omni-mdx-core/issues"
 "Source Code" = "https://github.com/TOAQ-oss/omni-mdx-core"
 
-[tool.setuptools]
-packages = ["omni_mdx"]
-
-[tool.setuptools.package-data]
-"omni_mdx" = ["*.pyd", "*.so", "*.dll"]
+[tool.maturin]
+manifest-path = "../../core-parser/Cargo.toml"
+features = ["python"]
+python-source = "."
+module-name = "omni_mdx.omni_mdx_core"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
