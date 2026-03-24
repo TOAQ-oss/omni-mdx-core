@@ -1,0 +1,43 @@
+# Math & JSX Handling
+
+*Last Updated March 24, 2025*
+
+Parsing standard CommonMark is a well-understood problem. The true engineering challenge of MDX lies in what we call the **Tri-Syntax Collision**. 
+
+In a single document, a parser must seamlessly juggle three entirely different grammar systems: whitespace-sensitive Markdown, XML-like JSX, and deeply nested LaTeX. If not handled with extreme precision, these syntaxes will collide and break the entire AST.
+
+<TriSyntaxVisualizer />
+
+## The Collision Problem
+
+To understand why traditional parsers struggle, consider a Data Scientist writing an MDX document about inequalities. They might write an equation like this:
+
+`$$ a < b \text{ and } c > d $$`
+
+To a human, this is clearly math. But to a naive parser, `< b \text...` looks exactly like the opening of an unclosed HTML or JSX tag! 
+
+Conversely, LaTeX heavily relies on curly braces `{}` for grouping (e.g., `\frac{1}{2}`). In JSX, `{}` denotes a JavaScript expression. If the parser tries to evaluate `\frac{1}{2}` as JavaScript, the build will immediately crash with a `SyntaxError: Unexpected token`.
+
+## Context-Aware State Machine
+
+Omni-Core solves this through strict **Context Switching** at the lexer level. The Rust engine does not blindly apply all rules to all text simultaneously. Instead, it maintains a strict internal `State`.
+
+### 1. The Math Boundary
+When the lexer encounters a `$` or `$$`, it immediately enters `MathMode`. 
+In `MathMode`, the rules of the universe change:
+- The JSX parser is completely **disabled**. Characters like `<` and `>` are treated as raw text.
+- Markdown features (like `*bold*` or `# heading`) are ignored.
+- JavaScript expression parsing (`{}`) is disabled.
+
+The lexer simply reads raw bytes until it finds the matching closing `$` or `$$`, ensuring the LaTeX payload remains mathematically pure and safe from JSX injection.
+
+### 2. The JSX Boundary
+When the lexer encounters a `<` followed by an uppercase letter (e.g., `<Box>`), it enters `JsxMode`.
+Here, it expects strict XML-like formatting:
+- Attributes must be properly formed (`prop="value"` or `prop={expression}`).
+- If it encounters a `{` inside an attribute, it briefly enters `ExpressionMode` to capture the JavaScript variable, carefully balancing nested braces.
+- Inside the JSX children (between `<Box>` and `</Box>`), the parser **re-enables Markdown**. This allows you to write `# Headings` and `**bold**` text directly inside React components without extra configuration.
+
+## Escaping the Chaos
+
+Because Omni-MDX builds the AST in Rust before any JavaScript evaluation occurs, you never have to manually "escape" math symbols. The binary AST clearly tags the node as `BlockMath` or `InlineMath`, allowing your high-level SDK to pass it securely to rendering libraries like KaTeX or MathJax without React trying to render an equation as a DOM node.

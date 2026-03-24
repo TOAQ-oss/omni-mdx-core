@@ -38,12 +38,45 @@
     ]
   },
   {
-    "group": "Architecture",
+    "title": "Architecture & Core",
     "items": [
-      { "title": "Design Philosophy", "slug": "architecture/design-philosophy" },
-      { "title": "OCP Binary Protocol", "slug": "architecture/ocp-protocol" },
-      { "title": "FFI & Memory Model", "slug": "architecture/ffi-memory-model" },
-      { "title": "Benchmarks", "slug": "architecture/benchmarks" }
+      {
+        "title": "Core Concepts",
+        "links": [
+          { "title": "Design Philosophy", "slug": "architecture/philosophy" },
+          { "title": "The Rendering Pipeline", "slug": "architecture/pipeline" }
+        ]
+      },
+      {
+        "title": "The Rust Parser",
+        "links": [
+          { "title": "Lexing & Tokenization", "slug": "architecture/parser/lexing" },
+          { "title": "AST Node Design", "slug": "architecture/parser/ast-design" },
+          { "title": "Math & JSX Handling", "slug": "architecture/parser/math-jsx" }
+        ]
+      },
+      {
+        "title": "OCP Binary Protocol",
+        "links": [
+          { "title": "Protocol Specification", "slug": "architecture/ocp/specification" },
+          { "title": "Zero-Copy Decoding", "slug": "architecture/ocp/zero-copy" }
+        ]
+      },
+      {
+        "title": "FFI & Memory Model",
+        "links": [
+          { "title": "Memory Lifecycle", "slug": "architecture/ffi/memory-model" },
+          { "title": "WASM Bindings (Browser)", "slug": "architecture/ffi/wasm" },
+          { "title": "Node.js Native Addons", "slug": "architecture/ffi/node-native" },
+          { "title": "Python Bindings (PyO3)", "slug": "architecture/ffi/python" }
+        ]
+      },
+      {
+        "title": "Performance",
+        "links": [
+          { "title": "Benchmarks", "slug": "architecture/benchmarks" }
+        ]
+      }
     ]
   }
 ]

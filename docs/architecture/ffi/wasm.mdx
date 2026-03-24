@@ -1,0 +1,49 @@
+# WASM Bindings (wasm-bindgen)
+
+*Last Updated March 24, 2025*
+
+The primary environment for MDX is JavaScript. Whether you are building a static site with Next.js or a real-time collaborative editor in React, you need to parse MDX in a JavaScript thread.
+
+To achieve native parsing speeds inside a web browser without writing slow JavaScript, we compile the Omni-Core Rust engine to **WebAssembly (WASM)** using **wasm-bindgen**.
+
+<WasmMemoryMap />
+
+## The WASM Paradigm
+
+WebAssembly is not a programming language; it is a binary instruction format for a stack-based virtual machine. It allows code written in languages like Rust or C++ to run in web browsers at near-native speed.
+
+**wasm-bindgen** is the toolchain we use to facilitate high-level communication between Rust and JavaScript. It automatically generates the JavaScript glue code needed to load the `.wasm` binary, instantiate it, and call its exported functions.
+
+When your React component calls:
+```typescript
+import { parse } from '@omni-mdx/wasm';
+
+const ast = parse("# Hello from WASM");
+```
+You are executing pre-compiled Rust bytecode inside the browser's WASM virtual machine.
+
+## Linear Memory & Shared Buffers
+WebAssembly operates on a fundamentally different memory model than JavaScript. WASM does not have access to the JavaScript heap. Instead, it has its own, contiguous block of raw memory called **Linear Memory**.
+
+This is where Omni-MDX's architecture truly shines.
+
+As we discussed in the Zero-Copy section, when the Rust engine finishes parsing:
+1. It allocates the OCP Binary payload inside its WASM Linear Memory.
+2. It returns the memory pointer (usize) and the length to JavaScript.
+3. The JavaScript SDK creates a view over that exact memory segment:
+
+```typescript
+// Inside the JS SDK
+const buffer = new Uint8Array(wasm.memory.buffer, ptr, length);
+```
+Because JavaScript is looking directly into WASM's RAM, we achieve true **Zero-Copy** data transfer. The host language can start reading the AST instructions without moving a single byte of data.
+
+## Deployment with wasm-pack
+Packaging a WASM module for use in a modern web application (with tools like Webpack, Vite, or Next.js) can be complex. We simplify this process using **wasm-pack**.
+
+In our CI/CD pipeline, `wasm-pack` automatically:
+* Compiles the Rust core to `wasm32-unknown-unknown`.
+* Generates the TypeScript definition files (`.d.ts`).
+* Generates the `package.json` for the `@omni-mdx/wasm` package.
+
+For web developers, Omni-MDX feels like any other npm package. They don't need to know Rust or configure complex WASM loaders; they just install it and profit from sub-millisecond parsing speed.

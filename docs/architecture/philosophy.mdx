@@ -1,0 +1,40 @@
+# Design Philosophy
+
+*Last Updated March 24, 2025*
+
+Omni-MDX was born out of a profound frustration with the modern content tooling ecosystem: **parsing Markdown and JSX in JavaScript is inherently slow.**
+
+As applications scale and content becomes more complex, the underlying infrastructure needs to evolve. Here is why we built Omni-Core, and the architectural decisions that shaped it.
+
+## The JavaScript Bottleneck
+
+When building content-heavy applications—like documentation hubs, technical blogs, or data-science reports—developers rely on MDX to seamlessly mix Markdown with interactive components. However, traditional MDX parsers (like `remark` and `rehype`) are written entirely in JavaScript or TypeScript.
+
+During the build process or at runtime, these parsers convert strings into massive Abstract Syntax Trees (ASTs). In JavaScript, this means allocating millions of tiny, interconnected objects in memory. 
+
+The V8 engine has to work overtime to traverse these structures, and the Garbage Collector (GC) inevitably kicks in. This causes massive CPU spikes, huge memory consumption, and severe delays in build times (especially in frameworks like Next.js or Vite).
+
+<Callout type="warning" title="The Hidden Cost of ASTs">
+  A single 500-line MDX file can generate an AST with over 15,000 nodes. Multiplying this by hundreds of files creates a severe memory bottleneck that JavaScript was simply never designed to handle efficiently.
+</Callout>
+
+## The Rust Paradigm
+
+To break this barrier, we had to step outside the Node.js ecosystem. We rewrote the core parsing and lexing engine from scratch in **Rust**.
+
+Why Rust?
+- **Zero Garbage Collection:** Memory is managed strictly at compile time. There are no unexpected GC pauses during parsing.
+- **Blazing Fast Lexing:** Text streams are processed natively as raw byte arrays, manipulating memory directly without the overhead of JavaScript string encoding.
+- **Ultimate Portability:** Rust compiles beautifully to native binaries (for Python/C++) and WebAssembly (for browsers and Edge runtimes).
+
+<ArchitectureComparison />
+
+## The Language-Agnostic Vision
+
+Solving the parsing speed was only step one. The real breakthrough of Omni-MDX is its **universality**. 
+
+Historically, MDX has been tightly coupled to the JavaScript and React ecosystem. But the modern web is diverse. What if a Data Scientist wants to parse MDX in Python to extract mathematical formulas? What if a desktop application built with PyQt needs to render custom UI components from a local `.mdx` file?
+
+Instead of rewriting a different parser for every single language (which leads to fragmentation and feature disparity), Omni-Core acts as a **single source of truth**. 
+
+It parses the text, serializes the AST into our custom **OCP Binary Protocol**, and streams it to any high-level language (TypeScript, Python, C++) via zero-copy bindings. Omni-MDX is not just a faster parser; it is the bridge bringing the power of MDX to the entire software engineering ecosystem.

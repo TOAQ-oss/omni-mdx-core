@@ -1,0 +1,49 @@
+# Zero-Copy Decoding
+
+*Last Updated March 24, 2025*
+
+The fastest way to transfer data is to not transfer it at all.
+
+When building tools that span multiple languages (like Rust and JavaScript), the biggest performance killer is rarely the parsing itself. It is the **FFI Tollbooth** (Foreign Function Interface)—the cost of moving data across the language boundary.
+
+Omni-MDX bypasses this tollbooth entirely using a **Zero-Copy Architecture**.
+
+<ZeroCopyVisualizer />
+
+## The FFI Tollbooth (The Old Way)
+
+In a traditional Rust-to-Node.js architecture, data transfer usually looks like this:
+1. Rust parses the text and creates a Rust AST in its own memory space.
+2. Rust serializes the AST into a JSON String.
+3. The string is physically **copied** from Rust's memory heap into V8's (JavaScript) memory heap.
+4. JavaScript runs `JSON.parse()`, allocating thousands of new objects in RAM.
+
+If you parse a 2MB Markdown file, you might end up allocating 10MB of RAM in Rust, copying 15MB of JSON string, and then allocating 30MB of JavaScript objects. This massive memory duplication triggers Garbage Collection pauses and destroys performance.
+
+## The Shared Memory Architecture (Omni-MDX)
+
+Omni-Core solves this by leveraging **Shared Memory Views**. 
+
+When the Rust parser finishes building the OCP Binary payload, it allocates a single, contiguous array of bytes (`Vec<u8>`) in memory. 
+
+Instead of copying these bytes into the host language, Rust simply hands over a **Pointer** (a memory address) and the **Length** of the buffer.
+
+### WebAssembly (JavaScript/TypeScript)
+In a browser or Node.js environment, the WebAssembly module exposes its memory as a huge JavaScript `ArrayBuffer`. When Omni-Core returns the pointer, our JS SDK simply creates a `Uint8Array` *view* over that exact memory location:
+```javascript
+// Inside the Omni-MDX JS SDK
+const ptr = wasm.parse_mdx(text);
+const length = wasm.get_payload_size();
+
+// 🚀 ZERO-COPY: We look directly into WASM memory!
+const ocpBuffer = new Uint8Array(wasm.memory.buffer, ptr, length);
+```
+
+### PyO3 (Python)
+The exact same principle applies to our Python bindings. Rust exposes the `Vec<u8>` as a Python `memoryview` or a zero-copy bytearray. The Python interpreter reads the bytes directly from the memory allocated by Rust.
+
+### Lazy Instantiation
+
+Because the host language is looking directly at the OCP buffer in RAM, it doesn't need to instantiate the entire AST upfront.
+
+Our decoders use **Lazy Instantiation**. As your React component or Python script walks the AST, the decoder reads the OpCodes on the fly. It only creates a JavaScript object or Python dictionary when you actually ask for it. If you only want to extract the headings from a massive document, the rest of the AST is never instantiated in the host language, saving massive amounts of CPU time and memory.

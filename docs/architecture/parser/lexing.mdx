@@ -1,0 +1,48 @@
+# Lexing & Tokenization
+
+*Last Updated March 24, 2025*
+
+Before an Abstract Syntax Tree (AST) can be built, the raw MDX text must be read and broken down into understandable chunks. This process is called **Lexing** (or Tokenization).
+
+In Omni-Core, the lexer is the frontline of our performance architecture. It is designed to read the input string exactly once, in a single forward pass, with zero backtracking.
+
+<LexerVisualization />
+
+## The Regex Bottleneck
+Traditional JavaScript parsers rely heavily on Regular Expressions (Regex) to find headings, links, or JSX tags. While Regex is convenient to write, it is computationally expensive. Complex Markdown/JSX files often trigger **Regex backtracking**, where the engine wastes CPU cycles re-evaluating the same characters multiple times when a pattern fails to match.
+
+To achieve sub-millisecond parsing, Omni-Core entirely abandons Regular Expressions.
+
+## Byte-Level Scanning
+Instead of treating the input as a high-level string, the Omni-Core lexer consumes the text as a raw stream of UTF-8 bytes (`&[u8]`) or character iterators in Rust. 
+
+We use a custom-built state machine that scans the text character by character:
+- If it sees a `#`, it checks the next characters for spaces to emit a `HeadingToken`.
+- If it sees a `$`, it enters a specialized "Math Lexing" state.
+- If it sees a `<`, it checks if it's an HTML tag or a JSX component (by looking for uppercase letters like `<Box>`).
+
+Because Rust has zero abstraction cost over memory arrays, reading the next byte is virtually instantaneous.
+
+## Handling the "Tri-Syntax"
+Parsing standard Markdown is relatively easy. Parsing MDX is notoriously difficult because the lexer must seamlessly juggle three entirely different syntaxes at the same time:
+
+1. **CommonMark (Markdown):** Indentation-sensitive, line-based syntax.
+2. **JSX (React):** XML-like tags with JavaScript expressions inside attributes (`prop={value}`).
+3. **LaTeX (Math):** Dollar-delimited blocks that must ignore both Markdown and JSX rules inside them.
+
+Omni-Core handles this by context-switching. When the lexer encounters `$$`, it temporarily disables Markdown and JSX rules, treating everything inside as raw text until it finds the closing `$$`. This prevents catastrophic bugs where `x < y` inside an equation is accidentally parsed as a JSX opening tag!
+
+## Zero-Allocation Tokens
+As the lexer scans the document, it produces `Tokens`. To keep memory usage close to zero, our tokens do not copy the text they represent. 
+
+Instead, a token simply stores its `Type` and a `Span` (the start and end indices in the original string).
+```rust
+// A simplified view of an Omni-Core Token
+pub struct Token {
+    pub kind: TokenKind,
+    pub start: usize,
+    pub end: usize,
+}
+```
+
+By deferring text allocation until the very end of the pipeline (when the OCP buffer is sent to the host language), the Rust engine avoids triggering the system allocator, saving precious milliseconds on large documents.

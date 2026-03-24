@@ -1,0 +1,65 @@
+# OCP Binary Protocol Specification
+
+*Last Updated March 24, 2025*
+
+To transmit the Abstract Syntax Tree (AST) from Rust to a host language (like JavaScript or Python), Omni-Core does not use JSON. 
+
+While JSON is universal, stringifying a massive AST in Rust and then parsing that JSON string in V8 or Python is incredibly slow and completely defeats the purpose of writing a fast parser. Instead, we created the **Open Core Protocol (OCP)**.
+
+<OcpBufferVisualizer />
+
+## The JSON Problem
+
+When you call `JSON.parse()` in JavaScript, the engine must read a string, allocate memory for every single bracket `{`, validate quotes `"`, and instantiate thousands of temporary Dictionary objects. This causes immense Garbage Collection pressure.
+
+**OCP solves this by flattening the tree into a dense, 1D array of bytes (`Uint8Array`).**
+
+## Buffer Anatomy
+
+An OCP payload is a contiguous block of memory. It consists of a Header (metadata) followed by the Body (a stream of OpCodes and Data).
+
+### 1. The Header
+The first few bytes of every OCP buffer are reserved for protocol metadata:
+- **Magic Number (4 bytes):** Identifies the buffer as a valid OCP payload (e.g., `OMNI`).
+- **Version (1 byte):** The OCP version (currently `0x02`), allowing for future backward-compatible upgrades.
+- **Payload Size (4 bytes):** A 32-bit unsigned integer representing the total byte length of the body, allowing the host language to pre-allocate the exact amount of memory needed.
+
+### 2. The OpCodes
+The Body is driven by **OpCodes** (Operation Codes). These are single-byte markers (`0x01` to `0xFF`) that tell the decoder exactly what data is coming next. 
+
+Because the host language reads an OpCode first, it knows exactly how to read the subsequent bytes without guessing.
+
+Here is a subset of the core OCP OpCodes:
+- `0x01` (NODE_START): Indicates a new `AstNode` is beginning.
+- `0x02` (NODE_END): Indicates the closing of the current node's children array.
+- `0x10` (STRING_UTF8): Indicates a string is next. The decoder reads the next 4 bytes to know the string's length, then reads exactly that many bytes.
+- `0x20` (ATTR_MAP): Indicates the start of a JSX attributes HashMap.
+
+## Serialization Example
+
+Let's look at how a simple Markdown heading like `# Hello` is serialized into OCP.
+
+In a theoretical JSON, it would look like this:
+```json
+{
+  "type": "h1",
+  "children": [
+    { "type": "text", "content": "Hello" }
+  ]
+}
+```
+
+In OCP, it becomes a flat stream of instructions:
+1. `NODE_START` (`0x01`)
+2. `STRING_UTF8` (`0x10`) -> Length (`0x02`) -> `"h1"`
+3. `NODE_START` (`0x01`)
+4. `STRING_UTF8` (`0x10`) -> Length (`0x04`) -> `"text"`
+5. `STRING_UTF8` (`0x10`) -> Length (`0x05`) -> `"Hello"`
+6. `NODE_END` (`0x02`)
+7. `NODE_END` (`0x02`)
+
+## Why it's radically faster
+
+Because the format is strictly defined by lengths and OpCodes, a JavaScript or Python decoder operates as a fast-forward loop. It reads a byte, jumps exactly `N` bytes forward to slice a string, and moves to the next instruction.
+
+There are no brackets to match, no whitespace to skip, and no dynamic typing guesses to make. It is pure, mechanical data extraction.

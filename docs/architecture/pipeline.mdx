@@ -1,0 +1,40 @@
+# The Rendering Pipeline
+
+*Last Updated March 24, 2025*
+
+To understand how Omni-MDX achieves its speed, you need to understand the journey of a single markdown string. Unlike traditional parsers that execute entirely within a single JavaScript thread, Omni-Core orchestrates a multi-language pipeline.
+
+Here is the step-by-step lifecycle of an MDX file, from raw text to rendered UI.
+
+<PipelineFlow />
+
+## 1. Text Ingestion & Lexing (Rust)
+The journey begins when a raw string of MDX is passed to the engine. Instantly, the Rust lexer takes over. Instead of using slow Regular Expressions, Omni-Core processes the text as a raw byte array (`&[u8]`). It identifies markdown tokens (headings, bold, lists), LaTeX boundaries (`$`, `$$`), and JSX tags with extreme mechanical sympathy for the CPU.
+
+## 2. AST Construction (Rust)
+Once tokenized, the parser builds the Abstract Syntax Tree (AST) in Rust's memory. 
+This is where the complex structural logic happens:
+- **Nesting:** Paragraphs are placed inside blockquotes, items inside lists.
+- **Virtual Nodes:** Math equations are structured safely using virtual text children to prevent JSX injection attacks.
+- **Validation:** JSX tags are checked for proper closing and valid attributes.
+
+## 3. OCP Binary Encoding
+This is the secret sauce of Omni-MDX. We do not serialize the Rust AST into a massive JSON string (which would be incredibly slow to parse back in JS/Python). 
+
+Instead, the AST is flattened into the **OCP (Open Core Protocol) Binary format**. Every node type, attribute, and text content is encoded into a dense, contiguous array of bytes (e.g., `Uint8Array` in JavaScript).
+
+## 4. Zero-Copy FFI Transfer
+The encoded binary buffer must now cross the language boundary:
+- In **Web/Node.js**, it crosses the WebAssembly boundary.
+- In **Python**, it crosses the PyO3 C-extension boundary.
+
+Because it is a flat buffer, this transfer is essentially **free**. We share the memory pointer directly. There is no expensive "copying" or "cloning" of objects between Rust and the host language.
+
+## 5. Native Decoding & Rendering
+Finally, the high-level SDK (TypeScript or Python) receives the buffer pointer. Our lightweight decoders read the bytes and instantly yield native objects on-demand. 
+
+From there, the target environment takes over:
+- **React/Next.js** walks the tree and maps nodes to React Components.
+- **Python** can extract the math nodes for Data Science analysis or render them via native UI frameworks like PyQt.
+
+By keeping the heavy lifting in Rust and the data transfer in binary, the host language is free to do what it does best: rendering.

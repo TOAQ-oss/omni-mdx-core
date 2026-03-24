@@ -1,0 +1,49 @@
+# Node.js Native Addons (N-API)
+
+*Last Updated March 24, 2025*
+
+While WebAssembly is the perfect solution for browsers and Edge runtimes, running Omni-MDX on a dedicated Node.js backend (like a Next.js SSR server or a Vite build plugin) requires maximum, unthrottled performance.
+
+For these environments, we bypass the WebAssembly virtual machine entirely and compile Omni-Core as a **Node.js Native Addon** using the `napi-rs` framework.
+
+<NapiArchitecture />
+
+## Why not just use WASM everywhere?
+
+WebAssembly is incredibly fast, but it still runs inside a sandboxed virtual machine with its own isolated linear memory. Every time you call a WASM function from Node.js, there is a tiny (but measurable) overhead to cross the VM sandbox boundary. Furthermore, WASM is historically bound by a 32-bit memory address space limit (4GB).
+
+By compiling Omni-MDX as a native C-compatible extension (`.node` file), we unlock:
+- **Direct V8 Access:** Rust can talk directly to Node.js's underlying V8 JavaScript engine.
+- **True Multi-threading:** We can use Node's `libuv` thread pool or Rust's `rayon` to parse thousands of MDX files in parallel across all CPU cores.
+- **Native OS File System:** The Rust parser can read `.mdx` files directly from your SSD in chunks, rather than Node.js having to read the file and pass the string to WASM.
+
+## The N-API Bridge (napi-rs)
+
+N-API is the official C API provided by Node.js for building native addons. It guarantees Application Binary Interface (ABI) stability across different Node versions.
+
+Using `napi-rs`, we write standard Rust code that compiles into a Node-compatible module. When you import Omni-MDX in Node.js:
+```javascript
+const { parse } = require('@omni-mdx/core-node');
+
+// This calls the native Rust binary directly!
+const ast = parse("# Backend Parsing");
+```
+
+## Zero-Copy with Node Buffer
+
+The Zero-Copy philosophy applies here just as strictly as it does in WebAssembly or Python.
+
+When the native Rust parser finishes encoding the OCP Binary payload, it does not clone the array to give it to Node.js. Instead, `napi-rs` allows us to take the Rust `Vec<u8>` pointer and wrap it instantly in a **Node.js** `Buffer` object.
+```rust
+// Simplified Rust N-API implementation
+#[napi]
+pub fn parse_to_buffer(env: Env, text: String) -> Result<Buffer> {
+    let ocp_payload: Vec<u8> = parse_and_encode(&text);
+    
+    // 🚀 ZERO-COPY: We wrap the Rust vector in a Node Buffer
+    // Node.js will take ownership of this memory and GC it later.
+    Ok(Buffer::from_raw(ocp_payload))
+}
+```
+
+Because a Node `Buffer` is essentially a subclass of `Uint8Array`, the exact same high-level JavaScript decoder we wrote for WASM works perfectly for the Native Addon without a single line of code changed!

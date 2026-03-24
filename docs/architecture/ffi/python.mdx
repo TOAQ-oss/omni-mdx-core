@@ -1,0 +1,44 @@
+# Python Bindings (PyO3)
+
+*Last Updated March 24, 2025*
+
+While MDX is heavily associated with the JavaScript and React ecosystem, the need to parse and analyze rich content extends far beyond the browser. Data Scientists, AI researchers, and backend engineers often need to extract mathematical formulas, tables, or text structures from MDX files.
+
+To bring Omni-Core's blazing speed to the Python ecosystem, we use **PyO3** and **Maturin**.
+
+<PyO3Architecture />
+
+## The PyO3 Bridge
+
+Python supports native C-extensions, allowing developers to write performance-critical code in C or C++ and import it directly into Python as a standard module. 
+
+**PyO3** is a Rust framework that seamlessly bridges the gap between Rust and Python. It allows us to compile the Omni-MDX Rust engine into a native Python extension module (`.so`, `.pyd`, or `.dylib`). 
+
+When a Python developer writes:
+```python
+import omni_mdx
+
+ast = omni_mdx.parse("# Hello World")
+```
+They are not running Python code. The `parse` function is a direct call into the compiled Rust binary.
+
+## Zero-Copy in Python
+As discussed in our Memory Model, we strictly avoid copying the OCP Binary buffer.
+
+When the Rust engine finishes parsing, PyO3 allows us to expose the resulting `Vec<u8>` as a Python `memoryview` or a raw bytes object, completely bypassing the expensive Python `dict` instantiation until the exact moment a developer requests a specific node.
+
+This makes Omni-MDX capable of parsing hundreds of megabytes of Markdown/LaTeX per second, directly inside a Jupyter Notebook or a FastAPI backend.
+
+## Building and Distributing with Maturin
+A common pain point with native extensions is the installation process. We do not want Python developers to install the Rust toolchain (`cargo`) just to use Omni-MDX.
+
+We use **Maturin**, a zero-configuration build system for PyO3. In our CI/CD pipeline, Maturin automatically compiles the Rust core for every major operating system (Windows, macOS, Linux) and CPU architecture (x86, ARM).
+
+It packages these compiled binaries into highly optimized Python Wheels (.whl) and publishes them to PyPI.
+
+## The Developer Experience
+For the end-user, the installation is completely standard and instant:
+```bash
+pip install omni-mdx
+```
+No C++ compilers, no Rust toolchain, no compilation errors. Just pure, instant parsing power out of the box.

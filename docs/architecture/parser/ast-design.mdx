@@ -1,0 +1,62 @@
+# AST Node Design
+
+*Last Updated March 24, 2025*
+
+Once the lexer has tokenized the input string, the parser's job is to build the **Abstract Syntax Tree (AST)**. 
+
+In Omni-Core, the AST is the ultimate source of truth. It is a strictly typed, recursive data structure in Rust that guarantees every host language (Python, TypeScript) receives exactly the same logical representation of the document.
+
+<AstTreeVisualizer />
+
+## The Unified `AstNode` Structure
+
+To keep the OCP Binary Protocol fast and the memory layout predictable, Omni-Core uses a single, unified `AstNode` struct for everything—from paragraphs to JSX components and mathematical formulas.
+
+```rust
+// The core Rust structure
+pub struct AstNode {
+    pub node_type: String,                     // e.g., "p", "BlockMath", "MyComponent"
+    pub content: Option<String>,               // Only populated for raw "text" nodes
+    pub attributes: HashMap<String, AttrValue>, // JSX or HTML props
+    pub children: Vec<AstNode>,                // Nested elements
+    pub self_closing: bool,                    // e.g., <Box />
+}
+```
+
+This structural simplicity is powerful. A high-level SDK only needs to implement one deserialization function to traverse the entire document.
+
+## The "Virtual Text Child" Pattern
+
+Handling complex formats like LaTeX within MDX introduces a significant architectural challenge: **Where should the math string live in the AST ?**
+
+Early versions of Omni-MDX stored the formula directly in the `content` field of the `InlineMath` or `BlockMath` node. However, this led to critical bugs in tree-walking algorithms (like word counters or summary extractors). If a script recursively asked for the text of all children, it would skip the math nodes because it expected text to only live inside `node_type: "text"`.
+
+To solve this, Omni-Core enforces the **Virtual Text Child** pattern:
+Non-text nodes (like `BlockMath` or JSX components) **never** use their own `content` field to store raw inner text. Instead, the Rust parser automatically injects a virtual child node of type `"text"`.
+
+<Note type="info" title="Why this matters">
+If you write `$$ E=mc^2 $$`, the AST does not look like:
+`{ type: &quot;BlockMath&quot;, content: &quot;E=mc^2&quot; }`
+
+It looks like this:
+`{ type: "BlockMath", children: [ { type: "text", content: "E=mc^2" } ] }`
+</Note>
+
+## Universal Traversal
+Because of this architectural rule, writing a `text_content()` function in Python or JavaScript becomes trivially simple and 100% reliable:
+
+```python
+def text_content(node):
+    # Base case: it's a pure text node
+    if node.node_type == "text":
+        return node.content or ""
+    
+    # Recursive case: gather text from all children
+    return "".join(text_content(child) for child in node.children)
+```
+
+Whether the node is a standard `p` tag, a complex `<Accordion>` component, or a `BlockMath` formula, the recursive extraction works perfectly without needing special `if/else` checks for every new node type.
+
+## Attribute System
+
+JSX attributes are stored in a typed `HashMap`. To support the full React ecosystem, `AttrValue` is an enum that can hold plain strings (`prop="hello"`), booleans (`isActive`), raw JS expressions (`count={42}`), or even entire nested ASTs if a component is passed as a prop !
