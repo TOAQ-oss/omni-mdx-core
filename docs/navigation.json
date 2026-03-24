@@ -38,33 +38,33 @@
     ]
   },
   {
-    "title": "Architecture & Core",
+    "group": "Architecture & Core",
     "items": [
       {
-        "title": "Core Concepts",
-        "links": [
+        "group": "Core Concepts",
+        "items": [
           { "title": "Design Philosophy", "slug": "architecture/philosophy" },
           { "title": "The Rendering Pipeline", "slug": "architecture/pipeline" }
         ]
       },
       {
-        "title": "The Rust Parser",
-        "links": [
+        "group": "The Rust Parser",
+        "items": [
           { "title": "Lexing & Tokenization", "slug": "architecture/parser/lexing" },
           { "title": "AST Node Design", "slug": "architecture/parser/ast-design" },
           { "title": "Math & JSX Handling", "slug": "architecture/parser/math-jsx" }
         ]
       },
       {
-        "title": "OCP Binary Protocol",
-        "links": [
+        "group": "OCP Binary Protocol",
+        "items": [
           { "title": "Protocol Specification", "slug": "architecture/ocp/specification" },
           { "title": "Zero-Copy Decoding", "slug": "architecture/ocp/zero-copy" }
         ]
       },
       {
-        "title": "FFI & Memory Model",
-        "links": [
+        "group": "FFI & Memory Model",
+        "items": [
           { "title": "Memory Lifecycle", "slug": "architecture/ffi/memory-model" },
           { "title": "WASM Bindings (Browser)", "slug": "architecture/ffi/wasm" },
           { "title": "Node.js Native Addons", "slug": "architecture/ffi/node-native" },
@@ -72,8 +72,8 @@
         ]
       },
       {
-        "title": "Performance",
-        "links": [
+        "group": "Performance",
+        "items": [
           { "title": "Benchmarks", "slug": "architecture/benchmarks" }
         ]
       }
