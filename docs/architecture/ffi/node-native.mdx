@@ -23,10 +23,10 @@ N-API is the official C API provided by Node.js for building native addons. It g
 
 Using `napi-rs`, we write standard Rust code that compiles into a Node-compatible module. When you import Omni-MDX in Node.js:
 ```javascript
-const { parse } = require('@omni-mdx/core-node');
+const { parseMdx } = require('@toaq-oss/omni-mdx/server');
 
 // This calls the native Rust binary directly!
-const ast = parse("# Backend Parsing");
+const ast = parseMdx("# Backend Parsing");
 ```
 
 ## Zero-Copy with Node Buffer
@@ -40,7 +40,7 @@ When the native Rust parser finishes encoding the OCP Binary payload, it does no
 pub fn parse_to_buffer(env: Env, text: String) -> Result<Buffer> {
     let ocp_payload: Vec<u8> = parse_and_encode(&text);
     
-    // 🚀 ZERO-COPY: We wrap the Rust vector in a Node Buffer
+    // ZERO-COPY: We wrap the Rust vector in a Node Buffer
     // Node.js will take ownership of this memory and GC it later.
     Ok(Buffer::from_raw(ocp_payload))
 }

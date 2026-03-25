@@ -16,9 +16,9 @@ WebAssembly is not a programming language; it is a binary instruction format for
 
 When your React component calls:
 ```typescript
-import { parse } from '@omni-mdx/wasm';
+import { parseMdx } from '@toaq-oss/omni-mdx/client';
 
-const ast = parse("# Hello from WASM");
+const ast = parseMdx("# Hello from WASM");
 ```
 You are executing pre-compiled Rust bytecode inside the browser's WASM virtual machine.
 
