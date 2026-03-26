@@ -1,8 +1,9 @@
-import type { AstNode } from "./MDXServerRenderer";
+import type { AstNode } from "./types/MdxAST";
 import { createRequire } from "module";
 import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
 import { MdxBinaryDecoder } from "./utils/binaryDecoder";
+import { MdxInput } from "./types/MdxInput";
 
 declare const __non_webpack_require__: NodeRequire | undefined;
 
@@ -84,13 +85,35 @@ function getParseFn(native: any): (mdx: string | Buffer | Uint8Array) => any {
   throw new Error("[toaq-oss/omni-mdx] Native parser lacks a valid parse function.");
 }
 
-export async function parseMdx(mdx: string | Buffer | Uint8Array): Promise<AstNode[]> {
+function normalizeToBuffer(input: any): Buffer {
+  if (Buffer.isBuffer(input)) return input;
+  if (input instanceof Uint8Array) return Buffer.from(input.buffer, input.byteOffset, input.byteLength);
+  if (input && typeof input === 'object' && input.type === 'Buffer' && Array.isArray(input.data)) {
+    return Buffer.from(input.data);
+  }
+  return Buffer.from(String(input), 'utf-8');
+}
+
+export async function parseMdx(mdx: MdxInput): Promise<AstNode[]> {
   const native = getNativeModuleSync();
-  const parse = getParseFn(native);
   let result: any;
   
   try {
-    result = parse(mdx);
+    if (typeof mdx === 'string') {
+      const parseStr = native.parse || native.parseToJson || native.parse_to_json;
+      if (!parseStr) throw new Error("Native string parser missing.");
+      result = parseStr(mdx);
+    } else {
+      const buf = normalizeToBuffer(mdx);
+      const parseBin = native.parseToBinary || native.parse_to_binary;
+      
+      if (parseBin) {
+        result = parseBin(buf);
+      } else {
+        const parseStr = native.parse || native.parseToJson || native.parse_to_json;
+        result = parseStr(buf.toString('utf-8'));
+      }
+    }
   } catch (err: any) {
     const sourceSnippet = typeof mdx === 'string' ? mdx.slice(0, 50) : "Binary Data";
     throw new MDXParseError(err?.message ?? String(err), sourceSnippet);
@@ -126,13 +149,24 @@ export async function parseMdx(mdx: string | Buffer | Uint8Array): Promise<AstNo
   throw new Error("[toaq-oss/omni-mdx] Unrecognized return format from Rust parser. Available properties: " + Object.keys(result.__proto__ || result).join(", "));
 }
 
-export function parseMdxSync(mdx: string | Buffer | Uint8Array): AstNode[] {
+export function parseMdxSync(mdx: MdxInput): AstNode[] {
   const native = getNativeModuleSync();
-  const parse = getParseFn(native);
-
   let result: any;
+
   try {
-    result = parse(mdx);
+    if (typeof mdx === 'string') {
+      const parseStr = native.parse || native.parseToJson || native.parse_to_json;
+      result = parseStr(mdx);
+    } else {
+      const buf = normalizeToBuffer(mdx);
+      const parseBin = native.parseToBinary || native.parse_to_binary;
+      if (parseBin) {
+        result = parseBin(buf);
+      } else {
+        const parseStr = native.parse || native.parseToJson || native.parse_to_json;
+        result = parseStr(buf.toString('utf-8'));
+      }
+    }
   } catch (err: any) {
     const sourceSnippet = typeof mdx === 'string' ? mdx.slice(0, 50) : "Binary Data";
     throw new MDXParseError(err?.message ?? String(err), sourceSnippet);
@@ -158,9 +192,8 @@ export function parseMdxSync(mdx: string | Buffer | Uint8Array): AstNode[] {
   throw new Error("[toaq-oss/omni-mdx] Unrecognized return format from Rust parser.");
 }
 
-export async function compileToJsx(mdx: string): Promise<string> {
+export async function compileToJsx(mdx: MdxInput): Promise<string> {
   const native = getNativeModuleSync();
-  
   const compileFn = native.compileToJsx || native.compile_to_jsx;
   
   if (typeof compileFn !== "function") {
@@ -168,24 +201,26 @@ export async function compileToJsx(mdx: string): Promise<string> {
   }
   
   try {
-    return compileFn(mdx);
+    const buf = normalizeToBuffer(mdx);
+    return compileFn(buf);
   } catch (err: any) {
-    throw new MDXParseError(err?.message ?? String(err), mdx);
+    throw new MDXParseError(err?.message ?? String(err), "Binary Data");
   }
 }
 
-export function compileToJsxSync(mdx: string): string {
+export function compileToJsxSync(mdx: MdxInput): string {
   const native = getNativeModuleSync();
-  
   const compileFn = native.compileToJsx || native.compile_to_jsx;
+  
   if (typeof compileFn !== "function") {
     throw new Error("[toaq-oss/omni-mdx] compileToJsx is not supported by this native module version.");
   }
   
   try {
-    return compileFn(mdx);
+    const buf = normalizeToBuffer(mdx);
+    return compileFn(buf);
   } catch (err: any) {
-    throw new MDXParseError(err?.message ?? String(err), mdx);
+    throw new MDXParseError(err?.message ?? String(err), "Binary Data");
   }
 }
 
