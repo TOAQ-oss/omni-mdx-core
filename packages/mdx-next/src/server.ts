@@ -16,4 +16,4 @@ export {
     MDXParseError
 } from "./parse.server";
 export { MDXServerRenderer } from "./MDXServerRenderer";
-export type { AstNode, AttrValueKind, MDXComponents } from "./MDXServerRenderer";
+export type { AstNode, AttrValueKind, MDXComponents } from "./types/MdxAST";

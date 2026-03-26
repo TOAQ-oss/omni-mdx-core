@@ -19,26 +19,7 @@
 
 import React, { ReactNode, JSX } from "react";
 import katex from "katex";
-
-// AST types (mirror Rust output exactly)
-
-export type AttrValueKind =
-  | { kind: "text";       value: string }
-  | { kind: "expression"; value: string }
-  | { kind: "boolean" }
-  | { kind: "ast";        value: AstNode[] };
-
-export interface AstNode {
-  node_type:     string;
-  content?:      string;
-  self_closing?: boolean;
-  child_count?:  number;
-  attributes?:   Record<string, AttrValueKind> | string;
-  children?:     AstNode[];
-}
-
-export type MDXComponents = Record<string, React.ComponentType<any>>;
-
+import type { AttrValueKind, AstNode, MDXComponents } from "./types/MdxAST";
 /**
  * Converts a raw AttrValueKind from the Rust AST into a React-usable prop value.
  *   text       → string

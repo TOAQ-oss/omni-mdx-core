@@ -10,7 +10,10 @@
 import React from "react";
 
 // Types only (no runtime imports)
-export type { AstNode, AttrValueKind, MDXComponents } from "./MDXServerRenderer";
+export type { AstNode, AttrValueKind, MDXComponents } from "./types/MdxAST";
+export type {
+    MdxInput
+} from './types/MdxInput';
 
 // Component registry (empty by default; to be expanded)
 export const MDX_COMPONENTS: Record<string, React.ComponentType<any>> = {};
