@@ -14,9 +14,9 @@ During the build process or at runtime, these parsers convert strings into massi
 
 The V8 engine has to work overtime to traverse these structures, and the Garbage Collector (GC) inevitably kicks in. This causes massive CPU spikes, huge memory consumption, and severe delays in build times (especially in frameworks like Next.js or Vite).
 
-<Callout type="warning" title="The Hidden Cost of ASTs">
+<Note type="warning">
   A single 500-line MDX file can generate an AST with over 15,000 nodes. Multiplying this by hundreds of files creates a severe memory bottleneck that JavaScript was simply never designed to handle efficiently.
-</Callout>
+</Note>
 
 ## The Rust Paradigm
 
