@@ -1,0 +1,26 @@
+[
+  {
+    "id": "blank",
+    "name": "Blank Canvas",
+    "description": "Start from scratch with an empty file.",
+    "icon": "FileText",
+    "file": "blank.tsx",
+    "mdx": "# Welcome to Omni-Core\n\n<CustomComponent />"
+  },
+  {
+    "id": "toaq",
+    "name": "TOAQ Style",
+    "description": "Beautiful pre-styled components and alerts.",
+    "icon": "LayoutTemplate",
+    "file": "toaq.tsx",
+    "mdx": "# TOAQ Interface\n\n<Alert type=\"success\">\n  System is fully operational.\n</Alert>\n\nTry editing the React component to change this alert!"
+  },
+  {
+    "id": "omni",
+    "name": "Omni Performance",
+    "description": "Heavy math and deep AST testing.",
+    "icon": "Zap",
+    "file": "omni.tsx",
+    "mdx": "# Native Math Parsing\n\n$$\nf(x) = \\\\int_{-\\\\infty}^\\\\infty \\\\hat f(\\\\xi)\\\\,e^{2 \\\\pi i \\\\xi x} \\\\,d\\\\xi\n$$\n\n<Benchmark />"
+  }
+]
