@@ -38,10 +38,10 @@ $$E_k = \\frac{1}{2}mv^2$$
 """
 
 # Parse the text into a list of AstNode objects
-nodes = omni_mdx.parse(mdx_content)
+ast = omni_mdx.parse(mdx_content)
 
 # Easily search the AST
-math_blocks = [n for n in nodes if n.node_type == "BlockMath"]
+math_blocks = [n for n in ast.nodes if n.node_type == "BlockMath"]
 print(math_blocks[0].content) # Output: E_k = \frac{1}{2}mv^2
 ```
 
@@ -51,7 +51,7 @@ Generate clean, highly customizable HTML, perfectly suited for modern web framew
 ```python
 from omni_mdx import HtmlRenderer, parse
 
-nodes = parse("<Speaker name='Leon'>Welcome to the show.</Speaker>")
+ast = parse("<Speaker name='Leon'>Welcome to the show.</Speaker>")
 
 # Register custom rendering logic for JSX components
 def render_speaker(node, ctx):
@@ -59,30 +59,18 @@ def render_speaker(node, ctx):
     return f'<div class="speaker-tag">{name}</div><p>{node.text_content()}</p>'
 
 renderer = HtmlRenderer(components={"Speaker": render_speaker})
-html_output = renderer.render(nodes)
+html_output = renderer.render(ast.nodes)
 ```
 
 ### 3. Native Desktop Rendering (PyQt5)
 Render MDX content directly into native Qt Widgets. Math equations are seamlessly converted to high-quality images via Matplotlib.
 
 ```python
-import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout
-from omni_mdx import OmniMDX, parse
+from omni_mdx.qt_renderer import QtRenderer
 
-app = QApplication(sys.argv)
-window = QWidget()
-layout = QVBoxLayout(window)
-
-nodes = parse("# Hello\\nNative rendering without WebViews!")
-
-# OmniMDX handles the Qt layout generation
-engine = OmniMDX()
-widget = engine.render_qt(nodes, parent=window)
-
-layout.addWidget(widget)
-window.show()
-sys.exit(app.exec_())
+ast = parse("# Hello\\nNative rendering without WebViews!")
+renderer = QtRenderer()
+widget = renderer.render(ast.nodes, parent=window)
 ```
 
 ## 🧠 Advanced AST Manipulation
@@ -109,7 +97,7 @@ ast = parse(script)
 
 # Extract dialogue for Text-To-Speech (TTS) dataset generation
 dataset_entries = []
-for node in ast:
+for node in ast.nodes:
     if node.node_type == "Speaker":
         dataset_entries.append({
             "character": node.attr_text("name"),

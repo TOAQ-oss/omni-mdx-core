@@ -1,60 +1,91 @@
-# Changelog — toaq-mdx (Python)
+# Changelog — omni-mdx (Python)
 
-All notable changes to the Python package `toaq-mdx` are documented here.
+All notable changes to the Python package `omni-mdx` are documented here.
+
+---
+
+## [0.1.14] — 2026-03-27
+
+### Fix — `parse()` now returns `MdxAst` instead of a plain list
+
+`omni_mdx.parse()` was previously unwrapping the `MdxAst` object returned by the Rust binary and returning a plain `list[MdxNode]` directly. This broke `ast.length`, `ast.nodes`, and any future methods on the root object.
+
+#### Modified files
+
+- **`parser.py`** — `MDXParser.parse()` now returns the `PyMdxAst` object directly without unwrapping
+- **`engine.py`** — the `.nodes` unwrap is moved into `parse_to_ast()`, where it is semantically correct
+- **`__init__.py`** — Quick Start docstring updated (`nodes = parse(...)` → `ast = parse(...)`)
+
+#### Migration
+```python
+# BEFORE (0.1.2 → 0.1.13)
+nodes = omni_mdx.parse("# Hello")
+for node in nodes:
+    print(node.node_type)
+
+# AFTER (0.1.14+)
+ast = omni_mdx.parse("# Hello")
+print(ast.length)
+for node in ast.nodes:
+    print(node.node_type)
+```
+
+#### `MdxAst` API
+
+| Property / Method | Type | Description |
+|---|---|---|
+| `ast.length` | `int` | Number of root nodes |
+| `ast.nodes` | `list[MdxNode]` | List of root nodes |
 
 ---
 
 ## [0.1.2] — 2026-03-13
 
-### Version initiale publique
+### Initial public release
 
-Première version stable du package Python. `toaq-mdx` expose le parser MDX Rust via PyO3/maturin et fournit un pipeline complet de rendu — HTML pour le web, Qt natif pour le desktop.
+First stable release of the Python package. `omni-mdx` exposes the Rust MDX parser via PyO3/maturin and provides a complete rendering pipeline — HTML for the web, native Qt for the desktop.
 
 ---
 
 ### Architecture
-
 ```
 omni_mdx/
-├── __init__.py          ← API publique + instance partagée parse()
-├── core_interface.py    ← Chargement du binaire Rust (.pyd / .so)
-├── parser.py            ← MDXParser — wrapping du core Rust
-├── engine.py            ← OmniMDX — orchestration parse + render
+├── __init__.py          ← Public API + shared parse() instance
+├── core_interface.py    ← Rust binary loader (.pyd / .so)
+├── parser.py            ← MDXParser — Rust core wrapper
+├── engine.py            ← OmniMDX — parse + render orchestration
 ├── ast.py               ← AstNode, AttrValue, parse_ast()
-├── renderer.py          ← HtmlRenderer — rendu HTML avec data-math
-├── qt_renderer.py       ← QtRenderer — rendu Qt natif (desktop)
+├── renderer.py          ← HtmlRenderer — HTML rendering with data-math
+├── qt_renderer.py       ← QtRenderer — native Qt desktop rendering
 ├── math_render.py       ← latex_to_unicode + latex_to_pixmap (matplotlib)
 └── exceptions.py        ← OmniMDXError, MDXSyntaxError, MDXRenderError
 ```
 
 ---
 
-### Fonctionnalités
+### Features
 
-#### API fonctionnelle (usage rapide)
-
+#### Functional API (quick usage)
 ```python
 import omni_mdx
 
-nodes = omni_mdx.parse("# Hello\n\n$E = mc^2$")
-html  = omni_mdx.render_html(nodes)
+ast  = omni_mdx.parse("# Hello\n\n$E = mc^2$")
+html = omni_mdx.render_html(ast.nodes)
 ```
 
-#### `MDXParser` — parser Rust via PyO3
+#### `MDXParser` — Rust parser via PyO3
 
-Wrapping direct du binaire Rust. Le `.pyd` (Windows) ou `.so` (Linux/macOS) est embarqué dans le package — aucune installation séparée.
-
+Direct wrapper around the Rust binary. The `.pyd` (Windows) or `.so` (Linux/macOS) is bundled inside the package — no separate installation required.
 ```python
 from omni_mdx import MDXParser
 
 parser = MDXParser()
-nodes  = parser.parse("# Titre\n\n**gras**")
+ast    = parser.parse("# Title\n\n**bold**")
 ```
 
-#### `OmniMDX` — moteur complet
+#### `OmniMDX` — full engine
 
-Orchestration du pipeline parse + render avec support de composants custom.
-
+Parse + render pipeline orchestration with custom component support.
 ```python
 from omni_mdx import OmniMDX
 
@@ -63,92 +94,87 @@ ast    = engine.parse_to_ast(mdx_text)
 result = engine.render(mdx_text)
 ```
 
-#### `HtmlRenderer` — rendu HTML
+#### `HtmlRenderer` — HTML rendering
 
-Produit du HTML sémantique compatible KaTeX. Les formules sont rendues comme attributs `data-math` pour hydratation côté client.
+Produces semantic HTML compatible with KaTeX. Formulas are rendered as `data-math` attributes for client-side hydration.
 
 - `InlineMath` → `<span class="math-inline" data-math="...">`
 - `BlockMath` → `<div class="math-block" data-math="...">`
 
-#### `QtRenderer` — rendu natif desktop
+#### `QtRenderer` — native desktop rendering
 
-Rendu zéro-HTML pour applications PyQt5. Chaque nœud AST est converti en widget Qt.
-
+Zero-HTML rendering for PyQt5 applications. Each AST node is converted into a native Qt widget.
 ```python
-from omni_mdx import OmniMDX
+from omni_mdx.qt_renderer import QtRenderer
 
-engine = OmniMDX()
-widget = engine.render_qt(nodes, parent=my_window)
+ast      = omni_mdx.parse(mdx_text)
+renderer = QtRenderer()
+widget   = renderer.render(ast.nodes, parent=my_window)
 ```
 
-API de registre des composants custom :
-
+Custom component registry API:
 ```python
 renderer = QtRenderer(components={"Note": my_fn}, math_font_size=14)
 renderer.register("Note", my_fn).register("Alert", my_fn2)  # chainable
-renderer.unregister("Note")   # revient au composant built-in
-renderer.registered()         # dict des composants utilisateur
+renderer.unregister("Note")   # reverts to built-in
+renderer.registered()         # dict of user-registered components
 renderer.builtin_components   # frozenset({"Note", "Details"})
 ```
 
-Signature d'un composant custom :
-
+Custom component signature:
 ```python
 def my_component(node: AstNode, renderer: QtRenderer) -> QWidget:
     title = node.attr_text("title")
-    # renderer._render_mixed_children(node.children) pour contenu mixte
+    # renderer._render_mixed_children(node.children) for mixed content
 ```
 
-#### `math_render` — rendu mathématique
+#### `math_render` — math rendering
 
-- `latex_to_unicode(latex)` — conversion symbolique (grec, opérateurs, exposants, indices)
-- `latex_to_pixmap(latex, font_size, dpi, bg, fg) → QPixmap | None` — rendu via matplotlib, retourne `None` silencieusement en cas d'erreur
+- `latex_to_unicode(latex)` — symbolic conversion (Greek, operators, superscripts, subscripts)
+- `latex_to_pixmap(latex, font_size, dpi, bg, fg) → QPixmap | None` — renders via matplotlib, returns `None` silently on error
 
 #### Exceptions
-
 ```python
 from omni_mdx import OmniMDXError, MDXSyntaxError, MDXRenderError
 
 try:
-    nodes = omni_mdx.parse(mdx_text)
+    ast = omni_mdx.parse(mdx_text)
 except MDXSyntaxError as e:
-    print(f"Erreur de syntaxe : {e}")
+    print(f"Syntax error: {e}")
 except MDXRenderError as e:
-    print(f"Erreur de rendu : {e}")
+    print(f"Render error: {e}")
 ```
 
 ---
 
-### Types AST
-
+### AST types
 ```python
 from omni_mdx import AstNode, AttrValue
 
 node.node_type          # str — "h1", "p", "Note", "InlineMath", ...
-node.content            # Optional[str] — contenu texte brut
+node.content            # Optional[str] — raw text content
 node.children           # List[AstNode]
 node.attributes         # Dict[str, AttrValue]
-node.attr_text("title") # str | None — raccourci pour les attrs text
+node.attr_text("title") # str | None — shorthand for text attributes
 ```
 
 ---
 
 ### Installation
-
 ```bash
-pip install toaq-mdx
+pip install omni-mdx
 
-# Depuis le monorepo (développement)
+# From the monorepo (development)
 cd core-parser
 maturin develop --release --features python
 ```
 
 ---
 
-### Dépendances
+### Dependencies
 
-| Package | Rôle | Optionnel |
+| Package | Role | Optional |
 |---|---|---|
-| PyO3 (Rust) | Bindings Python ↔ Rust | Non |
-| PyQt5 | Rendu desktop natif | Oui |
-| matplotlib | Rendu math en pixmap | Oui |
+| PyO3 (Rust) | Python ↔ Rust bindings | No |
+| PyQt5 | Native desktop rendering | Yes |
+| matplotlib | Math pixmap rendering | Yes |
