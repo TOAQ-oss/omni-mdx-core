@@ -4,10 +4,12 @@
 
 We currently provide security updates for the following versions of the Omni-MDX Core parser (including Node.js and Python bindings):
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 0.2.x   | :white_check_mark: |
-| < 0.2.x | :x:                |
+| Component       | Version | Supported          |
+| --------------- | ------- | ------------------ |
+| **Core Parser** | 0.2.x   | :white_check_mark: |
+| **MDX Next** | 0.1.x   | :white_check_mark: |
+| **MDX Python** | 0.1.x   | :white_check_mark: |
+| Legacy / Others | < 0.1.0 | :x:                |
 
 *Note: As the project is in active development prior to a 1.0 release, we strongly encourage users to always upgrade to the latest minor version.*
 
