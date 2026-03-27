@@ -50,12 +50,15 @@ impl PyMdxNode {
 impl PyMdxNode {
     #[getter]
     pub fn node_type(&self) -> String {
-        self.resolve().map(|n| n.node_type.to_string()).unwrap_or_default()
+        self.resolve()
+            .map(|n| n.node_type.to_string())
+            .unwrap_or_default()
     }
 
     #[getter]
     pub fn content(&self) -> Option<String> {
-        self.resolve().and_then(|n| n.content.as_ref().map(|c| c.to_string()))
+        self.resolve()
+            .and_then(|n| n.content.as_ref().map(|c| c.to_string()))
     }
 
     #[getter]
@@ -71,7 +74,10 @@ impl PyMdxNode {
 
     #[getter]
     pub fn is_component(&self) -> bool {
-        self.node_type().chars().next().map_or(false, |c| c.is_ascii_uppercase())
+        self.node_type()
+            .chars()
+            .next()
+            .map_or(false, |c| c.is_ascii_uppercase())
     }
 
     pub fn text_content(&self) -> String {
@@ -155,7 +161,10 @@ impl PyMdxAst {
     #[getter]
     pub fn nodes(&self) -> Vec<PyMdxNode> {
         (0..self.inner.len())
-            .map(|i| PyMdxNode { ast: Arc::clone(&self.inner), path: vec![i] })
+            .map(|i| PyMdxNode {
+                ast: Arc::clone(&self.inner),
+                path: vec![i],
+            })
             .collect()
     }
 }
@@ -165,9 +174,11 @@ impl PyMdxAst {
 fn py_parse_mdx(input: String) -> PyResult<PyMdxAst> {
     let ast = parse_mdx(&input)
         .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e.to_string()))?;
-    
+
     let static_ast: Vec<AstNode<'static>> = ast.into_iter().map(|n| n.into_static()).collect();
-    Ok(PyMdxAst { inner: Arc::new(static_ast) })
+    Ok(PyMdxAst {
+        inner: Arc::new(static_ast),
+    })
 }
 
 #[pymodule]
