@@ -1,4 +1,4 @@
-import type { AstNode, AttrValueKind } from "../MDXServerRenderer";
+import type { AstNode, AttrValueKind } from "../types/MdxAST";
 
 const NODE_TEXT = 0x01;
 const NODE_ELEMENT = 0x02;

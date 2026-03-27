@@ -133,7 +133,9 @@ jobs:
           restore-keys: ${{ runner.os }}-cargo-py-
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@nightly
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-03-23
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
