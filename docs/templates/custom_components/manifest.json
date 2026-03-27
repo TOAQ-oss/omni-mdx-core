@@ -21,6 +21,6 @@
     "description": "Heavy math and deep AST testing.",
     "icon": "Zap",
     "file": "omni.tsx",
-    "mdx": "# Native Math Parsing\n\n$$\nf(x) = \\\\int_{-\\\\infty}^\\\\infty \\\\hat f(\\\\xi)\\\\,e^{2 \\\\pi i \\\\xi x} \\\\,d\\\\xi\n$$\n\n<Benchmark />"
+    "mdx": "# Native Math Parsing\n\n$$\nf(x) = \\int_{-\\infty}^\\infty \\hat f(\\xi)\\,e^{2 \\pi i \\xi x} \\,d\\xi\n$$\n\n<Benchmark />"
   }
 ]
