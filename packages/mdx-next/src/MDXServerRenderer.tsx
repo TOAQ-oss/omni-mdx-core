@@ -20,6 +20,8 @@
 import React, { ReactNode, JSX } from "react";
 import katex from "katex";
 import type { AttrValueKind, AstNode, MDXComponents } from "./types/MdxAST";
+import { BASIC_STYLES } from "./utils/basicStyles";
+
 /**
  * Converts a raw AttrValueKind from the Rust AST into a React-usable prop value.
  *   text       → string
@@ -262,9 +264,14 @@ export function MDXServerRenderer({
     return <></>;
   }
 
+  const finalComponents = {
+    ...BASIC_STYLES,
+    ...components
+  };
+
   return (
     <div className="omni-mdx-root">
-      {ast.map((node, i) => renderNode(node, i, components))}
+      {ast.map((node, i) => renderNode(node, i, finalComponents))}
     </div>
   );
 }

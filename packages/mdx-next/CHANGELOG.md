@@ -4,6 +4,23 @@ All notable changes to `@toaq-oss/omni-mdx` are documented here.
 
 ---
 
+## [0.1.24] - 2026-03-27
+
+### 🚀 Core & Architecture
+
+* **Buffer Input Normalization:** Added strict normalization for binary inputs (`Buffer` / `Uint8Array`) prior to being processed by the native Rust parser (`napi-rs`). This safeguards the Node.js/Rust boundary against encoding mismatch errors and ensures rock-solid stability when piping raw AST streams into the `MdxBinaryDecoder`.
+
+### 🎨 Features & Developer Experience (DX)
+
+* **Zero-Config Default Styling (`BASIC_STYLES`):** The package now ships with a built-in, highly polished "Dark Mode" aesthetic for all standard HTML elements (`h1`-`h6`, `p`, `ul`, `ol`, `blockquote`, `table`, etc.). This enables a beautiful out-of-the-box documentation experience without requiring users to write custom CSS or configure Tailwind Typography.
+* **Smart Component Merging:** Both `MDXClientRenderer` and `MDXServerRenderer` have been updated to automatically merge the new `BASIC_STYLES` with user-provided `components`. User-defined components strictly take priority, allowing for effortless overrides while keeping the defaults for unspecified tags.
+
+### 💅 Styling & UI Polish
+
+* **Context-Aware Inline Code:** The default `<code>` component now distinguishes between standalone inline code (styled as a highlighted pill) and code nested inside `<pre>` blocks, preventing style collisions with external syntax highlighters (like Prism or Shiki).
+* **Responsive Media & Links:** Added production-ready default styles for `<img>` (responsive scaling, rounded corners, subtle borders) and `<a>` (underlined with hover transitions) to prevent layout shifts and improve accessibility in markdown content.
+* **Hydration Consistency:** Guaranteed 1:1 visual parity between Server-Side Rendering (SSR) and Client-Side Rendering (CSR) by injecting the shared styling logic directly into both renderers, eliminating the Flash of Unstyled Content (FOUC).
+
 ## [0.1.4] — 2026-03-18
 
 ### 🚀 Performance & Architecture

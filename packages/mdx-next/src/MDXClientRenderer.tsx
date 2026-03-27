@@ -20,7 +20,7 @@ import React, { ReactNode, useRef } from "react";
 import katex from "katex";
 import { MDXErrorBoundary } from "./MDXErrorBoundary";
 import type { AstNode, MDXComponents } from "./types/MdxAST";
-
+import { BASIC_STYLES } from "./utils/basicStyles";
 
 
 // Attr resolver (client version handles expressions fully)
@@ -169,9 +169,14 @@ export function MDXClientRenderer({
 
   if (!ast || !Array.isArray(ast)) return null;
 
+  const finalComponents = {
+    ...BASIC_STYLES,
+    ...components
+  };
+
   return (
     <div className="omni-mdx-root">
-      <MDXClientContent ast={ast} components={components} />
+      <MDXClientContent ast={ast} components={finalComponents} />
     </div>
   );
 }
