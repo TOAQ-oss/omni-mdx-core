@@ -1,0 +1,57 @@
+# Introduction & Core Engine
+
+*Last Updated March 27, 2026*
+
+Welcome to the Omni-MDX Python ecosystem.
+
+Traditional Markdown or MDX parsers in Python typically fall into two categories: pure Python implementations (which can bottleneck on large volumes of text) or wrappers around JavaScript tooling (requiring heavy external processes like Node.js).
+
+Omni-MDX introduces a different paradigm: **a native, high-performance parsing engine written in Rust, directly interfaced with Python.**
+
+---
+
+## The Monorepo Guarantee
+
+Omni-MDX is developed as a monorepo. The underlying parsing engine (`core-parser` in Rust) serves as the absolute single source of truth across all environments.
+
+This means the `omni-mdx` Python package utilizes the **exact same compiled binary** as the `@toaq-oss/omni-mdx` Node.js package. If an MDX document is valid on your Next.js frontend, it is guaranteed to be parsed identically in your Python data pipeline or desktop application. This eliminates rendering and parsing inconsistencies between web and data teams.
+
+---
+
+## Under the Hood: Zero-Copy Architecture
+
+Integrating low-level libraries (Rust, C++) with high-level languages (Python) often introduces a significant performance hurdle: **serialization overhead**.
+
+In a standard Foreign Function Interface (FFI) architecture, a Rust parser would analyze the text and return a large JSON string. Python would then parse this string using `json.loads()`, allocating thousands of dictionaries in memory. For massive documents, this data conversion often takes longer than the actual parsing.
+
+Omni-MDX bypasses this bottleneck using a **Zero-Copy** bridge powered by PyO3:
+
+1. **One-Time Rust Allocation:** The Rust engine parses the MDX document and constructs the Abstract Syntax Tree (AST) within its own highly optimized, safe memory space.
+2. **Smart Pointers:** Instead of deep-copying the tree into JSON, the Rust function returns a lightweight proxy class (`PyMdxAst`) to Python. This class merely holds a memory address (an `Arc` pointer) to the Rust tree.
+3. **Lazy Evaluation:** On the Python side, when you request a property like `node.node_type` or `node.children`, Python does not read from a pre-allocated dictionary. It crosses the native bridge in real-time to query that specific node directly from Rust's RAM.
+
+### Performance Impact
+* **O(1) Memory Footprint in Python:** Whether the MDX document is 10 lines or 10,000 lines long, the `omni_mdx.parse()` function returns almost instantly with a near-zero memory footprint on the Python side.
+* **Surgical Data Extraction:** If a processing pipeline only needs to extract `<Table />` components, only those specific nodes will cross the Rust-to-Python boundary. The rest of the document remains securely in Rust's memory, bypassing Python's Garbage Collector entirely.
+
+---
+
+## Core Concept: The Entry Point
+
+The entire Python API is centered around a single fundamental function that triggers the Rust engine: `parse()`.
+
+```python
+import omni_mdx
+
+# 1. The Rust parser analyzes the text instantly
+ast = omni_mdx.parse("# Hello\n\n<Note>Powered by Rust.</Note>")
+
+# 2. 'ast' is a Zero-Copy object pointing to Rust memory
+print(f"Number of root nodes: {ast.length}")
+
+# 3. Lazy data retrieval
+for node in ast.nodes:
+    print(f"Type: {node.node_type}, Is JSX Component: {node.is_component}")
+```
+
+With the core engine's philosophy and architecture established, you can now proceed to explore how to traverse and extract data from the AST.

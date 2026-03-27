@@ -31,10 +31,38 @@
     ]
   },
   {
-    "group": "Python & Desktop",
-    "items": [
-      { "title": "Python Engine API", "slug": "python-engine" },
-      { "title": "Native Qt Rendering", "slug": "qt-rendering" }
+    "group": "Python",
+    "pages": [
+      {
+        "title": "Introduction & Core Engine",
+        "path": "python/core-engine"
+      },
+      {
+        "group": "AST & Data Extraction",
+        "pages": [
+          {
+            "title": "Basic Parsing & Traversal",
+            "path": "python/ast-data-extraction/basic-parsing"
+          },
+          {
+            "title": "Advanced Analysis & RAG",
+            "path": "python/ast-data-extraction/advanced-analysis"
+          }
+        ]
+      },
+      {
+        "group": "Renderers",
+        "pages": [
+          {
+            "title": "Native Qt Rendering",
+            "path": "python/rendering/qt-rendering"
+          },
+          {
+            "title": "HTML & Web Rendering",
+            "path": "python/rendering/html-rendering"
+          }
+        ]
+      }
     ]
   },
   {

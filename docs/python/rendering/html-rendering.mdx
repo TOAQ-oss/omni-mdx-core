@@ -1,0 +1,129 @@
+# HTML & Web Rendering
+
+*Last Updated March 27, 2026*
+
+While Omni-MDX boasts unique native desktop capabilities, its primary use case remains web rendering. If you are building a Python backend (such as FastAPI, Flask, or Django) and need to serve MDX content to a frontend, the `HtmlRenderer` provides a secure, high-performance solution.
+
+Unlike traditional Markdown-to-HTML converters that rely on complex regular expressions, the `HtmlRenderer` operates directly on the native Rust AST. This guarantees that the generated HTML is structurally sound and strictly reflects the parsed tree.
+
+---
+
+## Basic HTML Generation
+
+The `HtmlRenderer` converts a list of `MdxNode` objects into a clean, minified HTML string. By default, it automatically escapes standard text to prevent Cross-Site Scripting (XSS) vulnerabilities.
+
+```python
+import omni_mdx
+from omni_mdx.renderer import HtmlRenderer
+
+source = """
+# Welcome
+This is a standard paragraph with **bold** text.
+"""
+
+ast = omni_mdx.parse(source)
+
+# Initialize the renderer and generate HTML
+renderer = HtmlRenderer()
+html_output = renderer.render(ast.nodes)
+
+print(html_output)
+# Output: <h1>Welcome</h1><p>This is a standard paragraph with <strong>bold</strong> text.</p>
+```
+
+---
+## Rendering Custom JSX Components
+The true power of MDX is the ability to interleave custom React-style components within Markdown. Because your Python backend does not run React, you must define how these components are translated into standard HTML.
+
+You can achieve this by passing a `components` dictionary to the renderer. Each key is the JSX tag name, and the value is a Python rendering function.
+
+### Component Function Signature
+A component rendering function must accept two arguments:
+
+1. `node`: The current `MdxNode` instance.
+2. `ctx`: The `RenderContext`, which allows you to recursively render children.
+
+```python
+import html
+import omni_mdx
+from omni_mdx.renderer import HtmlRenderer
+
+source = """
+<Alert level="danger" dismissible>
+  The server is **offline**.
+</Alert>
+"""
+
+def render_alert(node, ctx) -> str:
+    # 1. Extract native attributes
+    attrs = node.attributes or {}
+    level = html.escape(attrs.get("level", "info"))
+    is_dismissible = attrs.get("dismissible", False)
+    
+    # 2. Recursively render inner children (e.g., parsing the **offline** bold tag)
+    inner_html = ctx.renderer.render(node.children) if hasattr(ctx, 'renderer') else ""
+    # Note: In the latest API, you can instantiate a temporary renderer or 
+    # the context might provide access to the rendering loop. For simplicity:
+    temp_renderer = HtmlRenderer(components=ctx.components)
+    inner_html = temp_renderer.render(node.children)
+    
+    # 3. Build the final HTML string
+    close_btn = "<button>X</button>" if is_dismissible else ""
+    return f'<div class="alert alert-{level}">{close_btn}{inner_html}</div>'
+
+# Parse and Render
+ast = omni_mdx.parse(source)
+renderer = HtmlRenderer(components={"Alert": render_alert})
+print(renderer.render(ast.nodes))
+```
+
+### Component Fallback
+If the AST contains a JSX component that you have not registered in the `components` dictionary, Omni-MDX will safely fall back to a generic `<div>`, preserving the properties as `data-` attributes so they are not lost to the frontend.
+
+For example, an unregistered `<CustomCard id="123" />` will render as:
+`<div data-component="CustomCard" data-id="123"></div>`
+
+---
+
+## Handling Mathematics (KaTeX)
+Omni-MDX is fully equipped for scientific and academic publishing.
+
+By default, the `HtmlRenderer` initializes with `katex=True`. This setting tells the engine not to attempt rendering LaTeX into SVG on the server side (which is slow and heavy). Instead, it delegates the rendering to the client.
+
+Formulas are wrapped in specific HTML tags with a `data-math` attribute containing the raw LaTeX source:
+
+```python
+ast = omni_mdx.parse("Equation: $E = mc^2$")
+renderer = HtmlRenderer(katex=True)
+
+print(renderer.render(ast.nodes))
+# Output: <p>Equation: <span class="math-inline" data-math="E = mc^2"></span></p>
+```
+
+### Frontend Hydration
+On your frontend (React, Vue, or Vanilla JS), you can then run KaTeX (or MathJax) over these elements to generate the visual equations:
+
+```js
+// Example: Vanilla JS hydration on the client
+document.querySelectorAll('[data-math]').forEach(el => {
+    const tex = el.getAttribute('data-math');
+    const isBlock = el.classList.contains('math-block');
+    
+    katex.render(tex, el, {
+        displayMode: isBlock,
+        throwOnError: false
+    });
+});
+```  
+If you prefer to output formulas simply wrapped in standard `<code>` tags, instantiate the renderer with `HtmlRenderer(katex=False)`.
+
+---
+## Functional Shortcut
+If you do not need to maintain a persistent renderer instance, you can use the `render_html` utility function for a quick, one-line conversion:
+
+```python
+from omni_mdx import parse, render_html
+
+ast = parse("# Quick Title")
+html = render_html(ast.nodes, components={"MyTag": my_func}, katex=True)
+```

@@ -1,0 +1,60 @@
+# Example: Advanced Analysis & RAG Pipelines
+
+*Last Updated March 27, 2026*
+
+Omni-MDX transforms your documents into highly structured databases. This is the perfect approach for Data Engineering and Artificial Intelligence, allowing you to intelligently chunk documents and extract metadata before feeding them to an LLM or a vector database.
+
+<Note type="info">
+  **Full Source Code:** Clone and test this environment directly from [omni-mdx-sandbox/python/advanced-rag](https://github.com/TOAQ-oss/omni-mdx-sandbox/tree/main/python/advanced-rag).
+</Note>
+
+## Building a Semantic Document Miner
+
+In this scenario, we want to extract the table of contents, isolate all mathematical formulas, and retrieve custom metadata tags hidden in the document.
+
+### 1. The Source MDX File
+
+Your document contains mixed content, including LaTeX math and invisible metadata components used strictly for your data pipeline:
+
+```mdx
+## Vector Embeddings
+To inject context into an LLM, we use cosine similarity:
+$$\text{similarity}(A, B) = \frac{A \cdot B}{\|A\| \|B\|}$$
+
+<DocMeta author="Alice" department="Research" />
+```
+
+### 2. The Python Data Pipeline
+By recursively walking the AST, you can selectively extract exactly what you need without mixing logic.
+
+```python
+import omni_mdx
+
+def analyze_document(mdx_source: str) -> dict:
+    ast = omni_mdx.parse(mdx_source)
+    summary = {"formulas": [], "metadata": []}
+
+    def walk(nodes):
+        for node in nodes:
+            # Isolate Mathematical Formulas
+            if node.node_type in ("InlineMath", "BlockMath"):
+                summary["formulas"].append(node.content)
+                continue # Stop descending to avoid counting math as text
+                
+            # Extract JSX metadata components
+            elif node.node_type == "DocMeta":
+                summary["metadata"].append(node.attributes or {})
+            
+            walk(node.children)
+
+    walk(ast.nodes)
+    return summary
+
+# Result: 
+# {
+#   "formulas": ["\text{similarity}(A, B) = \frac{A \cdot B}{\|A\| \|B\|}"],
+#   "metadata": [{"author": "Alice", "department": "Research"}]
+# }
+```
+
+This ensures that your LLM context window receives clean, structured JSON rather than raw, noisy Markdown formatting.

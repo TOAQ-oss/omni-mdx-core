@@ -1,0 +1,116 @@
+# Native Qt Rendering: The Zero-HTML Paradigm
+
+*Last Updated March 27, 2026*
+
+The vast majority of Markdown and MDX parsers are intrinsically tied to the web ecosystem. Their ultimate goal is to generate HTML strings or Virtual DOM nodes (like React components). 
+
+**Omni-MDX breaks this limitation.** Because the Rust engine generates a purely semantic Abstract Syntax Tree (AST), it remains completely agnostic to the display medium. This opens the door to **100% native desktop rendering** using GUI frameworks like PyQt5 or PySide6.
+
+---
+
+## Why Native Qt instead of WebEngine?
+
+Historically, if a Python developer wanted to render rich Markdown or MDX in a desktop application, they had to embed a `QWebEngineView`—essentially bundling an entire Chromium browser instance inside their app.
+
+The `QtRenderer` provided by Omni-MDX bypasses HTML entirely, converting each `MdxNode` directly into a native Qt widget (`QLabel`, `QFrame`, `QVBoxLayout`, etc.). 
+
+This architectural shift provides three massive advantages:
+
+1. **Extreme Performance:** A Chromium `QWebEngineView` routinely consumes 150MB+ of RAM just to idle. A native widget tree built from our Zero-Copy AST consumes less than 5MB and renders instantly.
+2. **Absolute Security (No XSS):** Because there is no HTML engine, Cross-Site Scripting (XSS) attacks are structurally impossible. A malicious `<script>` tag injected into the MDX is treated merely as a harmless text node. Qt will simply display the raw text without executing it.
+3. **Deep Python Integration:** A JSX component like `<Chart data={[1, 2, 3]} />` does not have to render an HTML canvas. With Omni-MDX, you can map that component to instantiate a real `matplotlib.backends.backend_qt5agg.FigureCanvasQTAgg` widget natively within your application interface.
+
+---
+
+## How the Native Bridge Works
+
+When you pass the AST to the `QtRenderer`, it recursively traverses the nodes and translates them into a fluid Qt layout:
+
+* **Typography:** A paragraph (`<p>`) becomes a custom `FlowLayout` populated with `QLabel` widgets for text, handling bold (`QFont(weight=Bold)`) and italics dynamically.
+* **Layouts:** Blockquotes and code blocks are instantiated as styled `QFrame` containers.
+* **Mathematics:** Mathematical equations (`$$ E=mc^2 $$`) do not require a remote KaTeX server. The renderer utilizes Python's native `matplotlib.mathtext` to render the formula into a high-fidelity `QPixmap` (image) and injects it directly into the UI.
+
+---
+
+## Implementation Example
+
+Integrating the native renderer into a PyQt5 application takes only a few lines of code.
+
+```python
+import sys
+from PyQt5.QtWidgets import QApplication, QMainWindow, QScrollArea, QVBoxLayout, QWidget
+import omni_mdx
+from omni_mdx.qt_renderer import QtRenderer
+
+class NativeMDXWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Omni-MDX Native Viewer")
+        self.resize(800, 600)
+        
+        # 1. Initialize the Qt Renderer
+        self.renderer = QtRenderer()
+        
+        # 2. Parse the MDX document natively (Zero-Copy)
+        document = """
+        # Native Rendering
+        This interface does **not** use HTML. 
+        
+        <Note type="success" title="Performance">
+          Parsed by Rust, rendered by Qt.
+        </Note>
+        
+        $$\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}$$
+        """
+        ast = omni_mdx.parse(document)
+        
+        # 3. Render the AST to a single QWidget container
+        container = QWidget()
+        layout = QVBoxLayout(container)
+        
+        # The render() method returns a fully populated QWidget tree
+        native_ui = self.renderer.render(ast.nodes, parent=container)
+        layout.addWidget(native_ui)
+        
+        # Set up a scroll area for the application
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setWidget(container)
+        self.setCentralWidget(scroll)
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = NativeMDXWindow()
+    window.show()
+    sys.exit(app.exec_())
+```
+
+---
+
+## Mapping Custom JSX Components to QWidgets
+The true power of MDX lies in custom components. You can register any Python function to handle a specific JSX tag, returning a standard `QWidget`.
+```python
+from PyQt5.QtWidgets import QPushButton, QMessageBox
+
+def render_interactive_button(node, renderer_context):
+    """Maps <InteractiveButton label="Click Me" /> to a QPushButton"""
+    
+    # Extract native attributes from the AST
+    label_text = node.attributes.get("label", "Default Button")
+    
+    # Create the native widget
+    btn = QPushButton(label_text)
+    btn.setStyleSheet("background-color: #7c3aed; color: white; padding: 8px;")
+    
+    # Bind native Python events!
+    btn.clicked.connect(lambda: QMessageBox.information(None, "Event", "MDX Button Clicked!"))
+    
+    return btn
+
+# Register the component
+renderer = QtRenderer()
+renderer.register("InteractiveButton", render_interactive_button)
+```
+
+## Next Steps
+If you are building traditional web applications (e.g., FastAPI, Django, or Flask backends) rather than desktop GUIs, proceed to **HTML & Web Rendering** to learn how to securely convert the AST into standard HTML.

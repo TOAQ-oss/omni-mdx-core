@@ -1,0 +1,57 @@
+# Basic Parsing & Traversal
+
+*Last Updated March 27, 2026*
+
+This guide covers the fundamental API for parsing MDX documents and traversing the resulting Abstract Syntax Tree (AST). Because Omni-MDX utilizes a Zero-Copy architecture, traversing the AST is both highly optimized and memory-efficient.
+
+---
+
+## Parsing a Document
+
+The entry point for parsing any MDX string is the `omni_mdx.parse()` function. It synchronously invokes the Rust engine and returns an `MdxAst` object.
+
+```python
+import omni_mdx
+
+source = """
+# Setup Guide
+<Note type="warning" alert>Do not skip this step.</Note>
+"""
+
+# Returns an MdxAst object pointing to the Rust memory
+ast = omni_mdx.parse(source)
+
+# Access the root nodes of the document
+print(f"Total root nodes: {ast.length}")
+for node in ast.nodes:
+    print(node.node_type)
+```
+
+The `MdxAst` object acts as a lightweight container. Its primary property is `.nodes`, which yields a list of `MdxNode` instances representing the top-level blocks of your document.
+
+---
+
+## The MdxNode Interface
+Every element in the AST—from standard Markdown paragraphs to complex JSX components—is represented by an `MdxNode`.
+
+Since data is retrieved via lazy evaluation across the PyO3 bridge, properties are queried in real-time. The `MdxNode` exposes the following core properties:
+
+### Core Properties
+* `node_type` (`str`): The tag or semantic type of the node.
+    * Standard Markdown: `"h1"`, `"p"`, `"ul"`, `"text"`.
+    * Math: `"InlineMath"`, `"BlockMath"`.
+    * JSX: The exact component name (e.g., `"Note"`, `"CustomChart"`).
+* `content` (`str | None`): The raw text content of the node. This is exclusively populated for `"text"`, `"code"`, and mathematical nodes. For container nodes (like a <p> or a JSX component), this property is None.
+* `attributes` (`dict | None`): A native Python dictionary containing the node's properties (JSX props or HTML attributes). Omni-MDX automatically converts values to standard Python types (`str`, `bool`).
+* `children` (`list[MdxNode]`): A list of child nodes nested within the current element.
+* `is_component` (`bool`): A computed flag that returns `True` if the node is a JSX component (defined by starting with an uppercase letter).
+* `self_closing` (`bool`): Indicates whether the node was self-closed (e.g., `<br />` or `<Table />`).
+
+### Helper Methods
+To simplify common traversal tasks, `MdxNode` provides several built-in methods executed natively on the Rust side for maximum performance:
+* `text_content() -> str`: Recursively traverses the node and all its descendants to concatenate and extract pure text. This is highly useful for extracting clean text from complex nested JSX or formatted Markdown.
+* `find(node_type: str) -> MdxNode | None`: Performs a depth-first search to find and return the first descendant node matching the given node_type.
+* `find_all(node_type: str) -> list[MdxNode]`: Performs a depth-first search and returns a list of all descendant nodes matching the given node_type.
+
+## Next Steps
+Now that you understand the basic node structure and how to extract attributes and text, proceed to **Advanced Analysis & RAG** to learn how to build large-scale data-mining pipelines and isolate mathematical formulas.

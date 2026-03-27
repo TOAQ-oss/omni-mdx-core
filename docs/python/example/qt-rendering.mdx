@@ -1,0 +1,68 @@
+# Example: Native Qt Rendering (Zero-HTML)
+
+*Last Updated March 27, 2026*
+
+The true strength of Omni-MDX for desktop developers is its complete decoupling from the web. Instead of embedding a heavy, memory-hungry Chromium browser (WebEngine) in your app, you can render MDX directly into native PyQt5 or PySide6 widgets.
+
+<Note type="info">
+  **Full Source Code:** Clone and test this environment directly from [omni-mdx-sandbox/python/qt-desktop](https://github.com/TOAQ-oss/omni-mdx-sandbox/tree/main/python/qt-desktop).
+</Note>
+
+## Mapping MDX to Native QWidgets
+
+Imagine building an offline scientific editor. You want to render Markdown, JSX components, and LaTeX math directly into your native UI layout.
+
+### 1. The Source MDX File
+
+```mdx
+# Native Rendering
+This interface does **not** use HTML. 
+
+<InteractiveButton label="Run Analysis" />
+
+$$\int_0^\infty e^{-x^2} dx = \frac{\sqrt{\pi}}{2}$$
+```
+
+### 2. The PyQt5 Implementation
+You can map the custom `<InteractiveButton />` tag directly to a real `QPushButton` and bind native Python events to it.
+
+```python
+import sys
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QMessageBox
+import omni_mdx
+from omni_mdx.qt_renderer import QtRenderer
+
+# 1. Define the native widget mapping for your JSX component
+def render_interactive_button(node, renderer_context):
+    label_text = node.attributes.get("label", "Click Me")
+    
+    btn = QPushButton(label_text)
+    btn.setStyleSheet("background-color: #7c3aed; color: white; padding: 8px;")
+    
+    # Bind native Python events directly from the MDX!
+    btn.clicked.connect(lambda: QMessageBox.information(None, "Success", "MDX Button Clicked!"))
+    
+    return btn
+
+def main():
+    app = QApplication(sys.argv)
+    
+    # 2. Parse the AST natively
+    ast = omni_mdx.parse(document_source)
+    
+    # 3. Configure the renderer
+    renderer = QtRenderer()
+    renderer.register("InteractiveButton", render_interactive_button)
+    
+    # 4. Render the AST into a single QWidget container
+    main_window = QWidget()
+    layout = QVBoxLayout(main_window)
+    
+    native_ui = renderer.render(ast.nodes, parent=main_window)
+    layout.addWidget(native_ui)
+    
+    main_window.show()
+    sys.exit(app.exec_())
+```
+
+Thanks to this architecture, your application remains lightweight, ultra-fast, and completely immune to XSS attacks, as no HTML is ever interpreted.

@@ -1,0 +1,73 @@
+# Advanced Analysis & RAG Pipelines
+
+*Last Updated March 27, 2026*
+
+While MDX is historically viewed as a format for visual rendering (Web or Desktop), Omni-MDX’s highly structured and rapidly accessible Abstract Syntax Tree (AST) transforms your documents into queryable databases. 
+
+This capability is particularly powerful for data engineering and Artificial Intelligence, specifically in **Retrieval-Augmented Generation (RAG)** pipelines.
+
+---
+
+## The AST Advantage for RAG
+
+In modern AI architectures, feeding raw Markdown text into a Large Language Model (LLM) or a vector database often leads to a loss of structural context. Traditional text chunking (e.g., splitting every 500 tokens) can accidentally sever a mathematical formula or cut a JSX component in half.
+
+With Omni-MDX, you can parse a corpus of documents on the fly to intelligently extract and segment information *before* vectorization:
+
+1. **Semantic Chunking:** Instead of arbitrary token limits, use header nodes (`h2`, `h3`) to chunk your documents logically by chapter or section.
+2. **Formula Indexing:** Isolate all `BlockMath` or `InlineMath` nodes to create a searchable index of equations, preventing the LLM from hallucinating math syntax.
+3. **JSX as Metadata:** Treat custom tags (e.g., `<DocMeta author="Alice" />` or `<Warning>`) as database tables. The AST allows you to extract `node.attributes.get("author")` instantly and attach it to your vector embeddings as filtering metadata.
+
+---
+
+## Targeted Extraction Techniques
+
+When traversing the AST for data extraction, the goal is often to isolate specific nodes while intentionally skipping others.
+
+### 1. Extracting Mathematical Formulas
+Math nodes contain their raw LaTeX source in the `content` property. When building an extractor, it is crucial to halt the traversal (stop descending into `node.children`) once a math node is found, as the formula is already fully captured.
+
+```python
+def extract_equations(nodes):
+    equations = {"inline": [], "block": []}
+    
+    def walk(current_nodes):
+        for node in current_nodes:
+            if node.node_type == "InlineMath":
+                equations["inline"].append(node.content)
+                continue # Halt descent
+            elif node.node_type == "BlockMath":
+                equations["block"].append(node.content)
+                continue # Halt descent
+            
+            walk(node.children)
+            
+    walk(nodes)
+    return equations
+```
+
+### 2. Extracting JSX Components
+Because Omni-MDX exposes JSX attributes as a native Python dictionary (`node.attributes`), you can easily filter and dump component data. Note that math nodes are technically considered components internally (they begin with an uppercase letter), so you should exclude them if you only want JSX tags.
+
+```python
+def extract_jsx_metadata(nodes):
+    components = []
+    
+    def walk(current_nodes):
+        for node in current_nodes:
+            if node.is_component and node.node_type not in ("InlineMath", "BlockMath"):
+                # Attributes are already a native Python dictionary
+                attrs = node.attributes or {}
+                components.append({
+                    "tag": node.node_type,
+                    "props": attrs,
+                    "has_children": len(node.children) > 0
+                })
+            walk(node.children)
+            
+    walk(nodes)
+    return components
+```
+
+## Next Steps
+Now that you possess the tools to extract raw data and manipulate the AST, the next logical step is learning how to display it. Proceed to **Native Qt Rendering** to see how to bypass HTML entirely and construct desktop applications, or **HTML & Web Rendering** for standard web pipelines.

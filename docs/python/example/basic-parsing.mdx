@@ -1,0 +1,56 @@
+# Example: Basic Parsing & Traversal
+
+*Last Updated March 27, 2026*
+
+The foundation of the Omni-MDX Python engine is its ability to parse Markdown and JSX at lightning speed while keeping the memory footprint near zero. This example demonstrates how to load a document and iterate through its native AST nodes.
+
+<Note type="info">
+  **Full Source Code:** Clone and test this environment directly from [omni-mdx-sandbox/python/basic-parsing](https://github.com/TOAQ-oss/omni-mdx-sandbox/tree/main/python/basic-parsing).
+</Note>
+
+## Extracting Node Information
+
+Imagine you want to parse a simple document and isolate specific JSX alerts to check their severity.
+
+### 1. The Source MDX File
+
+You have a standard MDX string containing custom components:
+
+```mdx
+# System Status
+
+The system is currently operating normally.
+
+<Alert level="critical" active>
+  Database connection **lost** at 10:42 PM.
+</Alert>
+
+### 2. The Python Extraction Script
+On the Python side, you use the `omni_mdx.parse()` function. Because of the Zero-Copy architecture, the attributes are instantly available as a native Python dictionary.
+
+```python
+import omni_mdx
+
+def main():
+    # 1. Parse the document (returns a pointer to Rust memory)
+    ast = omni_mdx.parse(document_source)
+    
+    # 2. Filter specific JSX nodes
+    alerts = [node for node in ast.nodes if node.node_type == "Alert"]
+    
+    for alert in alerts:
+        # 3. Access the native dictionary for attributes
+        attrs = alert.attributes or {}
+        level = attrs.get("level", "unknown")
+        is_active = attrs.get("active", False)
+        
+        # 4. Use text_content() to recursively strip Markdown tags (like **lost**)
+        clean_message = alert.text_content().strip()
+        
+        status = "ONGOING" if is_active else "RESOLVED"
+        print(f"[{status}] {level.upper()}: {clean_message}")
+
+# Output: [ONGOING] CRITICAL: Database connection lost at 10:42 PM.
+```
+
+By leveraging the AST, you bypass the need for fragile regular expressions, accessing your document's semantic structure safely and efficiently.
