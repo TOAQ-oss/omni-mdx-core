@@ -7,6 +7,13 @@ on:
       - main
     types:
       - completed
+  workflow_dispatch:
+    inputs:
+      skip_version_check:
+        description: 'Bypass version check and publish immediately'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -15,7 +22,9 @@ permissions:
 jobs:
   check-version:
     runs-on: ubuntu-latest
-    if: github.event.workflow_run.conclusion == 'success'
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
     outputs:
       version_changed: ${{ steps.check.outputs.version_changed }}
     steps:
@@ -26,6 +35,19 @@ jobs:
       - name: Check if package version changed
         id: check
         run: |
+          if [ "${{ inputs.skip_version_check }}" == "true" ]; then
+            echo "Version check bypassed manually."
+            echo "version_changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Si déclenchement manuel sans bypass, on force aussi true
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "Manual trigger without bypass — assuming version changed."
+            echo "version_changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           extract_version() {
             git show "$1:packages/mdx-python/pyproject.toml" 2>/dev/null \
               | grep -E '^version\s*=' | head -1 | sed 's/.*=\s*"\(.*\)"/\1/' \
