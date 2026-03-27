@@ -32,7 +32,9 @@ print(html_output)
 ```
 
 ---
+
 ## Rendering Custom JSX Components
+
 The true power of MDX is the ability to interleave custom React-style components within Markdown. Because your Python backend does not run React, you must define how these components are translated into standard HTML.
 
 You can achieve this by passing a `components` dictionary to the renderer. Each key is the JSX tag name, and the value is a Python rendering function.
