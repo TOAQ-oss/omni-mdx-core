@@ -1,7 +1,7 @@
 """
 omni_mdx.qt_renderer — AST rendered in native PyQt5 widgets.
 
-No HTML produced. Each AstNode becomes a dedicated Qt widget.
+No HTML produced. Each Any becomes a dedicated Qt widget.
 Mathematical formulas are rendered:
   - InlineMath → Unicode text via math_render.latex_to_unicode
   - BlockMath → PNG image via matplotlib.mathtext (if available)
@@ -25,7 +25,6 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, QRect, QSize, QPoint
 from PyQt5.QtGui import QFont, QPixmap
 
-from .ast import AstNode
 from .math_render import latex_to_unicode, latex_to_pixmap, latex_to_pixmap_available
 
 class FlowLayout(QLayout):
@@ -107,7 +106,7 @@ _BUILTIN_COMPONENTS = {"Note", "Details"}
 
 class QtRenderer:
     """
-    Converts a list of AstNodes into native Qt widgets.
+    Converts a list of Anys into native Qt widgets.
 
     Rendering priority for a JSX component:
     1. Component registered by the developer  (via ``components=`` or ``register()``)
@@ -118,7 +117,7 @@ class QtRenderer:
     ----------
     components: dict, optional
         Initial registry of custom components.
-        Signature: ``fn(node: AstNode, renderer: QtRenderer) -> QWidget``
+        Signature: ``fn(node: Any, renderer: QtRenderer) -> QWidget``
 
         Example — override Note with a custom style ::
 
@@ -137,7 +136,7 @@ class QtRenderer:
             renderer = QtRenderer(components={“Note”: my_note})
 
         The component receives:
-        - ``node``     : the complete AstNode with ``node.attributes``, ``node.children``
+        - ``node``     : the complete Any with ``node.attributes``, ``node.children``
         - ``renderer``: the current QtRenderer — use ``renderer._render_mixed_children()``
           to render children, or ``renderer.render()`` for a complete subtree.
 
@@ -183,7 +182,7 @@ class QtRenderer:
         """Names of built-in components (always available even without registration)."""
         return frozenset(_BUILTIN_COMPONENTS)
 
-    def render(self, nodes: List[AstNode], parent: Optional[QWidget] = None) -> QWidget:
+    def render(self, nodes: List[Any], parent: Optional[QWidget] = None) -> QWidget:
         """Returns a QWidget containing the rendering of all nodes."""
         container = QWidget(parent)
         container.setStyleSheet("background:transparent;")
@@ -197,7 +196,7 @@ class QtRenderer:
         layout.addStretch()
         return container
 
-    def _node(self, node: AstNode) -> Optional[QWidget]:
+    def _node(self, node: Any) -> Optional[QWidget]:
         t = node.node_type
         dispatch = {
             "h1": self._heading, "h2": self._heading,
@@ -223,7 +222,7 @@ class QtRenderer:
             return self.render(node.children)
         return None
 
-    def _heading(self, node: AstNode) -> QLabel:
+    def _heading(self, node: Any) -> QLabel:
         level = int(node.node_type[1])
         lbl   = QLabel(node.text_content())
         lbl.setTextInteractionFlags(Qt.TextSelectableByMouse)
@@ -237,7 +236,7 @@ class QtRenderer:
         lbl.setStyleSheet(f"color:{color};background:transparent;{border}{margin}")
         return lbl
 
-    def _paragraph(self, node: AstNode) -> QWidget:
+    def _paragraph(self, node: Any) -> QWidget:
         w = QWidget()
         w.setStyleSheet("background:transparent;")
         layout = FlowLayout(w, h_spacing=2, v_spacing=2)
@@ -245,7 +244,7 @@ class QtRenderer:
         self._inline_into(node.children, layout)
         return w
 
-    def _inline_into(self, children: List[AstNode], layout: FlowLayout,
+    def _inline_into(self, children: List[Any], layout: FlowLayout,
                      bold=False, italic=False, strike=False):
         """Populate a FlowLayout with inline nodes."""
         for child in children:
@@ -281,7 +280,7 @@ class QtRenderer:
             elif child.children:
                 self._inline_into(child.children, layout, bold, italic, strike)
 
-    def _inline_math_into(self, node: AstNode, layout: FlowLayout):
+    def _inline_math_into(self, node: Any, layout: FlowLayout):
         """
         Inline math rendering → always Unicode.
         matplotlib is not suited to inline rendering: images do not align
@@ -292,7 +291,7 @@ class QtRenderer:
         lbl.setToolTip(f"LaTeX : {latex}")
         layout.addWidget(lbl)
 
-    def _block_math(self, node: AstNode) -> QFrame:
+    def _block_math(self, node: Any) -> QFrame:
         frame = QFrame()
         frame.setStyleSheet(
             "QFrame{background:#faf5ff;border:1px solid #ddd6fe;"
@@ -349,7 +348,7 @@ class QtRenderer:
 
         return frame
 
-    def _inline_math_as_block(self, node: AstNode) -> QWidget:
+    def _inline_math_as_block(self, node: Any) -> QWidget:
         """InlineMath encountered at block level (outside <p>) — centered."""
         w = QWidget()
         w.setStyleSheet("background:transparent;")
@@ -362,7 +361,7 @@ class QtRenderer:
         layout.addWidget(lbl)
         return w
 
-    def _list(self, node: AstNode, ordered: bool) -> QWidget:
+    def _list(self, node: Any, ordered: bool) -> QWidget:
         w = QWidget()
         w.setStyleSheet("background:transparent;")
         layout = QVBoxLayout(w)
@@ -404,7 +403,7 @@ class QtRenderer:
                     layout.addWidget(wrapper)
         return w
 
-    def _blockquote(self, node: AstNode) -> QFrame:
+    def _blockquote(self, node: Any) -> QFrame:
         frame = QFrame()
         frame.setStyleSheet(
             "QFrame{background:#f9fafb;border-left:4px solid #d1d5db;"
@@ -419,7 +418,7 @@ class QtRenderer:
                 layout.addWidget(w)
         return frame
 
-    def _code_block(self, node: AstNode) -> QFrame:
+    def _code_block(self, node: Any) -> QFrame:
         frame = QFrame()
         frame.setStyleSheet(
             "QFrame{background:#1e293b;border-radius:6px;margin:2px 0;}"
@@ -441,7 +440,7 @@ class QtRenderer:
         line.setStyleSheet("background:#e5e7eb;border:none;margin:4px 0;")
         return line
 
-    def _table(self, node: AstNode) -> QFrame:
+    def _table(self, node: Any) -> QFrame:
         from PyQt5.QtWidgets import QGridLayout
         frame = QFrame()
         frame.setStyleSheet(
@@ -478,7 +477,7 @@ class QtRenderer:
                 row_idx += 1
         return frame
 
-    def _component(self, node: AstNode) -> QFrame:
+    def _component(self, node: Any) -> QFrame:
         fn = self.components.get(node.node_type)
         if fn:
             return fn(node, self)
@@ -505,7 +504,7 @@ class QtRenderer:
             layout.addWidget(w)
         return frame
 
-    def _render_mixed_children(self, children: List[AstNode]) -> List[QWidget]:
+    def _render_mixed_children(self, children: List[Any]) -> List[QWidget]:
         """
         Returns a list of children that can mix block and inline nodes.
 
@@ -518,7 +517,7 @@ class QtRenderer:
                          "code", "a", "br"}
 
         widgets: List[QWidget] = []
-        inline_buf: List[AstNode] = []
+        inline_buf: List[Any] = []
 
         def flush_inline():
             if not inline_buf:
@@ -543,7 +542,7 @@ class QtRenderer:
         flush_inline()
         return widgets
 
-    def _note(self, node: AstNode) -> QFrame:
+    def _note(self, node: Any) -> QFrame:
         kind  = node.attr_text("type") or "info"
         title = node.attr_text("title") or ""
         styles = {
@@ -572,7 +571,7 @@ class QtRenderer:
             layout.addWidget(w)
         return frame
 
-    def _details(self, node: AstNode) -> QFrame:
+    def _details(self, node: Any) -> QFrame:
         title = node.attr_text("title") or "Détails"
         outer = QFrame()
         outer.setStyleSheet(

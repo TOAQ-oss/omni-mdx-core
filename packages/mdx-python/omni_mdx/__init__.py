@@ -22,7 +22,6 @@ Quick start
 
 from .parser import MDXParser
 from .engine import OmniMDX
-from .ast import AstNode, AttrValue
 from .renderer import HtmlRenderer, render_html
 from .exceptions import OmniMDXError, MDXSyntaxError, MDXRenderError
 
@@ -38,12 +37,10 @@ __all__ = [
     "MDXParser",
     "OmniMDX",
     "HtmlRenderer",
-    "AstNode",
-    "AttrValue",
     # Exceptions
     "OmniMDXError",
     "MDXSyntaxError",
     "MDXRenderError",
 ]
 
-__version__ = "0.1.0"
+__version__ = "0.1.10"

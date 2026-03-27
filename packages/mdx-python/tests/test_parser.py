@@ -4,7 +4,6 @@ Vérifie la communication avec le moteur Rust et la construction de l'AST.
 """
 import pytest
 import omni_mdx
-from omni_mdx.ast import AstNode
 
 class TestParser:
     def test_empty_string(self):
@@ -18,10 +17,8 @@ class TestParser:
         nodes = omni_mdx.parse("# Titre Principal\nUn paragraphe.")
         
         assert len(nodes) == 2
-        # Vérification du H1
         assert nodes[0].node_type == "h1"
         assert nodes[0].text_content() == "Titre Principal"
-        # Vérification du paragraphe
         assert nodes[1].node_type == "p"
         assert nodes[1].text_content() == "Un paragraphe."
 
@@ -38,27 +35,20 @@ class TestParser:
         nodes = omni_mdx.parse(mdx)
         
         assert len(nodes) == 1
+
         note = nodes[0]
         
         assert note.node_type == "Note"
         assert note.is_component is True
-        
-        # Test des attributs (texte et booléen)
         assert note.attr_text("type") == "warning"
-        assert note.attr("alert").is_boolean is True
-        
-        # Test de l'extraction récursive du texte
+        assert note.attributes.get("alert") is True
         assert note.text_content() == "Attention"
 
     def test_ast_find_methods(self):
         """Les méthodes find() et find_all() doivent parcourir l'arbre correctement."""
-        # On utilise des composants JSX (Majuscule) pour garantir que le parser
-        # crée un véritable arbre AST imbriqué (et non un bloc HTML brut).
         nodes = omni_mdx.parse("<Box><Item>A</Item><Badge>B</Badge><Item>C</Item></Box>")
         box = nodes[0]
         
-        # find() renvoie le premier trouvé
         assert box.find("Item").text_content() == "A"
-        # find_all() renvoie tous les nœuds correspondants
         assert len(box.find_all("Item")) == 2
         assert len(box.find_all("Badge")) == 1

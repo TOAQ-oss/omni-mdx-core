@@ -1,5 +1,4 @@
 from .core_interface import CoreInterface
-from .ast import parse_ast
 
 class OmniMDX:
     def __init__(self, components=None):
@@ -7,29 +6,26 @@ class OmniMDX:
         self._interface = CoreInterface()
 
     def parse_to_ast(self, mdx_text: str):
-        raw_json = self._interface.parse_to_json(mdx_text)
-        return parse_ast(raw_json)
+        ast = self._interface.parse(mdx_text)
+        return ast.nodes
 
     def render(self, mdx_text: str):
-        ast = self.parse_to_ast(mdx_text)
-        return self._traverse(ast)
+        nodes = self.parse_to_ast(mdx_text)
+        return self._traverse(nodes)
 
     def _traverse(self, node):
         if isinstance(node, list):
             return [self._traverse(n) for n in node]
         
-        node_type = node.get("node_type")
-        
-        if node_type == "Jsx":
-            tag = node.get("name")
+        if node.is_component:
+            tag = node.node_type
             if tag in self.components:
-                props = node.get("props", {})
-                children = self._traverse(node.get("children", []))
+                props = node.attributes or {}
+                children = self._traverse(node.children)
                 return self.components[tag](props, children)
         
-        if node_type == "text":
-            return node.get("content", "")
+        if node.node_type == "text":
+            return node.content or ""
 
-        if "children" in node:
-            node["children"] = self._traverse(node["children"])
-        return node
+        children_rendered = self._traverse(node.children)
+        return {"type": node.node_type, "children": children_rendered, "props": node.attributes}
