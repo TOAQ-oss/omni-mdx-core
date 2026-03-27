@@ -62,6 +62,15 @@
             "slug": "python/rendering/html-rendering"
           }
         ]
+      },
+      {
+        "group": "Examples",
+        "items": [
+          { "title": "Basic Parsing", "slug": "python/examples/basic-parsing" },
+          { "title": "Advanced Analysis", "slug": "python/examples/advanced-analysis" },
+          { "title": "HTML Rendering", "slug": "python/examples/html-rendering" },
+          { "title": "Qt Rendering", "slug": "python/examples/qt-rendering" }
+        ]
       }
     ]
   },
