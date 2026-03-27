@@ -6,8 +6,7 @@ class OmniMDX:
         self._interface = CoreInterface()
 
     def parse_to_ast(self, mdx_text: str):
-        ast = self._interface.parse(mdx_text)
-        return ast.nodes
+        return self._interface.parse(mdx_text).nodes
 
     def render(self, mdx_text: str):
         nodes = self.parse_to_ast(mdx_text)

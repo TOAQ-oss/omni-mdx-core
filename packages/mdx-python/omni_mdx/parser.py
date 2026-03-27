@@ -10,5 +10,4 @@ class MDXParser:
         """
         Parse MDX text and return the list of root MdxNode (Zero-Copy).
         """
-        ast = self._interface.parse(mdx_text)
-        return ast.nodes
+        return self._interface.parse(mdx_text)

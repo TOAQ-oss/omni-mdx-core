@@ -9,15 +9,15 @@ Quick start
     import omni_mdx
 
     # Parse
-    nodes = omni_mdx.parse("# Hello\\n\\n$E = mc^2$")
+    ast = omni_mdx.parse("# Hello\\n\\n$E = mc^2$")
 
     # Rendu HTML (pour web)
-    html = omni_mdx.render_html(nodes)
+    html = omni_mdx.render_html(ast.nodes)
 
     # Rendu Qt natif (pour desktop, 0 HTML)
     from omni_mdx import OmniMDX
     engine = OmniMDX()
-    widget = engine.render_qt(nodes, parent=my_parent)
+    widget = engine.render_qt(ast.nodes, parent=my_parent)
 """
 
 from .parser import MDXParser
