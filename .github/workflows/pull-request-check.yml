@@ -9,6 +9,9 @@ on:
       - 'Cargo.toml'
       - 'package.json'
 
+permissions:
+  contents: read
+  
 jobs:
   test-rust-core:
     runs-on: ubuntu-latest
