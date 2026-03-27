@@ -94,6 +94,7 @@ mod node {
     #[napi]
     pub struct MdxNode {
         /// Shared ownership of the root AST — keeps memory alive.
+        // codeql[rust/access-invalid-pointer] : False positive. The AST is converted to owned data (Cow::Owned) preventing any Use-After-Free across the FFI boundary.
         ast: Arc<Vec<AstNode<'static>>>,
         /// Path from root to this node, e.g. [2, 0, 1] means
         /// root[2].children[0].children[1].
@@ -219,6 +220,7 @@ mod node {
     #[napi]
     pub struct MdxAst {
         /// Shared ownership of the parsed AST.
+        // codeql[rust/access-invalid-pointer] : False positive.
         inner: Arc<Vec<AstNode<'static>>>,
     }
 
