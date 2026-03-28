@@ -44,6 +44,10 @@ pub fn extract_jsx(input: &str) -> Result<(String, Vec<String>), ParseError> {
             let placeholder = make_placeholder(pool.len());
             pool.push(block);
             output.push_str(&placeholder);
+
+            if pool.len() > 1000 {
+                return Err(ParseError::TooManyJsxBlocks);
+            }
             continue;
         }
 
@@ -142,8 +146,12 @@ pub(crate) fn scan_jsx_block_pub(bytes: &[u8], i: &mut usize, len: usize) -> Res
                         depth -= 1;
                         // Root block fully closed.
                         if depth == 0 {
-                            *i += 1;
-                            return Ok(());
+                            if *i < len && bytes[*i] == b'>' {
+                                *i += 1;
+                                return Ok(());
+                            } else {
+                                return Err(());
+                            }
                         }
                     } else if (next as char).is_ascii_alphabetic() || next == b'_' {
                         // Found a new opening tag `<Child>`.
