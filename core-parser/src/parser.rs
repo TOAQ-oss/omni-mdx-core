@@ -2,6 +2,10 @@ use crate::ast::{AstNode, ParseError};
 use crate::lexer::extract_jsx;
 use crate::markdown::{extract_math, mask_code_blocks, parse_markdown};
 
+/// Maximum JSX nesting depth allowed before the parser returns an error.
+/// Prevents stack overflow from deeply nested components.
+pub const MAX_JSX_DEPTH: usize = 128;
+
 pub fn parse_mdx(input: &str) -> Result<Vec<AstNode<'static>>, ParseError> {
     // Guard: reject inputs that are too large
     if input.len() > 500_000 {
