@@ -21,6 +21,22 @@ pub fn parse_jsx<'a>(
     block_math: &'a [String],
     inline_math: &'a [String],
 ) -> Result<AstNode<'a>, ParseError> {
+    parse_jsx_depth(input, block_math, inline_math, 0)
+}
+
+fn parse_jsx_depth<'a>(
+    input: &'a str,
+    block_math: &'a [String],
+    inline_math: &'a [String],
+    depth: usize,
+) -> Result<AstNode<'a>, ParseError> {
+    // Guard: prevent stack overflow from deeply nested JSX components
+    if depth > crate::parser::MAX_JSX_DEPTH {
+        return Err(ParseError::UnclosedTag {
+            name: format!("depth limit ({}) exceeded", crate::parser::MAX_JSX_DEPTH),
+        });
+    }
+
     let input = input.trim();
     let bytes = input.as_bytes();
 
@@ -33,7 +49,7 @@ pub fn parse_jsx<'a>(
 
     // 1. Parse the opening tag to extract the name, attributes, and self-closing status.
     let (tag_name, attrs, self_closing, after_open) =
-        parse_open_tag(input, block_math, inline_math)?;
+        parse_open_tag(input, block_math, inline_math, depth)?;
 
     let mut node = AstNode::element(tag_name.clone(), self_closing);
     if !attrs.is_empty() {
@@ -48,7 +64,7 @@ pub fn parse_jsx<'a>(
     // 3. Otherwise, extract the inner content and parse it as children.
     let rest = &input[after_open..];
     let children_src = strip_closing_tag(rest, &tag_name)?;
-    node.children = parse_children(children_src, block_math, inline_math)?;
+    node.children = parse_children(children_src, block_math, inline_math, depth + 1)?;
 
     Ok(node)
 }
@@ -70,6 +86,7 @@ fn parse_open_tag<'a>(
     input: &'a str,
     block_math: &'a [String],
     inline_math: &'a [String],
+    depth: usize,
 ) -> Result<
     (
         Cow<'a, str>,
@@ -119,10 +136,14 @@ fn parse_open_tag<'a>(
         while i < len && is_attr_name_char(bytes[i]) {
             i += 1;
         }
+        // Guard: if no valid attribute name char was consumed, we have an unexpected token.
+        // Without this, non-alphanumeric bytes could cause an infinite loop.
         if i == attr_start {
+            // Skip the offending byte to avoid infinite loop in the fuzzer
+            i += 1;
             return Err(ParseError::UnexpectedToken {
                 pos: i,
-                got: bytes[i] as char,
+                got: bytes.get(i.saturating_sub(1)).copied().unwrap_or(b'?') as char,
             });
         }
         // Zero-Copy: Attribute name
@@ -140,6 +161,12 @@ fn parse_open_tag<'a>(
         i += 1; // skip `=`
         while i < len && bytes[i] == b' ' {
             i += 1;
+        }
+
+        if i >= len {
+            return Err(ParseError::UnclosedTag {
+                name: tag_name.to_string(),
+            });
         }
 
         let value = match bytes[i] {
@@ -160,7 +187,7 @@ fn parse_open_tag<'a>(
             }
             b'{' => {
                 let brace_start_byte = i + 1;
-                let mut depth = 1i32;
+                let mut brace_depth = 1i32;
                 let mut inner_quote: Option<char> = None;
                 let mut end_byte = brace_start_byte;
 
@@ -177,10 +204,10 @@ fn parse_open_tag<'a>(
                         '"' | '\'' | '`' => {
                             inner_quote = Some(ch);
                         }
-                        '{' => depth += 1,
+                        '{' => brace_depth += 1,
                         '}' => {
-                            depth -= 1;
-                            if depth == 0 {
+                            brace_depth -= 1;
+                            if brace_depth == 0 {
                                 end_byte = abs;
                                 break;
                             }
@@ -195,8 +222,8 @@ fn parse_open_tag<'a>(
 
                 let expr_bytes = expr.as_bytes();
                 if expr_bytes.first() == Some(&b'<') {
-                    // Optimized recursion
-                    match parse_jsx(expr, block_math, inline_math) {
+                    // Optimized recursion — depth tracked to prevent stack overflow
+                    match parse_jsx_depth(expr, block_math, inline_math, depth + 1) {
                         Ok(node) => AttrValue::Ast(vec![node]),
                         Err(_) => AttrValue::Expression(Cow::Borrowed(expr)),
                     }
@@ -225,6 +252,7 @@ fn parse_children<'a>(
     src: &'a str,
     block_math: &'a [String],
     inline_math: &'a [String],
+    depth: usize,
 ) -> Result<Vec<AstNode<'a>>, ParseError> {
     let mut children = Vec::new();
     let bytes = src.as_bytes();
@@ -237,7 +265,7 @@ fn parse_children<'a>(
             let mut end = i;
             crate::lexer::scan_jsx_block_pub(bytes, &mut end, len)
                 .map_err(|_| ParseError::UnclosedJsxBlock { pos: start })?;
-            children.push(parse_jsx(&src[start..end], block_math, inline_math)?);
+            children.push(parse_jsx_depth(&src[start..end], block_math, inline_math, depth + 1)?);
             i = end;
         } else {
             let start = i;
@@ -340,5 +368,54 @@ mod tests {
         let node = parse_jsx("<Note>\x02MATHI0\x03</Note>", &[], &inline_pool).unwrap();
         assert_eq!(node.children[0].node_type, "InlineMath");
         assert_eq!(node.children[0].content.as_deref(), Some("E = mc^2"));
+    }
+}
+
+#[cfg(all(test, feature = "fuzzing"))]
+mod fuzz_tests {
+    use super::*;
+    use proptest::prelude::*;
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(1000))]
+
+        // 1. Deep Denial-of-Service (DDoS) Attack
+        // Thousands of opening tags are generated WITHOUT closing them
+        // Ex: <A><B><C><D><E>... (should be blocked by your `depth` setting)
+        #[test]
+        fn fuzz_deep_nesting(
+            input in "(<[a-zA-Z]{1,3}[ ]*){1,2000}"
+        ) {
+            let _ = parse_jsx(&input, &[], &[]);
+        }
+
+        // 2. Syntax Salad (State Machine Confuser)
+        // We only spam critical characters to drive the parser crazy.
+        // Ex: <$$={\n\n"}  }><>\\
+        #[test]
+        fn fuzz_syntax_salad(
+            input in "([<>{}$\\n\\t\\\\\"'`= ]){1,1000}"
+        ) {
+            let _ = parse_jsx(&input, &[], &[]);
+        }
+
+        // 3. The Unicode & Mojibake Nightmare
+        // We inject absolutely EVERYTHING from the Unicode space (Emojis, ZWJ, RTL, Kanji)
+        // mixed with JSX tags to see if reading the bytes causes a crash.
+        #[test]
+        fn fuzz_extreme_unicode(
+            input in "<[a-z]{1,5} attr=\"[\\u0000-\\uFFFF]*\" />"
+        ) {
+            let _ = parse_jsx(&input, &[], &[]);
+        }
+        
+        // 4. The Giant Attributes Attack
+        // A single tag, but with thousands of empty or malformed attributes
+        #[test]
+        fn fuzz_massive_attributes(
+            input in "<A ([a-z]+=[{}a-z]* ){1,1000} />"
+        ) {
+            let _ = parse_jsx(&input, &[], &[]);
+        }
     }
 }

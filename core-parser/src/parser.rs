@@ -5,7 +5,20 @@ use crate::markdown::{extract_math, mask_code_blocks, parse_markdown};
 // The primary orchestrator for the entire MDX to AST parsing pipeline.
 //
 /// The execution order here is strictly deliberate and solves common MDX parsing bugs.
+/// Maximum input length accepted by the parser (10 MB).
+/// Inputs beyond this limit are rejected immediately to prevent OOM on adversarial inputs.
+const MAX_INPUT_BYTES: usize = 10 * 1024 * 1024;
+
+/// Maximum JSX nesting depth allowed before the parser returns an error.
+/// Prevents stack overflow from deeply nested components.
+pub const MAX_JSX_DEPTH: usize = 128;
+
 pub fn parse_mdx(input: &str) -> Result<Vec<AstNode<'static>>, ParseError> {
+    // Guard: reject inputs that are too large
+    if input.len() > MAX_INPUT_BYTES {
+        return Err(ParseError::UnexpectedToken { pos: 0, got: '?' });
+    }
+
     // 1. Code block protection
     let protected = mask_code_blocks(input);
 
