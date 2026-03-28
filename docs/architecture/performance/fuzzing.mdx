@@ -1,0 +1,58 @@
+# Fuzzing Results
+
+*Last Updated March 28, 2026*
+
+Fuzzing is an automated testing technique that floods the parser with millions of random, malformed, or extreme inputs to identify security vulnerabilities, memory leaks, or crashes (`panic`).
+
+For **Omni-MDX**, we used `cargo-fuzz` (based on libFuzzer) to validate the robustness of the Rust engine.
+
+---
+
+## 🛡️ Fuzzing Targets
+
+We have set up two separate test harnesses to cover the entire attack surface.
+
+### 1. `fuzz_parse.rs` (Parsing Logic)
+Target the JSX and MDX parser state machine using only valid UTF-8 sequences.
+* **Objective**: Detect infinite recursion, out-of-bounds index errors, and logical errors in component nesting.
+* **Contract**: The parser must return a graceful `Err`, but must **never** panic.
+
+### 2. `fuzz_utf8.rs` (Data Integrity)
+Injects raw byte sequences, including invalid or truncated UTF-8 characters.
+* **Objective**: Verify that the FFI layer and the engine do not crash when they encounter corrupted characters (Mojibake).
+
+---
+
+## 📊 Test Results
+
+The tests were run on an **Apple Silicon (M1)** architecture to achieve maximum code coverage.
+
+| Metric | `fuzz_parse` | `fuzz_utf8` |
+| :--- | :--- | :--- |
+| **Iterations** | **+ 1.9 million** | **+ 430,000** |
+| **Unique paths** | 36,111 | 21,205 |
+| **Checkpoints** | 6,864 | 5,471 |
+| **Crashes detected** | **0** | **0** |
+
+---
+
+## 🛠️ Fixes & Improvements
+
+Thanks to this fuzzing campaign, we were able to identify and fix critical vulnerabilities before they reached production:
+
+### 1. Fix: Out-of-Bounds Index (JSX)
+The fuzzer discovered a borderline case where a JSX tag ending abruptly with an equal sign (e.g., `<A A=`) caused a crash. 
+* **Solution**: Added a bounds check (`i >= len`) before reading the attribute value.
+
+### 2. Detection of “Markdown Bomb”
+The `fuzz_utf8` test revealed that a specific sequence of extremely nested lists and dashes could overload the processor (Denial of Service).
+* **Solution**: Implementation of a security preprocessor (Shield) that rejects documents with a list nesting depth greater than **64 levels**.
+
+### 3. Unicode Support
+Validation of robustness against truncated multibyte characters (emojis, kanji), ensuring that the parser never attempts to split a character in the middle of its bytes.
+
+---
+
+<Note>
+    **Performance Note**: Despite these additional security checks, the engine maintains its parsing speed thanks to the extensive use of `Cow<'a, str>` and zero-copy.
+</Note>

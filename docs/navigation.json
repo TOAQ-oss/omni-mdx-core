@@ -111,7 +111,8 @@
       {
         "group": "Performance",
         "items": [
-          { "title": "Benchmarks", "slug": "architecture/benchmarks" }
+          { "title": "Benchmarks", "slug": "architecture/performance/benchmarks" },
+          {  "title": "Fuzzing Results", "slug": "architecture/performance/fuzzing" }
         ]
       }
     ]
