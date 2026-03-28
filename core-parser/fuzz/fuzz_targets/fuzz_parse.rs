@@ -18,6 +18,6 @@ fuzz_target!(|data: &[u8]| {
     };
  
     // The parser must never panic — only return Ok or Err.
-    let _ = mdx_parser::parser::parse_mdx(input);
+    let _ = omni_mdx_core::parser::parse_mdx(input);
 });
  
