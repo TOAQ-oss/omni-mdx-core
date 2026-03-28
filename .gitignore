@@ -1,6 +1,5 @@
 # Rust
 target/
-fuzz/
 
 # Node / Next.js
 node_modules/

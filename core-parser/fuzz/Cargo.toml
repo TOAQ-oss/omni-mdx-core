@@ -1,0 +1,32 @@
+[package]
+name = "omni-mdx-fuzz"
+version = "0.0.1"
+authors  = ["Automatically generated"]
+publish  = false
+edition  = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.omni-mdx]
+path = ".."
+
+# Fuzz targets must be compiled without overflow checks for performance,
+# but WITH address sanitizer support (handled by cargo-fuzz automatically).
+
+[[bin]]
+name = "fuzz_parse"
+path = "fuzz_targets/fuzz_parse.rs"
+test  = false
+doc   = false
+
+[[bin]]
+name = "fuzz_utf8"
+path = "fuzz_targets/fuzz_utf8.rs"
+test  = false
+doc   = false
+
+[workspace]
