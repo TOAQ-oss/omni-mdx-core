@@ -12,7 +12,7 @@ pub fn parse_mdx(input: &str) -> Result<Vec<AstNode<'static>>, ParseError> {
         return Err(ParseError::InputTooLong);
     }
 
-    if input.as_bytes().iter().any(|&b| b == 0) {
+    if input.as_bytes().contains(&0) {
         return Err(ParseError::InvalidUtf8);
     }
 
