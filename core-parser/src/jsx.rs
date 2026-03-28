@@ -265,7 +265,12 @@ fn parse_children<'a>(
             let mut end = i;
             crate::lexer::scan_jsx_block_pub(bytes, &mut end, len)
                 .map_err(|_| ParseError::UnclosedJsxBlock { pos: start })?;
-            children.push(parse_jsx_depth(&src[start..end], block_math, inline_math, depth + 1)?);
+            children.push(parse_jsx_depth(
+                &src[start..end],
+                block_math,
+                inline_math,
+                depth + 1,
+            )?);
             i = end;
         } else {
             let start = i;
@@ -408,7 +413,7 @@ mod fuzz_tests {
         ) {
             let _ = parse_jsx(&input, &[], &[]);
         }
-        
+
         // 4. The Giant Attributes Attack
         // A single tag, but with thousands of empty or malformed attributes
         #[test]
