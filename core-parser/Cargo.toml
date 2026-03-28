@@ -35,6 +35,9 @@ pyo3           = { version = "0.24.1", features = ["extension-module"], optional
 napi           = { version = "2", features = ["napi4"], optional = true }
 napi-derive    = { version = "2", optional = true }
 
+[dev-dependencies]
+proptest = "1.4"
+
 [build-dependencies]
 napi-build = "2"
 
@@ -45,6 +48,7 @@ python  = ["pyo3"]
 ffi     = []
 node    = ["napi", "napi-derive"]
 dev-tools  = []
+fuzzing = []
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = ["-Oz"]
