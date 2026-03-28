@@ -15,6 +15,8 @@ pub enum ParseError {
     UnexpectedToken { pos: usize, got: char },
     /// An error occurred while serializing the AST to JSON.
     Serialization(serde_json::Error),
+    InputTooLong,
+    TooManyJsxBlocks,
 }
 
 impl std::fmt::Display for ParseError {
@@ -29,6 +31,8 @@ impl std::fmt::Display for ParseError {
                 write!(f, "Unexpected token '{got}' at byte {pos}")
             }
             ParseError::Serialization(e) => write!(f, "Serialization error: {e}"),
+            ParseError::InputTooLong => write!(f, "Input exceeds maximum allowed length"),
+            ParseError::TooManyJsxBlocks => write!(f, "Too many JSX blocks extracted; limit is 1000"),
         }
     }
 }
