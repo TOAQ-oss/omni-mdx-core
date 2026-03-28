@@ -8,11 +8,18 @@ pub enum ParseError {
     /// The input byte slice is not valid UTF-8.
     InvalidUtf8,
     /// A JSX block was opened but never closed. Contains the byte offset where it started.
-    UnclosedJsxBlock { pos: usize },
+    UnclosedJsxBlock {
+        pos: usize,
+    },
     /// A specific JSX tag was opened but its corresponding closing tag was not found.
-    UnclosedTag { name: String },
+    UnclosedTag {
+        name: String,
+    },
     /// An unexpected character was encountered during parsing.
-    UnexpectedToken { pos: usize, got: char },
+    UnexpectedToken {
+        pos: usize,
+        got: char,
+    },
     /// An error occurred while serializing the AST to JSON.
     Serialization(serde_json::Error),
     InputTooLong,
@@ -32,7 +39,9 @@ impl std::fmt::Display for ParseError {
             }
             ParseError::Serialization(e) => write!(f, "Serialization error: {e}"),
             ParseError::InputTooLong => write!(f, "Input exceeds maximum allowed length"),
-            ParseError::TooManyJsxBlocks => write!(f, "Too many JSX blocks extracted; limit is 1000"),
+            ParseError::TooManyJsxBlocks => {
+                write!(f, "Too many JSX blocks extracted; limit is 1000")
+            }
         }
     }
 }

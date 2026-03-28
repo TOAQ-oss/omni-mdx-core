@@ -9,7 +9,7 @@ pub fn parse_mdx(input: &str) -> Result<Vec<AstNode<'static>>, ParseError> {
     }
 
     if input.as_bytes().iter().any(|&b| b == 0) {
-         return Err(ParseError::InvalidUtf8); 
+        return Err(ParseError::InvalidUtf8);
     }
 
     let mut structural_symbols = 0;
