@@ -12,13 +12,15 @@ For **Omni-MDX**, we used `cargo-fuzz` (based on libFuzzer) to validate the robu
 
 We have set up two separate test harnesses to cover the entire attack surface.
 
-### 1. `fuzz_parse.rs` (Parsing Logic)
+### 1. Parsing Logic
 Target the JSX and MDX parser state machine using only valid UTF-8 sequences.
+**Target:** `fuzz_parse.rs`
 * **Objective**: Detect infinite recursion, out-of-bounds index errors, and logical errors in component nesting.
 * **Contract**: The parser must return a graceful `Err`, but must **never** panic.
 
-### 2. `fuzz_utf8.rs` (Data Integrity)
+### 2. Data Integrity
 Injects raw byte sequences, including invalid or truncated UTF-8 characters.
+**Target:** `fuzz_utf8.rs`
 * **Objective**: Verify that the FFI layer and the engine do not crash when they encounter corrupted characters (Mojibake).
 
 ---
