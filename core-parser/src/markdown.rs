@@ -201,6 +201,28 @@ pub fn extract_math(input: &str) -> (Cow<'_, str>, Vec<String>, Vec<String>) {
     }
 }
 
+/// Enforces structural limits on the Markdown input to prevent excessive parsing times
+/// and potential resource exhaustion during the AST generation phase.
+fn verify_markdown_safety(text: &str) -> Result<(), String> {
+    if text.len() > 250_000 {
+        return Err("Security Alert: Document exceeds maximum allowed size (250KB).".to_string());
+    }
+
+    let footnote_triggers = text.matches("[^").count();
+    if footnote_triggers > 100 {
+        return Err(format!(
+            "Security Alert: Algorithmic complexity limit reached. Too many footnote triggers ({} / 100 allowed).",
+            footnote_triggers
+        ));
+    }
+
+    if text.matches(">>>>>>>>>").count() > 0 {
+        return Err("Security Alert: Excessive blockquote nesting detected.".to_string());
+    }
+
+    Ok(())
+}
+
 /// Converts a pre-processed Markdown string into a flattened Abstract Syntax Tree (AST).
 ///
 /// This function drives the `pulldown-cmark` event loop. It intercepts Markdown events,
@@ -212,6 +234,10 @@ pub fn parse_markdown<'a>(
     block_math: &'a [String],
     inline_math: &'a [String],
 ) -> Result<Vec<AstNode<'a>>, ParseError> {
+    if let Err(security_msg) = verify_markdown_safety(text) {
+        return Err(ParseError::ComplexityLimitExceeded(security_msg)); 
+    }
+    
     let parser = Parser::new_ext(text, Options::all());
     let ph_re = get_ph_re();
 

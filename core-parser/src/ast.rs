@@ -24,6 +24,8 @@ pub enum ParseError {
     Serialization(serde_json::Error),
     InputTooLong,
     TooManyJsxBlocks,
+    /// A generic limit to obfuscate structural/security limits (AST DoS protection)
+    ComplexityLimitExceeded(String),
 }
 
 impl std::fmt::Display for ParseError {
@@ -41,7 +43,8 @@ impl std::fmt::Display for ParseError {
             ParseError::InputTooLong => write!(f, "Input exceeds maximum allowed length"),
             ParseError::TooManyJsxBlocks => {
                 write!(f, "Too many JSX blocks extracted; limit is 1000")
-            }
+            },
+            ParseError::ComplexityLimitExceeded(msg) => write!(f, "{}", msg),
         }
     }
 }

@@ -8,7 +8,7 @@ pub const MAX_JSX_DEPTH: usize = 128;
 
 pub fn parse_mdx(input: &str) -> Result<Vec<AstNode<'static>>, ParseError> {
     // Guard: reject inputs that are too large
-    if input.len() > 500_000 {
+    if input.len() > 2_000_000 {
         return Err(ParseError::InputTooLong);
     }
 
@@ -24,7 +24,7 @@ pub fn parse_mdx(input: &str) -> Result<Vec<AstNode<'static>>, ParseError> {
         }
     }
 
-    if structural_symbols > 5000 {
+    if structural_symbols > 50_000 {
         return Err(ParseError::InputTooLong);
     }
 
