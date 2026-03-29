@@ -235,9 +235,9 @@ pub fn parse_markdown<'a>(
     inline_math: &'a [String],
 ) -> Result<Vec<AstNode<'a>>, ParseError> {
     if let Err(security_msg) = verify_markdown_safety(text) {
-        return Err(ParseError::ComplexityLimitExceeded(security_msg)); 
+        return Err(ParseError::ComplexityLimitExceeded(security_msg));
     }
-    
+
     let parser = Parser::new_ext(text, Options::all());
     let ph_re = get_ph_re();
 

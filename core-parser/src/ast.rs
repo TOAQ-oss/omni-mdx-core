@@ -43,7 +43,7 @@ impl std::fmt::Display for ParseError {
             ParseError::InputTooLong => write!(f, "Input exceeds maximum allowed length"),
             ParseError::TooManyJsxBlocks => {
                 write!(f, "Too many JSX blocks extracted; limit is 1000")
-            },
+            }
             ParseError::ComplexityLimitExceeded(msg) => write!(f, "{}", msg),
         }
     }
