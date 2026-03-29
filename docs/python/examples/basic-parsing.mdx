@@ -34,9 +34,18 @@ import omni_mdx
 
 def main():
     # 1. Parse the document (returns a pointer to Rust memory)
+    document_source = """# System Status
+
+The system is currently operating normally.
+
+<Alert level="critical" active>
+  Database connection **lost** at 10:42 PM.
+</Alert>
+"""
     ast = omni_mdx.parse(document_source)
     
     # 2. Filter specific JSX nodes
+    # In omni_mdx, JSX component nodes use the component tag name (e.g. "Alert") as node_type.
     alerts = [node for node in ast.nodes if node.node_type == "Alert"]
     
     for alert in alerts:
