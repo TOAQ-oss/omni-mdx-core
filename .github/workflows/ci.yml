@@ -4,9 +4,21 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'core-parser/**'
+      - 'packages/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'package.json'
   pull_request:
     branches:
       - main
+    paths:
+      - 'core-parser/**'
+      - 'packages/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'package.json'
 
 permissions:
   contents: read
