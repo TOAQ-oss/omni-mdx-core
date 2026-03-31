@@ -2,62 +2,56 @@
 
 Welcome to the official parsing engine of the Omni MDX ecosystem.
 
-Written entirely in Rust for maximum performance and absolute memory safety, this module is responsible for ingesting submissions from researchers (Markdown files extended with JSX and math) and transforming them into a universal Abstract Syntax Tree (AST) in JSON format.
+Written entirely in Rust for maximum performance and absolute memory safety, this module is responsible for ingesting potentially hostile Markdown files (extended with JSX and LaTeX math) and transforming them into a universal Abstract Syntax Tree (AST).
 
-This parser ensures that the text, metadata, and structure of podcast episodes are fully validated before being sent to the front-end (React) or the machine learning pipeline (Python) for the voice dataset.
+Instead of relying on slow JavaScript parsers, Omni-Core processes text natively and streams the AST directly to the host language (TypeScript/React or Python) using our zero-copy **OCP Binary Protocol**.
 
 ## ✨ Key Features
+* **Zero-Trust Security Shield:** Built for public-facing web environments. The core includes a deterministic pre-processor that detects and deflects Algorithmic Complexity attacks ($O(n^2)$ catastrophic backtracking), WASM Stack Overflows, and malformed symbol entropy bombs in constant time.
+
 * **Surgical JSX Cloaking:** Custom tags (such as `<Speaker>` or `<DataChart>`) are temporarily hidden from the standard Markdown engine to prevent them from being accidentally wrapped in `` paragraphs.
 
 * **Math Sanitization:** LaTeX equations (`$` and `$$`) are extracted before parsing. A `>` character in a math equation will never break the document structure.
 
-* **Dynamic Attribute Typing:** The parser identifies whether a JSX prop is a string (`name=“Dr. Laurent”`), an evaluated expression (`data={[1, 2, 3]}`), or a boolean.
+* **Dynamic Attribute Typing:** The parser identifies whether a JSX prop is a string (`name="Dr. Laurent"`), an evaluated expression (`data={[1, 2, 3]}`), or a boolean.
 
-* **Zero Panic:** The architecture handles syntax errors gracefully. If a tag has not been closed, the engine returns a clean error node instead of crashing the application.
-
-* **Multi-Target:** The code is designed to be compiled into **WebAssembly (WASM)** for the web, and exposed via **C-FFI** for the Python ecosystem.
+* **True Multi-Target:** Compiled to **WebAssembly (WASM)** for the browser, native **Node.js addons** via `napi-rs`, and **Python wheels** via `PyO3/maturin` .
 
 ## 🏗️ Internal Architecture
 
 The source code (`src/`) is divided into several specialized modules:
 
-* `lexer.rs`: Primary parser. Handles the wrapping of math blocks and the identification of JSX components.
+* `parser.rs`: The main entry point. Houses the event loop, the AST construction, and the **Omni-Core Security Shields**.
 
-* `jsx.rs`: Parsing engine specifically designed for custom tags and the extraction of their complex attributes.
+* `jsx.rs`: A custom parsing engine designed exclusively for React-style tags and the extraction of their complex attributes.
 
-* `markdown.rs`: Handles integration with `pulldown-cmark` for the CommonMark standard specification.
+* `ast.rs`: Defines the data structures (nodes and attribute types) that are serialized into the OCP Binary format.
 
-* `ast.rs`: Defines the data structures (nodes and attribute types) that will be serialized to JSON.
-
-* `lib.rs` / `ffi.rs`: The public entry points for WASM (`wasm-bindgen`) and Python (`extern “C”`) exports.
+* `lib.rs`: The FFI bridges and public bindings for `wasm-bindgen`, `napi`, and Python exports.
 
 ## 🚀 Compilation & Testing
 The parser's lifecycle is managed by the `Makefile` located at the root of the monorepo.
 
 ### 1. Run the Rust test suite:
-Ensure that the parser correctly handles errors, the AST, and performance:
+We maintain strict performance and security benchmarks. Run the comprehensive test suites to ensure the shields hold against fuzzing payloads:
 
 ```bash
-make test
+cargo test
 ```
-*(This runs the `test_ast`, `test_errors`, and `test_perf` binaries located in `src/bin/`)*
 
 ### 2. Compile for the Web (WASM):
-To generate the ultra-lightweight `.wasm` binary and TypeScript definitions for the `@toaq-oss/omni-mdx` module:
+To generate the ultra-lightweight `.wasm` binary for the browser:
 
 ```bash
-make build-web
+wasm-pack build --target web --features wasm
 ```
-*(The compiled files will be automatically copied to `packages/mdx-next/omni-core/`)*
 
-### 3. Clean up build artifacts:
-
-```bash
-make clean
-```
+### 3. Build Native Addons (Node.js & Python)
+* **Node.js:** `napi build --platform --release --features node`
+* **Python:** `maturin develop --release` (inside `packages/mdx-python`)
 
 ## 🌳 Structure of the Generated AST
-The parser transforms any MDX script into a strict JSON stream. Here is what the standardized output looks like:
+While the data is transferred in binary for speed, the parser's logical output represents a strict, predictable tree. Here is what the standardized structure looks like conceptually:
 
 **Input (MDX):**
 
@@ -94,13 +88,7 @@ Output (JSON AST):
 ]
 ```
 
-## 🛡️ Error Handling
-The philosophy of `core-parser` is to always provide actionable feedback. If the document contains malformed JSX, the parser will inject a specific error node directly into the AST:
+## 🚨 Error Handling & Resilience
+The philosophy of `core-parser` is "Zero Panic". If the document contains malformed JSX or exceeds complexity limits, the parser will never crash the host application.
 
-```
-{
-  “node_type”: “error”,
-  “content”: “Unexpected token near ‘<Speaker name=\”...’"
-}
-```
-This allows client-side interfaces to display localized “Error Boundaries” without breaking the rest of the page or script.
+Instead, it injects actionable error nodes directly into the AST or returns a graceful `ParseError`. This allows client-side interfaces (like Next.js) to display localized "Error Boundaries" without taking down the entire page.
