@@ -1,6 +1,6 @@
 {
   "name": "@toaq-oss/omni-mdx-core",
-  "version": "0.2.9",
+  "version": "0.2.10",
   "description": "Native Rust core for @toaq-oss/omni-mdx",
   "license": "MIT",
   "napi": {
