@@ -210,19 +210,20 @@ fn verify_markdown_safety(text: &str) -> Result<(), ParseError> {
 
     if text.matches("[^").count() > 100 {
         return Err(ParseError::ComplexityLimitExceeded(
-            "ParseError: Document complexity limit exceeded (too many specific syntax tokens).".to_string()
+            "ParseError: Document complexity limit exceeded (too many specific syntax tokens)."
+                .to_string(),
         ));
     }
 
     if text.matches("-  -").count() > 50 || text.matches("- - -").count() > 50 {
         return Err(ParseError::ComplexityLimitExceeded(
-            "ParseError: Excessive structural ambiguity detected.".to_string()
+            "ParseError: Excessive structural ambiguity detected.".to_string(),
         ));
     }
 
     if text.matches(">>>>>>>>>").count() > 0 {
         return Err(ParseError::ComplexityLimitExceeded(
-            "ParseError: Excessive nesting depth detected.".to_string()
+            "ParseError: Excessive nesting depth detected.".to_string(),
         ));
     }
 
@@ -240,8 +241,8 @@ fn verify_markdown_safety(text: &str) -> Result<(), ParseError> {
         }
 
         if max_symbol_streak > 250 {
-             return Err(ParseError::ComplexityLimitExceeded(
-                "ParseError: Malformed document (abnormal symbol density).".to_string()
+            return Err(ParseError::ComplexityLimitExceeded(
+                "ParseError: Malformed document (abnormal symbol density).".to_string(),
             ));
         }
     }
@@ -261,7 +262,9 @@ pub fn parse_markdown<'a>(
     inline_math: &'a [String],
 ) -> Result<Vec<AstNode<'a>>, ParseError> {
     if let Err(security_msg) = verify_markdown_safety(text) {
-        return Err(ParseError::ComplexityLimitExceeded(security_msg.to_string()));
+        return Err(ParseError::ComplexityLimitExceeded(
+            security_msg.to_string(),
+        ));
     }
 
     let parser = Parser::new_ext(text, Options::all());

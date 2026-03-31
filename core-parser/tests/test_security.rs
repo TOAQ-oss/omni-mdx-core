@@ -12,7 +12,7 @@ use omni_mdx_core::parser::parse_mdx;
 
 fn test_payload_rejection(payload: &str) {
     let result = parse_mdx(payload);
-    
+
     assert!(
         result.is_err(),
         "The shield failed to reject a malicious payload!"
@@ -21,7 +21,7 @@ fn test_payload_rejection(payload: &str) {
 
 #[test]
 fn test_shield_1_legitimate_document_passes() {
-    let normal_text = "Ceci est un document normal. ".repeat(10_000); 
+    let normal_text = "Ceci est un document normal. ".repeat(10_000);
     let result = parse_mdx(&normal_text);
     assert!(result.is_ok(), "The shield blocked a legitimate document!");
 }
