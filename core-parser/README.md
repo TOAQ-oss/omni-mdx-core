@@ -73,7 +73,7 @@ Output (JSON AST):
     "children": [
       {
         "node_type": "text",
-        "content": "L'énergie est "
+        "content": "Energy is "
       },
       {
         "node_type": "InlineMath",
