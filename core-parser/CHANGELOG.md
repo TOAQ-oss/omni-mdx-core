@@ -3,6 +3,22 @@
 All notable changes to the Rust MDX parser crate are documented here.
 
 ---
+## [0.2.4] - 2026-03-31
+
+### Security
+- **Universal Omni-Core Shield**: Implemented an advanced symbol entropy filter within the Rust engine. The parser now mathematically detects and drops anomalous, malformed payloads (unnatural density of non-alphanumeric characters) before AST generation.
+- **WASM Memory Protection**: Added structural limits to prevent WebAssembly Stack Overflow (OOM) crashes caused by extreme nesting, deep blockquotes (`>`), and ambiguous nested lists.
+
+### Fixed
+- Prevented browser main-thread freezes in the React/Next.js client by instantly rejecting malicious payloads at the Rust/C level with a clear `ParseError: ComplexityLimitExceeded`.
+
+---
+
+## [0.2.3] - 2026-03-31
+
+### Security
+- **Algorithmic Complexity Mitigation (DoS)**: Introduced strict execution bounding for specific markdown tokens. The parser now successfully deflects $O(n^2)$ catastrophic backtracking attacks (CWE-400 Resource Exhaustion) caused by unclosed references or footnotes.
+- **Payload Limits**: Enforced a strict 2MB global size limit at the core level to ensure stable RAM usage across all supported environments (WASM, Node.js, and Python).
 
 [0.2.0] — 2026-03-18
 ## 🚀 Features & Architecture

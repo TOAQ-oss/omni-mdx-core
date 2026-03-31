@@ -1,6 +1,6 @@
 [package]
 name    = "omni-mdx"
-version = "0.2.3"
+version = "0.2.4"
 edition = "2021"
 
 [lib]
@@ -24,6 +24,9 @@ path = "tests/test_code.rs"
 name = "test_ast"
 path = "tests/test_ast.rs"
 
+[[test]]
+name = "test_security"
+path = "tests/test_security.rs"
 
 [dependencies]
 pulldown-cmark = "0.10"

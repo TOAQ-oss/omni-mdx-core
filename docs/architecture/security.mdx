@@ -1,0 +1,42 @@
+# Security & Robustness
+
+*Last Updated March 31, 2026*
+
+Parsing Markdown and JSX is fundamentally a security challenge. Historically, static site generators assumed that Markdown files were written by trusted developers on a local machine. However, as MDX expands into SaaS platforms, CMS environments, and web-based editors, parsers are increasingly exposed to **User-Generated Content (UGC)**.
+
+If a parser implicitly trusts its input, a single malformed document can bring down an entire server or freeze a user's browser. Omni-MDX was designed from the ground up with a "Zero Trust" philosophy regarding input strings.
+
+## Safe for User-Generated Content
+
+When dealing with public-facing text inputs, applications are vulnerable to Denial of Service (DoS) attacks specifically targeting the parser's computational limits (CWE-400: Uncontrolled Resource Consumption). 
+
+Malicious actors do not need large payloads to crash a system; they use carefully crafted strings containing ambiguous structures to force the parser into infinite loops, deep recursion, or catastrophic memory allocation. 
+
+To solve this, we implemented the **Omni-Core Shield**—a proactive, multi-layered defense mechanism written entirely in Rust that intercepts structural anomalies *before* the Abstract Syntax Tree (AST) generation phase even begins.
+
+## The 3-Layer Defense Architecture
+
+### 1. Memory Protection (OOM Prevention)
+WebAssembly (WASM) and Edge environments have strict memory constraints. To prevent Out-Of-Memory (OOM) crashes and Stack Overflows:
+- **Global Payload Limits:** Omni-Core enforces a strict, hardcoded size limit on incoming documents. 
+- **Depth & Ambiguity Caps:** The engine mathematically limits blockquote nesting and list ambiguity. If a document attempts to force the parser's call stack into extreme recursion, the engine gracefully aborts the operation in $O(1)$ time.
+
+### 2. Algorithmic Complexity Mitigation (CPU DoS)
+The most dangerous vulnerability in parsing engines is catastrophic backtracking. Certain syntaxes (like unclosed references or nested formatting) can degrade parsing performance from linear time $O(n)$ to quadratic time $O(n^2)$ or worse.
+- **Universal Entropy Filter:** Instead of playing whack-a-mole with specific attack vectors, Omni-Core utilizes a heuristical symbol entropy shield. It scans the raw byte stream for unnatural densities of non-alphanumeric characters (a common signature of fuzzers and AST bombs) and preemptively drops the payload if it violates human-readable structural limits.
+- **Token Execution Bounding:** Specific high-risk structural tokens are strictly capped, ensuring the internal state machine never enters a CPU-bound death spiral.
+
+### 3. Browser Main-Thread Safety
+In traditional JavaScript parsers, when a malicious payload triggers a CPU spike, the browser's main thread completely freezes. The user cannot scroll, click, or close the modal.
+
+Because the Omni-Core Shield operates at the Rust/C level, validation happens instantaneously. If a payload is deemed too complex or hostile, the WASM module immediately returns a clean `ParseError: ComplexityLimitExceeded` to the JavaScript layer. Your React UI can catch this error and render a fallback boundary, but **the application will never freeze**.
+
+## Predictable Performance Under Attack
+
+Security should not come at the cost of speed. Because our mitigation shields rely on linear byte-stream scanning and zero-copy string references (`Cow<'a, str>`), the overhead of validating a document is virtually zero.
+
+Whether Omni-MDX is parsing a beautifully crafted 10,000-word technical article or deflecting a highly concentrated algorithmic bomb, the execution time remains predictable and bounded to a few milliseconds. 
+
+<Note type="info">
+  **Built for the Edge:** By delegating the security and parsing workload to a memory-safe, isolated Rust binary, your Node.js or Python host environments remain stable, secure, and completely insulated from content-based exploits.
+</Note>

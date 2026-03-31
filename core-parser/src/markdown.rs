@@ -203,21 +203,47 @@ pub fn extract_math(input: &str) -> (Cow<'_, str>, Vec<String>, Vec<String>) {
 
 /// Enforces structural limits on the Markdown input to prevent excessive parsing times
 /// and potential resource exhaustion during the AST generation phase.
-fn verify_markdown_safety(text: &str) -> Result<(), String> {
-    if text.len() > 250_000 {
-        return Err("Security Alert: Document exceeds maximum allowed size (250KB).".to_string());
+fn verify_markdown_safety(text: &str) -> Result<(), ParseError> {
+    if text.len() > 2_000_000 {
+        return Err(ParseError::InputTooLong);
     }
 
-    let footnote_triggers = text.matches("[^").count();
-    if footnote_triggers > 100 {
-        return Err(format!(
-            "Security Alert: Algorithmic complexity limit reached. Too many footnote triggers ({} / 100 allowed).",
-            footnote_triggers
+    if text.matches("[^").count() > 100 {
+        return Err(ParseError::ComplexityLimitExceeded(
+            "ParseError: Document complexity limit exceeded (too many specific syntax tokens).".to_string()
+        ));
+    }
+
+    if text.matches("-  -").count() > 50 || text.matches("- - -").count() > 50 {
+        return Err(ParseError::ComplexityLimitExceeded(
+            "ParseError: Excessive structural ambiguity detected.".to_string()
         ));
     }
 
     if text.matches(">>>>>>>>>").count() > 0 {
-        return Err("Security Alert: Excessive blockquote nesting detected.".to_string());
+        return Err(ParseError::ComplexityLimitExceeded(
+            "ParseError: Excessive nesting depth detected.".to_string()
+        ));
+    }
+
+    let mut symbol_streak = 0;
+    let mut max_symbol_streak = 0;
+
+    for c in text.chars() {
+        if !c.is_alphanumeric() && !c.is_whitespace() {
+            symbol_streak += 1;
+            if symbol_streak > max_symbol_streak {
+                max_symbol_streak = symbol_streak;
+            }
+        } else if c.is_alphanumeric() {
+            symbol_streak = 0;
+        }
+
+        if max_symbol_streak > 250 {
+             return Err(ParseError::ComplexityLimitExceeded(
+                "ParseError: Malformed document (abnormal symbol density).".to_string()
+            ));
+        }
     }
 
     Ok(())
@@ -235,7 +261,7 @@ pub fn parse_markdown<'a>(
     inline_math: &'a [String],
 ) -> Result<Vec<AstNode<'a>>, ParseError> {
     if let Err(security_msg) = verify_markdown_safety(text) {
-        return Err(ParseError::ComplexityLimitExceeded(security_msg));
+        return Err(ParseError::ComplexityLimitExceeded(security_msg.to_string()));
     }
 
     let parser = Parser::new_ext(text, Options::all());
