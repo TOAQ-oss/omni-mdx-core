@@ -21,7 +21,7 @@ fn test_payload_rejection(payload: &str) {
 
 #[test]
 fn test_shield_1_legitimate_document_passes() {
-    let normal_text = "Ceci est un document normal. ".repeat(10_000);
+    let normal_text = "This is a normal document. ".repeat(10_000);
     let result = parse_mdx(&normal_text);
     assert!(result.is_ok(), "The shield blocked a legitimate document!");
 }
@@ -49,7 +49,7 @@ fn test_shield_4_list_ambiguity_stack_overflow() {
 
 #[test]
 fn test_shield_5_blockquote_nesting_bomb() {
-    let quote_bomb = ">>>>>>>>> Attaque de profondeur";
+    let quote_bomb = ">>>>>>>>> Depth attack";
     test_payload_rejection(&quote_bomb);
 }
 
