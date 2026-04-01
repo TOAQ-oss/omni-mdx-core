@@ -109,6 +109,10 @@
         ]
       },
       {
+        "title": "Security",
+        "slug": "architecture/security"
+      },
+      {
         "group": "Performance",
         "items": [
           { "title": "Benchmarks", "slug": "architecture/performance/benchmarks" },
