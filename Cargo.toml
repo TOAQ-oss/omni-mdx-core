@@ -1,6 +1,7 @@
 [workspace]
 members = [
-    "core-parser"
+    "core-parser",
+    "dos-fuzzing"
 ]
 resolver = "2"
 

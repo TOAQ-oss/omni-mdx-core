@@ -28,3 +28,6 @@ Thumbs.db
 
 # Development environment
 tests-dev
+
+# dos-fuzzing
+dos-fuzzing/artifacts
