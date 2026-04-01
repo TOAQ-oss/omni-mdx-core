@@ -1,12 +1,6 @@
 name: Publish @toaq-oss/omni-mdx
 
 on:
-  workflow_run:
-    workflows: ["CI"]
-    branches:
-      - main
-    types:
-      - completed
   workflow_dispatch:
     inputs:
       skip_version_check:
@@ -28,8 +22,7 @@ jobs:
   check-version:
     runs-on: ubuntu-latest
     if: >
-      github.event_name == 'workflow_dispatch' ||
-      github.event.workflow_run.conclusion == 'success'
+      github.event_name == 'workflow_dispatch'
     outputs:
       version_changed: ${{ steps.check.outputs.version_changed }}
       build_core: ${{ steps.core.outputs.build_core }}
