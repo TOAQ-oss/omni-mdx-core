@@ -52,7 +52,7 @@ The system is currently operating normally.
         # 3. Access the native dictionary for attributes
         attrs = alert.attributes or {}
         level = attrs.get("level", "unknown")
-        is_active = attrs.get("active", False)
+        is_active = "active" in attrs
         
         # 4. Use text_content() to recursively strip Markdown tags (like **lost**)
         clean_message = alert.text_content().strip()

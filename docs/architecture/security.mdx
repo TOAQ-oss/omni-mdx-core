@@ -19,7 +19,7 @@ To solve this, we implemented the **Omni-Core Shield**—a proactive, multi-laye
 ### 1. Memory Protection (OOM Prevention)
 WebAssembly (WASM) and Edge environments have strict memory constraints. To prevent Out-Of-Memory (OOM) crashes and Stack Overflows:
 - **Global Payload Limits:** Omni-Core enforces a strict, hardcoded size limit on incoming documents. 
-- **Depth & Ambiguity Caps:** The engine mathematically limits blockquote nesting and list ambiguity. If a document attempts to force the parser's call stack into extreme recursion, the engine gracefully aborts the operation in $O(1)$ time.
+- **Depth & Ambiguity Caps:** The engine mathematically limits blockquote nesting and list ambiguity. If a document attempts to force the parser's call stack into extreme recursion, the engine quickly detects the limit and then aborts the operation in constant time once that limit is reached, keeping overall parsing time bounded by the input size.
 
 ### 2. Algorithmic Complexity Mitigation (CPU DoS)
 The most dangerous vulnerability in parsing engines is catastrophic backtracking. Certain syntaxes (like unclosed references or nested formatting) can degrade parsing performance from linear time $O(n)$ to quadratic time $O(n^2)$ or worse.
