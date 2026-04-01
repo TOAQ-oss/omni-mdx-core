@@ -10,7 +10,11 @@ pub enum DecodeError {
     /// An opcode byte was not recognised.
     UnknownOpcode(u8),
     /// A length field pointed past the end of the buffer.
-    InvalidLength { offset: usize, claimed: usize, remaining: usize },
+    InvalidLength {
+        offset: usize,
+        claimed: usize,
+        remaining: usize,
+    },
     /// A string slice was not valid UTF-8.
     InvalidUtf8 { offset: usize },
 }
@@ -18,15 +22,22 @@ pub enum DecodeError {
 impl std::fmt::Display for DecodeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            DecodeError::UnexpectedEof =>
-                write!(f, "OCP decode error: unexpected end of buffer"),
-            DecodeError::UnknownOpcode(op) =>
-                write!(f, "OCP decode error: unknown opcode 0x{:02X}", op),
-            DecodeError::InvalidLength { offset, claimed, remaining } =>
-                write!(f, "OCP decode error: at offset {} claimed length {} > {} remaining bytes",
-                    offset, claimed, remaining),
-            DecodeError::InvalidUtf8 { offset } =>
-                write!(f, "OCP decode error: invalid UTF-8 at offset {}", offset),
+            DecodeError::UnexpectedEof => write!(f, "OCP decode error: unexpected end of buffer"),
+            DecodeError::UnknownOpcode(op) => {
+                write!(f, "OCP decode error: unknown opcode 0x{:02X}", op)
+            }
+            DecodeError::InvalidLength {
+                offset,
+                claimed,
+                remaining,
+            } => write!(
+                f,
+                "OCP decode error: at offset {} claimed length {} > {} remaining bytes",
+                offset, claimed, remaining
+            ),
+            DecodeError::InvalidUtf8 { offset } => {
+                write!(f, "OCP decode error: invalid UTF-8 at offset {}", offset)
+            }
         }
     }
 }
@@ -146,7 +157,6 @@ impl<'a> Cursor<'a> {
     }
 }
 
-
 /// Maximum nesting depth to prevent stack overflow on pathological inputs.
 const MAX_DEPTH: usize = 512;
 
@@ -154,7 +164,10 @@ fn decode_node(cursor: &mut Cursor<'_>) -> Result<AstNode<'static>, DecodeError>
     decode_node_inner(cursor, 0)
 }
 
-fn decode_node_inner(cursor: &mut Cursor<'_>, depth: usize) -> Result<AstNode<'static>, DecodeError> {
+fn decode_node_inner(
+    cursor: &mut Cursor<'_>,
+    depth: usize,
+) -> Result<AstNode<'static>, DecodeError> {
     if depth > MAX_DEPTH {
         // Treat runaway nesting as a malformed payload.
         return Err(DecodeError::InvalidLength {
@@ -360,7 +373,10 @@ mod tests {
         let mut buf = vec![];
         buf.extend_from_slice(&1u32.to_le_bytes());
         buf.push(0xFF); // unknown opcode
-        assert!(matches!(decode_ast(&buf), Err(DecodeError::UnknownOpcode(0xFF))));
+        assert!(matches!(
+            decode_ast(&buf),
+            Err(DecodeError::UnknownOpcode(0xFF))
+        ));
     }
 
     #[test]

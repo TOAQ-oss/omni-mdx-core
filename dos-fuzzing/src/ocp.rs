@@ -158,7 +158,7 @@ pub fn generate_deep_ocp(depth: usize) -> Vec<u8> {
 pub fn generate_overflow_root_count() -> Vec<u8> {
     let mut buf = Vec::new();
     write_u32(&mut buf, u32::MAX); // root_count absurde
-    // Aucun nœud réel — le décodeur doit gérer l'EOF prématuré proprement
+                                   // Aucun nœud réel — le décodeur doit gérer l'EOF prématuré proprement
     buf
 }
 
@@ -168,7 +168,7 @@ pub fn generate_overflow_string_length() -> Vec<u8> {
     write_u32(&mut buf, 1); // 1 nœud racine
     buf.push(NODE_TEXT);
     write_u32(&mut buf, u32::MAX); // longueur absurde
-    // Pas d'octets de string qui suivent
+                                   // Pas d'octets de string qui suivent
     buf
 }
 
@@ -188,7 +188,7 @@ pub fn generate_overflow_attr_count() -> Vec<u8> {
     write_str_u16(&mut buf, "Box");
     buf.push(0); // self_closing = false
     write_u16(&mut buf, u16::MAX); // attr_count absurde
-    // Aucun attribut réel
+                                   // Aucun attribut réel
     buf
 }
 
@@ -224,7 +224,10 @@ fn random_node(rng: &mut impl Rng, remaining_depth: usize) -> Vec<u8> {
                 (k, v)
             })
             .collect();
-        let attr_refs: Vec<(&str, &str)> = attrs.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
+        let attr_refs: Vec<(&str, &str)> = attrs
+            .iter()
+            .map(|(k, v)| (k.as_str(), v.as_str()))
+            .collect();
 
         let child_count = rng.gen_range(0..=3usize);
         let children: Vec<Vec<u8>> = (0..child_count)

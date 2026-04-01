@@ -3,7 +3,7 @@ use itertools::Itertools;
 /// The number of samples generated per pattern (e.g., sizes 100, 200, 300...).
 pub const SAMPLE_SIZE: usize = 5;
 
-/// Threshold for the standard deviation of slopes. 
+/// Threshold for the standard deviation of slopes.
 /// If the deviation exceeds this, the parser's time complexity is non-linear (O(N^2) or worse).
 const ACCEPTANCE_STDDEV: f64 = 300.0;
 
@@ -28,7 +28,11 @@ pub fn is_superlinear(time_samples: &[(f64, f64)]) -> (f64, bool) {
 
     // Calculate Standard Deviation
     let mean: f64 = slopes.iter().sum::<f64>() / slopes.len() as f64;
-    let variance: f64 = slopes.iter().map(|&slope| (slope - mean).powi(2)).sum::<f64>() / slopes.len() as f64;
+    let variance: f64 = slopes
+        .iter()
+        .map(|&slope| (slope - mean).powi(2))
+        .sum::<f64>()
+        / slopes.len() as f64;
     let stddev = variance.sqrt();
 
     (stddev, stddev > ACCEPTANCE_STDDEV)

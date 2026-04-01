@@ -12,13 +12,35 @@ pub struct Pattern {
 /// Designed to trigger complex AST nesting and state-machine edge cases.
 const TOKENS: &[&str] = &[
     // Core Markdown
-    " [^", "]\n", "* ", "    ", "> ", "---", "![", "`", "```\n",
+    " [^",
+    "]\n",
+    "* ",
+    "    ",
+    "> ",
+    "---",
+    "![",
+    "`",
+    "```\n",
     // JSX & MDX Components
-    "<Box>", "</Box>", "<Speaker ", " data={{", "}}>", "/>", "{/*", "*/}",
+    "<Box>",
+    "</Box>",
+    "<Speaker ",
+    " data={{",
+    "}}>",
+    "/>",
+    "{/*",
+    "*/}",
     // Math & LaTeX (Often causes catastrophic backtracking)
-    "$$", "$", "\\begin{equation}", "\\frac{1}{2}", "_", "^",
+    "$$",
+    "$",
+    "\\begin{equation}",
+    "\\frac{1}{2}",
+    "_",
+    "^",
     // MDX ESM Imports/Exports
-    "export const ", "import { ", "} from '",
+    "export const ",
+    "import { ",
+    "} from '",
 ];
 
 /// Generates a randomized Russian Doll pattern.
@@ -27,9 +49,19 @@ pub fn generate_russian_doll(rng: &mut impl Rng, parts_len: usize) -> Pattern {
     let mut repeating = String::new();
     let mut suffix = String::new();
 
-    for _ in 0..parts_len { prefix.push_str(TOKENS[rng.gen_range(0..TOKENS.len())]); }
-    for _ in 0..parts_len { repeating.push_str(TOKENS[rng.gen_range(0..TOKENS.len())]); }
-    for _ in 0..parts_len { suffix.push_str(TOKENS[rng.gen_range(0..TOKENS.len())]); }
+    for _ in 0..parts_len {
+        prefix.push_str(TOKENS[rng.gen_range(0..TOKENS.len())]);
+    }
+    for _ in 0..parts_len {
+        repeating.push_str(TOKENS[rng.gen_range(0..TOKENS.len())]);
+    }
+    for _ in 0..parts_len {
+        suffix.push_str(TOKENS[rng.gen_range(0..TOKENS.len())]);
+    }
 
-    Pattern { prefix, repeating, suffix }
+    Pattern {
+        prefix,
+        repeating,
+        suffix,
+    }
 }

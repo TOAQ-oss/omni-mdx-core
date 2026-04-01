@@ -9,8 +9,8 @@ use ocp::{
     generate_overflow_root_count, generate_overflow_string_length, generate_random_valid_ocp,
     generate_unknown_opcode, mutate_ocp_payload,
 };
-use targets::{measure_isolated, FuzzTarget};
 use rand::Rng;
+use targets::{measure_isolated, FuzzTarget};
 
 use std::fs;
 use std::time::Duration;
@@ -22,12 +22,16 @@ const FATAL_TIMEOUT: Duration = Duration::from_millis(MAX_MILLIS * 10);
 // Standard size for Russian Doll patterns
 const BASE_SIZE: usize = 100;
 
-
 fn test_mdx_pattern(pat: &Pattern, test_id: usize) -> bool {
     let mut time_samples = Vec::new();
 
     // Warmup
-    let warmup = format!("{}{}{}", pat.prefix, pat.repeating.repeat(BASE_SIZE), pat.suffix);
+    let warmup = format!(
+        "{}{}{}",
+        pat.prefix,
+        pat.repeating.repeat(BASE_SIZE),
+        pat.suffix
+    );
     let _ = measure_isolated(FuzzTarget::MdxText(warmup), FATAL_TIMEOUT);
 
     for i in 1..=scoring::SAMPLE_SIZE {
@@ -81,7 +85,12 @@ fn test_mdx_pattern(pat: &Pattern, test_id: usize) -> bool {
 fn test_ocp_roundtrip(pat: &Pattern, test_id: usize) -> bool {
     let mut time_samples = Vec::new();
 
-    let warmup = format!("{}{}{}", pat.prefix, pat.repeating.repeat(BASE_SIZE), pat.suffix);
+    let warmup = format!(
+        "{}{}{}",
+        pat.prefix,
+        pat.repeating.repeat(BASE_SIZE),
+        pat.suffix
+    );
     let _ = measure_isolated(FuzzTarget::OcpRoundtrip(warmup), FATAL_TIMEOUT);
 
     for i in 1..=scoring::SAMPLE_SIZE {
@@ -103,7 +112,10 @@ fn test_ocp_roundtrip(pat: &Pattern, test_id: usize) -> bool {
                     pat.repeating.repeat(BASE_SIZE * scoring::SAMPLE_SIZE),
                     pat.suffix
                 );
-                let _ = fs::write(format!("artifacts/fatal_loop_ocp_enc_{}.mdx", test_id), &worst);
+                let _ = fs::write(
+                    format!("artifacts/fatal_loop_ocp_enc_{}.mdx", test_id),
+                    &worst,
+                );
                 return true;
             }
         }
@@ -135,15 +147,15 @@ fn test_ocp_roundtrip(pat: &Pattern, test_id: usize) -> bool {
 fn fuzz_ocp_binary(rng: &mut impl rand::Rng, iteration: usize) {
     // Deterministic structured payloads — known edge cases
     let structured: Vec<(&str, Vec<u8>)> = vec![
-        ("empty",                 generate_empty_ocp()),
-        ("flat_10",               generate_flat_ocp(10, "hello")),
-        ("flat_1000",             generate_flat_ocp(1000, "x")),
-        ("deep_100",              generate_deep_ocp(100)),
-        ("deep_10000",            generate_deep_ocp(10_000)),
-        ("overflow_root_count",   generate_overflow_root_count()),
-        ("overflow_string_len",   generate_overflow_string_length()),
-        ("overflow_attr_count",   generate_overflow_attr_count()),
-        ("unknown_opcode",        generate_unknown_opcode()),
+        ("empty", generate_empty_ocp()),
+        ("flat_10", generate_flat_ocp(10, "hello")),
+        ("flat_1000", generate_flat_ocp(1000, "x")),
+        ("deep_100", generate_deep_ocp(100)),
+        ("deep_10000", generate_deep_ocp(10_000)),
+        ("overflow_root_count", generate_overflow_root_count()),
+        ("overflow_string_len", generate_overflow_string_length()),
+        ("overflow_attr_count", generate_overflow_attr_count()),
+        ("unknown_opcode", generate_unknown_opcode()),
     ];
 
     for (name, payload) in &structured {

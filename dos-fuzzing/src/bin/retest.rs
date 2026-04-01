@@ -4,7 +4,7 @@ use std::time::Instant;
 
 fn main() {
     println!("🧪 Starting Phase 2: Vulnerability Verification...");
-    
+
     let paths = match fs::read_dir("artifacts") {
         Ok(p) => p,
         Err(_) => return,
@@ -16,10 +16,14 @@ fn main() {
     for path in paths {
         let path = path.unwrap().path();
         let filename = path.file_name().unwrap().to_str().unwrap();
-        
+
         // Skip the tmp tracker file
-        if filename == ".current_test.tmp" { continue; }
-        if path.extension().and_then(|s| s.to_str()) != Some("mdx") { continue; }
+        if filename == ".current_test.tmp" {
+            continue;
+        }
+        if path.extension().and_then(|s| s.to_str()) != Some("mdx") {
+            continue;
+        }
 
         tested += 1;
         let payload = fs::read_to_string(&path).unwrap();
@@ -30,7 +34,7 @@ fn main() {
             confirmed += 1;
             continue;
         }
-        
+
         // Warm-up
         let _ = parse_mdx(&payload);
 
@@ -45,10 +49,18 @@ fn main() {
         let avg_time = total_time / runs as f64;
 
         if avg_time > 0.05 {
-            println!("🚨 CONFIRMED VULNERABILITY : {} (Avg: {:.3}s)", path.display(), avg_time);
+            println!(
+                "🚨 CONFIRMED VULNERABILITY : {} (Avg: {:.3}s)",
+                path.display(),
+                avg_time
+            );
             confirmed += 1;
         } else {
-            println!("❌ False Positive Dismissed: {} (Avg: {:.3}s)", path.display(), avg_time);
+            println!(
+                "❌ False Positive Dismissed: {} (Avg: {:.3}s)",
+                path.display(),
+                avg_time
+            );
             let _ = fs::remove_file(&path); // Auto-delete false positives
         }
     }
@@ -56,6 +68,9 @@ fn main() {
     if tested == 0 {
         println!("✨ No suspect artifacts found. Engine is secure!");
     } else {
-        println!("\n📊 Final Report: {} DoS vulnerabilities confirmed out of {} tested.", confirmed, tested);
+        println!(
+            "\n📊 Final Report: {} DoS vulnerabilities confirmed out of {} tested.",
+            confirmed, tested
+        );
     }
 }
