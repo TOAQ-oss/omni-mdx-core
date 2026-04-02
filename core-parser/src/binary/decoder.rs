@@ -96,11 +96,17 @@ impl<'a> Cursor<'a> {
     fn read_bytes(&mut self, n: usize) -> Result<&'a [u8], DecodeError> {
         let end = self.pos + n;
         if end > self.data.len() {
-            return Err(DecodeError::InvalidLength {
-                offset: self.pos,
-                claimed: n,
-                remaining: self.remaining(),
-            });
+            // No bytes at all left → UnexpectedEof.
+            // Some bytes left but not enough → InvalidLength.
+            return if self.remaining() == 0 {
+                Err(DecodeError::UnexpectedEof)
+            } else {
+                Err(DecodeError::InvalidLength {
+                    offset: self.pos,
+                    claimed: n,
+                    remaining: self.remaining(),
+                })
+            };
         }
         let slice = &self.data[self.pos..end];
         self.pos = end;
@@ -190,6 +196,7 @@ fn decode_node_inner(
                 children: vec![],
             })
         }
+
         NODE_ELEMENT => {
             // 1. Tag name
             let tag_name = cursor.read_string_u16()?;
