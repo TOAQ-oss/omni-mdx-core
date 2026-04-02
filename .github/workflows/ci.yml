@@ -156,11 +156,13 @@ jobs:
         working-directory: core-parser
         run: |
           pip install maturin pytest
-          pip install -e .
+          pip install -e .[dev]
         env:
           PYO3_PYTHON: ${{ steps.setup_python_step.outputs.python-path }}
  
       - name: Run pytest
         working-directory: packages/mdx-python
         run: pytest tests/ -v --tb=short
+        env:
+          PYTHONPATH: .
  
