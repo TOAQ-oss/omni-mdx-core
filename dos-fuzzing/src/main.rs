@@ -66,11 +66,8 @@ fn test_mdx_pattern(pat: &Pattern, test_id: usize) -> bool {
                 }
             }
             None => {
-                println!("\n 🔥 CRITICAL: INFINITE LOOP — MDX text parser frozen.");
-                let _ = fs::rename(
-                    tmp_path,
-                    format!("artifacts/fatal_loop_text_{}.mdx", test_id),
-                );
+                println!("\n  INFINITE LOOP — MDX text parser frozen.");
+                let _ = fs::rename(tmp, format!("artifacts/fatal_loop_text_{}.mdx", test_id));
                 return true;
             }
         }
@@ -96,7 +93,7 @@ fn test_mdx_pattern(pat: &Pattern, test_id: usize) -> bool {
             pat.suffix
         );
         let _ = fs::write(format!("artifacts/suspect_mdx_{}.mdx", test_id), &worst);
-        println!(" ⚠️  SUSPECT MDX detected — score: {:.2}", score);
+        println!("   SUSPECT MDX — score: {:.2}", score);
         return true;
     }
 
@@ -127,7 +124,7 @@ fn test_ocp_roundtrip(pat: &Pattern, test_id: usize) -> bool {
                 }
             }
             None => {
-                println!("\n 🔥 CRITICAL: INFINITE LOOP — OCP encoder frozen.");
+                println!("\n  INFINITE LOOP — OCP encoder frozen.");
                 let worst = format!(
                     "{}{}{}",
                     pat.prefix,
@@ -159,7 +156,7 @@ fn test_ocp_roundtrip(pat: &Pattern, test_id: usize) -> bool {
             pat.suffix
         );
         let _ = fs::write(format!("artifacts/suspect_ocp_enc_{}.mdx", test_id), &worst);
-        println!(" ⚠️  SUSPECT OCP ENCODER detected — score: {:.2}", score);
+        println!("   SUSPECT OCP ENCODER — score: {:.2}", score);
         return true;
     }
 
@@ -181,13 +178,16 @@ fn fuzz_ocp_binary(rng: &mut impl rand::Rng, iteration: usize) {
         ("unknown_opcode", generate_unknown_opcode()),
     ];
 
-    for (name, payload) in structured {
-        if measure_isolated(FuzzTarget::OcpBinary(payload.clone()), FATAL_TIMEOUT).is_none() {
-            println!(" 🔥 CRITICAL: INFINITE LOOP — OCP binary [{}]", name);
-            let _ = fs::write(
-                format!("artifacts/fatal_loop_ocp_{}_{}.bin", name, iteration),
-                payload,
-            );
+    for (name, payload) in &structured {
+        match measure_isolated(FuzzTarget::OcpBinary(payload.clone()), FATAL_TIMEOUT) {
+            None => {
+                println!("  INFINITE LOOP — OCP binary [{}]", name);
+                let _ = fs::write(
+                    format!("artifacts/fatal_loop_ocp_{}_{}.bin", name, iteration),
+                    payload,
+                );
+            }
+            Some(_) => {} // No hang → OK (panic = crash; in Rust, the thread terminates cleanly)
         }
     }
 
@@ -195,12 +195,15 @@ fn fuzz_ocp_binary(rng: &mut impl rand::Rng, iteration: usize) {
     let base = generate_flat_ocp(5, "fuzz");
     let mutated = mutate_ocp_payload(rng, &base);
 
-    if measure_isolated(FuzzTarget::OcpBinary(mutated.clone()), FATAL_TIMEOUT).is_none() {
-        println!(" 🔥 CRITICAL: INFINITE LOOP — OCP mutated binary");
-        let _ = fs::write(
-            format!("artifacts/fatal_loop_ocp_mut_{}.bin", iteration),
-            &mutated,
-        );
+    match measure_isolated(FuzzTarget::OcpBinary(mutated.clone()), FATAL_TIMEOUT) {
+        None => {
+            println!("  INFINITE LOOP — OCP mutated binary");
+            let _ = fs::write(
+                format!("artifacts/fatal_loop_ocp_mut_{}.bin", iteration),
+                &mutated,
+            );
+        }
+        Some(_) => {}
     }
 
     // High depth valid payload.
@@ -210,7 +213,7 @@ fn fuzz_ocp_binary(rng: &mut impl rand::Rng, iteration: usize) {
 }
 
 fn main() {
-    println!(" 🚀 Starting Omni-Core Ultimate DoS-Fuzzer...");
+    println!("  Starting Omni-Core Ultimate DoS-Fuzzer...");
     let _ = fs::create_dir_all("artifacts");
     let _ = fs::remove_file("artifacts/.current_test.tmp");
 
@@ -218,8 +221,8 @@ fn main() {
     let mut i = 0usize;
     let mut suspects = 0usize;
 
-    println!("\n=== Phase 1: MDX Text + OCP Roundtrip Fuzzing ===");
-    println!(" 🛑 Press Ctrl+C to stop.\n");
+    println!("\n=== Phase 1 : MDX Text + OCP Roundtrip Fuzzing ===");
+    println!("  Press Ctrl+C to stop.\n");
 
     loop {
         i += 1;
