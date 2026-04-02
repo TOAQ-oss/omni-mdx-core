@@ -1,18 +1,24 @@
-/// test_code.rs — Code block protection tests.
-///
-/// Verifies that JSX/HTML inside code blocks (fenced and inline) is NOT
-/// extracted by the JSX lexer and appears correctly in the final AST.
-///
-/// Run with: `cargo run --bin test_code --release -- --nocapture`
+//! Code Block Protection Tests for Omni-Core
+//!
+//! Verifies that JSX/HTML and LaTeX Math inside code blocks (fenced and inline)
+//! are strictly treated as literal text. They must NOT be extracted by the JSX
+//! or Math lexers, and the internal masking control characters must be cleanly restored.
+//!
+//! Run with: `cargo test --test test_code --release -- --nocapture`
+
 use omni_mdx_core::ast::{AstNode, AttrValue};
 use omni_mdx_core::parser::parse_mdx;
 
-// Helpers
+// ============================================================================
+// Helper Functions
+// ============================================================================
 
+/// Finds the first child node matching the given `node_type` at the top level.
 fn find<'a>(nodes: &'a [AstNode], node_type: &str) -> Option<&'a AstNode<'a>> {
     nodes.iter().find(|n| n.node_type == node_type)
 }
 
+/// Recursively performs a Depth-First Search (DFS) to find all nodes of a specific type.
 fn find_all<'a>(nodes: &'a [AstNode], node_type: &str) -> Vec<&'a AstNode<'a>> {
     let mut result = Vec::new();
     for node in nodes {
@@ -26,30 +32,32 @@ fn find_all<'a>(nodes: &'a [AstNode], node_type: &str) -> Vec<&'a AstNode<'a>> {
     result
 }
 
+/// Recursively checks if a specific node type exists anywhere in the tree.
 fn has_node_type(nodes: &[AstNode], node_type: &str) -> bool {
     nodes
         .iter()
         .any(|n| n.node_type == node_type || has_node_type(&n.children, node_type))
 }
 
+/// Recursively traverses the AST to ensure no internal masking bytes leaked into the final output.
 fn check_no_hidden_bytes(nodes: &[AstNode]) {
     for node in nodes {
         if let Some(ref content) = node.content {
             assert!(
                 !content.contains('\x01'),
-                "Byte \\x01 trouvé dans le nœud {}: {:?}",
+                "Masking byte \\x01 found leaked in node {}: {:?}",
                 node.node_type,
                 content
             );
             assert!(
                 !content.contains('\x04'),
-                "Byte \\x04 trouvé dans le nœud {}: {:?}",
+                "Masking byte \\x04 found leaked in node {}: {:?}",
                 node.node_type,
                 content
             );
             assert!(
                 !content.contains('\x05'),
-                "Byte \\x05 trouvé dans le nœud {}: {:?}",
+                "Masking byte \\x05 found leaked in node {}: {:?}",
                 node.node_type,
                 content
             );
@@ -57,6 +65,10 @@ fn check_no_hidden_bytes(nodes: &[AstNode]) {
         check_no_hidden_bytes(&node.children);
     }
 }
+
+// ============================================================================
+// Tests
+// ============================================================================
 
 #[test]
 fn test_fenced_jsx_is_protected() {

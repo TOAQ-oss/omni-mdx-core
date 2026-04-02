@@ -1,17 +1,25 @@
-/// test_perf.rs — Performance and edge-case robustness tests.
-///
-/// Chosen because the parser must survive real-world content:
-///   - Large documents (won't be slow or OOM)
-///   - Deeply nested JSX (won't stack-overflow)
-///   - Heavy UTF-8 (accents, CJK, emoji) everywhere in the pipeline
-///   - Math and JSX interleaved in every possible position
-///   - Attribute expressions with complex JS literals
-///
-/// Run with: `cargo test --test test_perf --release -- --nocapture`
+//! Performance and Edge-Case Robustness Tests
+//!
+//! This test suite ensures the parser can survive real-world, pathological content:
+//!   - Large documents (Ensuring it won't be slow or trigger OOM)
+//!   - Deeply nested JSX (Ensuring it won't trigger Stack Overflows)
+//!   - Heavy UTF-8 (Accents, CJK, Emoji) everywhere in the pipeline
+//!   - Math and JSX interleaved in every possible position
+//!   - Attribute expressions containing complex JS literals and nested ASTs
+//!
+//! Run with: `cargo test --test test_perf --release -- --nocapture`
+
 use omni_mdx_core::parser::parse_mdx;
 use std::time::{Duration, Instant};
 
-// Helper function for timed parsing assertions
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/// Helper function to assert that a parsing operation completes within a maximum allowed duration.
+///
+/// Prevents accidental performance regressions (e.g., introducing an O(N^2) regex)
+/// from slipping into the main branch.
 fn assert_timed(label: &str, input: &str, max: Duration) {
     let t = Instant::now();
     match parse_mdx(input) {
@@ -25,10 +33,14 @@ fn assert_timed(label: &str, input: &str, max: Duration) {
                 elapsed,
                 max
             );
-            println!("   {} ({:?})", label, elapsed);
+            println!("  ✅ {} completed in {:?}", label, elapsed);
         }
     }
 }
+
+// ============================================================================
+// Tests
+// ============================================================================
 
 #[test]
 fn test_large_document_performance() {
@@ -56,6 +68,7 @@ fn test_deeply_nested_jsx() {
     let inner: &str = "  Contenu profondément imbriqué.";
     let close: String = (0..20).map(|_| "</Box>\n").collect();
     let doc = format!("{open}{inner}\n{close}");
+
     assert_timed("20-level nesting", &doc, Duration::from_millis(200));
 }
 
@@ -80,7 +93,7 @@ fn test_utf8_stress() {
 
     assert!(
         !json.contains("\u{00c3}\u{00a9}") && !json.contains("\u{00c3}\u{00a0}"),
-        "UTF-8 corruption detected in output"
+        "UTF-8 corruption (Mojibake) detected in output"
     );
     assert!(
         json.contains("T\u{00ed}tre"),
@@ -115,11 +128,11 @@ $$
 
     assert!(
         inline_count >= 4,
-        "Expected >= 4 InlineMath, got {inline_count}"
+        "Expected >= 4 InlineMath nodes, got {inline_count}"
     );
     assert!(
         block_count >= 3,
-        "Expected >= 3 BlockMath, got {block_count}"
+        "Expected >= 3 BlockMath nodes, got {block_count}"
     );
 }
 

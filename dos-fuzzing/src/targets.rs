@@ -14,6 +14,7 @@ pub enum FuzzTarget {
     /// Raw corrupted bytes → future deserialize_ocp (stubbed until decoder exists)
     OcpBinary(Vec<u8>),
     /// encode → decode → re-encode → assert bytes equal (integrity full roundtrip)
+    #[allow(dead_code)]
     OcpFullRoundtrip(String),
 }
 

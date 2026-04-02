@@ -4,6 +4,10 @@ use pyo3::prelude::*;
 use pyo3::types::PyDict;
 use std::sync::Arc;
 
+/// Represents a single MDX Abstract Syntax Tree (AST) node exposed to Python.
+///
+/// To ensure memory safety and avoid deep-copying the AST when traversing,
+/// nodes are resolved lazily using an `Arc` reference to the root and a navigational path.
 #[pyclass(name = "MdxNode", module = "omni_mdx_core")]
 pub struct PyMdxNode {
     ast: Arc<Vec<AstNode<'static>>>,
@@ -11,6 +15,7 @@ pub struct PyMdxNode {
 }
 
 impl PyMdxNode {
+    /// Lazily resolves the internal Rust `AstNode` based on the stored path.
     fn resolve(&self) -> Option<&AstNode<'static>> {
         if self.path.is_empty() {
             return None;
@@ -23,6 +28,7 @@ impl PyMdxNode {
         nodes.get(self.path[last])
     }
 
+    /// Creates a new `PyMdxNode` pointing to a specific child index.
     fn child_node(&self, child_index: usize) -> PyMdxNode {
         let mut child_path = self.path.clone();
         child_path.push(child_index);
@@ -32,6 +38,7 @@ impl PyMdxNode {
         }
     }
 
+    /// Internal recursive helper to extract text content.
     fn extract_text_recursive(&self, buf: &mut String) {
         if let Some(n) = self.resolve() {
             if n.node_type == "text" {
@@ -48,6 +55,7 @@ impl PyMdxNode {
 
 #[pymethods]
 impl PyMdxNode {
+    /// The tag name or type of the node (e.g., 'p', 'div', 'text', 'Box').
     #[getter]
     pub fn node_type(&self) -> String {
         self.resolve()
@@ -55,23 +63,28 @@ impl PyMdxNode {
             .unwrap_or_default()
     }
 
+    /// The raw text content of the node, if applicable.
+    /// Returns `None` if the node does not contain direct text.
     #[getter]
     pub fn content(&self) -> Option<String> {
         self.resolve()
             .and_then(|n| n.content.as_ref().map(|c| c.to_string()))
     }
 
+    /// Returns `True` if the node is self-closing (e.g., `<img />`).
     #[getter]
     pub fn self_closing(&self) -> bool {
         self.resolve().map(|n| n.self_closing).unwrap_or(false)
     }
 
+    /// Returns a list of the node's children as `MdxNode` objects.
     #[getter]
     pub fn children(&self) -> Vec<PyMdxNode> {
         let count = self.resolve().map(|n| n.children.len()).unwrap_or(0);
         (0..count).map(|i| self.child_node(i)).collect()
     }
 
+    /// Returns `True` if the node represents a JSX/MDX Component (Starts with a capital letter).
     #[getter]
     pub fn is_component(&self) -> bool {
         self.node_type()
@@ -80,12 +93,15 @@ impl PyMdxNode {
             .map_or(false, |c| c.is_ascii_uppercase())
     }
 
+    /// Recursively extracts and concatenates all text content from this node and its descendants.
     pub fn text_content(&self) -> String {
         let mut buf = String::new();
         self.extract_text_recursive(&mut buf);
         buf
     }
 
+    /// Retrieves the string value of a specific attribute.
+    /// Returns `None` if the attribute does not exist or is not a text/expression type.
     pub fn attr_text(&self, name: &str) -> Option<String> {
         let attrs = self.resolve()?.attributes.as_ref()?;
         match attrs.get(name)? {
@@ -95,6 +111,8 @@ impl PyMdxNode {
         }
     }
 
+    /// Returns a Python dictionary containing all attributes of the node.
+    /// Expressions and text are returned as strings, booleans as bools.
     #[getter]
     pub fn attributes(&self, py: Python) -> PyResult<Option<PyObject>> {
         let attrs = match self.resolve().and_then(|n| n.attributes.as_ref()) {
@@ -115,6 +133,7 @@ impl PyMdxNode {
         Ok(Some(dict.into()))
     }
 
+    /// Performs a Depth-First Search (DFS) to find the first child node matching the given type.
     pub fn find(&self, node_type: &str) -> Option<PyMdxNode> {
         for child in self.children() {
             if child.node_type() == node_type {
@@ -127,6 +146,7 @@ impl PyMdxNode {
         None
     }
 
+    /// Performs a Depth-First Search (DFS) and returns a list of all nodes matching the given type.
     pub fn find_all(&self, node_type: &str) -> Vec<PyMdxNode> {
         let mut results = Vec::new();
         for child in self.children() {
@@ -139,6 +159,7 @@ impl PyMdxNode {
     }
 }
 
+/// Helper function to clone a PyMdxNode cheaply.
 fn child_node_clone(node: &PyMdxNode) -> PyMdxNode {
     PyMdxNode {
         ast: Arc::clone(&node.ast),
@@ -146,6 +167,7 @@ fn child_node_clone(node: &PyMdxNode) -> PyMdxNode {
     }
 }
 
+/// Represents the root Abstract Syntax Tree (AST) returned by the parser.
 #[pyclass(name = "MdxAst", module = "omni_mdx_core")]
 pub struct PyMdxAst {
     inner: Arc<Vec<AstNode<'static>>>,
@@ -153,11 +175,13 @@ pub struct PyMdxAst {
 
 #[pymethods]
 impl PyMdxAst {
+    /// The number of root nodes in the AST.
     #[getter]
     pub fn length(&self) -> usize {
         self.inner.len()
     }
 
+    /// Returns a list of all root nodes in the AST.
     #[getter]
     pub fn nodes(&self) -> Vec<PyMdxNode> {
         (0..self.inner.len())
@@ -169,6 +193,9 @@ impl PyMdxAst {
     }
 }
 
+/// Parses an MDX string and returns the root Abstract Syntax Tree (`MdxAst`).
+///
+/// Raises a `ValueError` if the MDX content is malformed.
 #[pyfunction]
 #[pyo3(name = "parse")]
 fn py_parse_mdx(input: String) -> PyResult<PyMdxAst> {
@@ -181,6 +208,9 @@ fn py_parse_mdx(input: String) -> PyResult<PyMdxAst> {
     })
 }
 
+/// The Omni-Core MDX parser module for Python.
+///
+/// Provides blazing fast MDX parsing with a safe, lazy-evaluated DOM API.
 #[pymodule]
 #[pyo3(name = "omni_mdx_core")]
 fn omni_mdx_core(m: &Bound<'_, PyModule>) -> PyResult<()> {

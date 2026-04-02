@@ -1,3 +1,16 @@
+//! Omni-Core Abstract Syntax Tree (AST)
+//!
+//! This module defines the core data structures that represent a parsed MDX document.
+//!
+//! # Zero-Copy Architecture
+//! To achieve maximum performance, the AST heavily relies on `Cow<'a, str>` (Copy-on-Write).
+//! During the parsing phase, nodes simply hold references (`Cow::Borrowed`) to slices of the
+//! original input string, resulting in near-zero memory allocations.
+//!
+//! When the AST needs to be sent across Foreign Function Interfaces (WASM, Node.js, Python)
+//! where the original string lifetime ends, the `.into_static()` methods efficiently convert
+//! the tree into an owned structure (`Cow::Owned`).
+
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -8,23 +21,18 @@ pub enum ParseError {
     /// The input byte slice is not valid UTF-8.
     InvalidUtf8,
     /// A JSX block was opened but never closed. Contains the byte offset where it started.
-    UnclosedJsxBlock {
-        pos: usize,
-    },
+    UnclosedJsxBlock { pos: usize },
     /// A specific JSX tag was opened but its corresponding closing tag was not found.
-    UnclosedTag {
-        name: String,
-    },
+    UnclosedTag { name: String },
     /// An unexpected character was encountered during parsing.
-    UnexpectedToken {
-        pos: usize,
-        got: char,
-    },
+    UnexpectedToken { pos: usize, got: char },
     /// An error occurred while serializing the AST to JSON.
     Serialization(serde_json::Error),
+    /// The input string exceeds the maximum allowed byte length (DoS protection).
     InputTooLong,
+    /// The number of extracted JSX blocks exceeds the safety threshold (DoS protection).
     TooManyJsxBlocks,
-    /// A generic limit to obfuscate structural/security limits (AST DoS protection)
+    /// A generic limit to obfuscate structural/security limits (Algorithmic Complexity DoS protection).
     ComplexityLimitExceeded(String),
 }
 
@@ -125,6 +133,11 @@ impl<'a> AstNode<'a> {
         }
     }
 
+    /// Converts all borrowed string references (`Cow::Borrowed`) within the node and its children
+    /// into fully owned strings (`Cow::Owned`), resulting in a `'static` lifetime.
+    ///
+    /// This is a critical utility for FFI boundaries (WASM, Python, Node.js). It allows the AST
+    /// to safely outlive the original MDX input string, preventing "Use-After-Free" memory bugs.
     pub fn into_static(self) -> AstNode<'static> {
         AstNode {
             node_type: Cow::Owned(self.node_type.into_owned()),
@@ -142,6 +155,8 @@ impl<'a> AstNode<'a> {
 }
 
 impl<'a> AttrValue<'a> {
+    /// Upgrades the attribute value to a strictly owned `'static` lifetime.
+    /// See [`AstNode::into_static`] for details.
     pub fn into_static(self) -> AttrValue<'static> {
         match self {
             AttrValue::Text(s) => AttrValue::Text(Cow::Owned(s.into_owned())),

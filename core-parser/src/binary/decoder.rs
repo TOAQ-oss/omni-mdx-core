@@ -1,3 +1,14 @@
+//! Omni-Core Protocol (OCP) Binary Decoder
+//!
+//! This module is responsible for safely deserializing OCP binary payloads back into
+//! a structured Abstract Syntax Tree (AST).
+//!
+//! # Security
+//! Because binary streams can be maliciously forged to crash the host application
+//! (e.g., claiming a string is 4GB long to trigger an Out-Of-Memory panic, or nesting
+//! tags infinitely to cause a Stack Overflow), this decoder is heavily fortified.
+//! It features strict bounds checking, hardcoded depth limits, and pre-allocation guards.
+
 use crate::ast::{AstNode, AttrValue};
 use crate::binary::opcodes::*;
 use std::borrow::Cow;
@@ -9,7 +20,7 @@ pub enum DecodeError {
     UnexpectedEof,
     /// An opcode byte was not recognised.
     UnknownOpcode(u8),
-    /// A length field pointed past the end of the buffer.
+    /// A length field pointed past the end of the buffer (Potential malicious payload).
     InvalidLength {
         offset: usize,
         claimed: usize,
@@ -44,14 +55,20 @@ impl std::fmt::Display for DecodeError {
 
 impl std::error::Error for DecodeError {}
 
-/// Decodes a complete OCP binary stream into a Vec of root AstNodes.
+/// Decodes a complete OCP binary stream into a `Vec` of root `AstNode`s.
 ///
-/// This is the exact mirror of `encode_ast`. The stream format is:
+/// This is the exact mirror of `encode_ast`. The stream format expects a 32-bit integer
+/// representing the root node count, followed by the encoded nodes.
 ///
+/// # Format
 /// ```text
 /// [root_count: u32]
 /// [node] × root_count
 /// ```
+///
+/// # Errors
+/// Returns a [`DecodeError`] if the payload is malformed, truncated, or exceeds
+/// the strict algorithmic complexity safety limits.
 pub fn decode_ast(data: &[u8]) -> Result<Vec<AstNode<'static>>, DecodeError> {
     let mut cursor = Cursor::new(data);
     let root_count = cursor.read_u32()?;
@@ -76,23 +93,29 @@ pub fn decode_ast(data: &[u8]) -> Result<Vec<AstNode<'static>>, DecodeError> {
 }
 
 /// A minimal cursor that tracks position inside a byte slice.
+///
 /// Using a cursor instead of passing `&mut usize` everywhere keeps the
-/// borrow checker happy and makes the read helpers easy to reason about.
+/// borrow checker happy and makes the read helpers easy to reason about without panicking.
 struct Cursor<'a> {
     data: &'a [u8],
     pos: usize,
 }
 
 impl<'a> Cursor<'a> {
+    /// Initializes a new cursor pointing at the beginning of the byte slice.
     fn new(data: &'a [u8]) -> Self {
         Cursor { data, pos: 0 }
     }
 
+    /// Returns the number of bytes left to read.
     fn remaining(&self) -> usize {
         self.data.len().saturating_sub(self.pos)
     }
 
-    /// Read exactly `n` bytes and advance the cursor.
+    /// Reads exactly `n` bytes and advances the cursor.
+    ///
+    /// # Errors
+    /// Returns `UnexpectedEof` or `InvalidLength` if not enough bytes remain.
     fn read_bytes(&mut self, n: usize) -> Result<&'a [u8], DecodeError> {
         let end = self.pos + n;
         if end > self.data.len() {
@@ -113,6 +136,7 @@ impl<'a> Cursor<'a> {
         Ok(slice)
     }
 
+    /// Reads a single byte and advances the cursor.
     fn read_u8(&mut self) -> Result<u8, DecodeError> {
         if self.pos >= self.data.len() {
             return Err(DecodeError::UnexpectedEof);
@@ -122,17 +146,19 @@ impl<'a> Cursor<'a> {
         Ok(b)
     }
 
+    /// Reads 2 bytes as a Little-Endian `u16` and advances the cursor.
     fn read_u16(&mut self) -> Result<u16, DecodeError> {
         let bytes = self.read_bytes(2)?;
         Ok(u16::from_le_bytes([bytes[0], bytes[1]]))
     }
 
+    /// Reads 4 bytes as a Little-Endian `u32` and advances the cursor.
     fn read_u32(&mut self) -> Result<u32, DecodeError> {
         let bytes = self.read_bytes(4)?;
         Ok(u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
     }
 
-    /// Read a UTF-8 string whose length is prefixed as a u16.
+    /// Reads a UTF-8 string whose length is prefixed as a `u16`.
     fn read_string_u16(&mut self) -> Result<String, DecodeError> {
         let len = self.read_u16()? as usize;
         let start = self.pos;
@@ -142,7 +168,7 @@ impl<'a> Cursor<'a> {
             .map_err(|_| DecodeError::InvalidUtf8 { offset: start })
     }
 
-    /// Read a UTF-8 string whose length is prefixed as a u32.
+    /// Reads a UTF-8 string whose length is prefixed as a `u32`.
     fn read_string_u32(&mut self) -> Result<String, DecodeError> {
         let len_raw = self.read_u32()? as usize;
 
@@ -166,10 +192,12 @@ impl<'a> Cursor<'a> {
 /// Maximum nesting depth to prevent stack overflow on pathological inputs.
 const MAX_DEPTH: usize = 512;
 
+/// Bootstraps the recursive decoding of a single AST node.
 fn decode_node(cursor: &mut Cursor<'_>) -> Result<AstNode<'static>, DecodeError> {
     decode_node_inner(cursor, 0)
 }
 
+/// Recursively decodes an AST node, strictly enforcing depth limits.
 fn decode_node_inner(
     cursor: &mut Cursor<'_>,
     depth: usize,
@@ -266,6 +294,7 @@ fn decode_node_inner(
             // 4. Children
             let child_count = cursor.read_u32()? as usize;
 
+            // Guard: prevent malicious allocation of excessive children
             const MAX_CHILDREN: usize = 1_000_000;
             if child_count > MAX_CHILDREN {
                 return Err(DecodeError::InvalidLength {

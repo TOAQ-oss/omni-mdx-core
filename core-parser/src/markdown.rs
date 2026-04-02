@@ -1,3 +1,18 @@
+//! Omni-Core Markdown Parser & AST Generator
+//!
+//! To prevent the standard Markdown parser (`pulldown-cmark`) from destroying or
+//! misinterpreting our custom JSX and LaTeX math blocks, this module uses a pre-processing
+//! "masking" technique. We temporarily replace complex blocks with invisible placeholders.
+//!
+//! We use ASCII control characters STX (`\x02`) and ETX (`\x03`) as delimiters.
+//! Unlike `_` or `$`, these control characters trigger absolutely no Markdown formatting
+//! rules (like emphasis or code blocks) and are safely passed through as raw text.
+//!
+//! # Namespaces:
+//! * `\x02JSXn\x03`   — Represents a JSX component block (where `n` is the pool index).
+//! * `\x02MATHBn\x03` — Represents a block math equation (`$$…$$`).
+//! * `\x02MATHIn\x03` — Represents an inline math equation (`$…$`).
+
 use pulldown_cmark::{Event, Options, Parser, Tag, TagEnd};
 use regex::Regex;
 use std::borrow::Cow;
@@ -7,21 +22,10 @@ use std::sync::OnceLock;
 use crate::ast::{AstNode, AttrValue, ParseError};
 use crate::jsx::parse_jsx;
 
-// To prevent the standard Markdown parser (`pulldown-cmark`) from destroying or
-// misinterpreting our custom JSX and LaTeX math blocks, we temporarily replace them
-// with placeholders.
-//
-// We use ASCII control characters STX (\x02) and ETX (\x03) as delimiters.
-// Unlike `_` or `$`, these control characters trigger absolutely no Markdown formatting
-// rules (like emphasis or code blocks) and are safely passed through as raw text.
-//
-// Namespaces:
-//   \x02JSXn\x03   — Represents a JSX component block (where n is the pool index).
-//   \x02MATHBn\x03 — Represents a block math equation ($$…$$).
-//   \x02MATHIn\x03 — Represents an inline math equation ($…$).
-
+/// Global compiled regex to find our STX/ETX placeholders efficiently.
 static PH_RE: OnceLock<Regex> = OnceLock::new();
 
+/// Returns a reference to the global placeholder regex.
 fn get_ph_re() -> &'static Regex {
     PH_RE.get_or_init(|| {
         Regex::new(r"\x02(JSX|MATHB|MATHI)(\d+)\x03").expect("static regex is valid")
@@ -33,18 +37,27 @@ const PFX_MATHB: &str = "\x02MATHB";
 const PFX_MATHI: &str = "\x02MATHI";
 const SFX: &str = "\x03";
 
+/// Creates a JSX placeholder string for a given pool index.
 pub(crate) fn make_placeholder(n: usize) -> String {
     format!("{}{}{}", PFX_JSX, n, SFX)
 }
+
+/// Creates a Block Math placeholder string for a given pool index.
 fn make_mathb_placeholder(n: usize) -> String {
     format!("{}{}{}", PFX_MATHB, n, SFX)
 }
+
+/// Creates an Inline Math placeholder string for a given pool index.
 fn make_mathi_placeholder(n: usize) -> String {
     format!("{}{}{}", PFX_MATHI, n, SFX)
 }
 
-/// Masks `<`, `>`, and `$` within fenced and inline code blocks
-/// by replacing them with \x01 before `extract_math` and `extract_jsx` run.
+/// Masks `<`, `>`, and `$` within fenced and inline code blocks.
+///
+/// Replaces sensitive characters with arbitrary invisible bytes (e.g., `\x01`) before
+/// `extract_math` and `extract_jsx` run. This ensures that a `<Box>` written inside
+/// a ` ``` ` code block is treated as literal text, not as a real component.
+///
 /// Positions are preserved — `pulldown-cmark` will re-parse the actual input.
 pub fn mask_code_blocks(input: &str) -> Cow<'_, str> {
     let bytes = input.as_bytes();
@@ -118,6 +131,10 @@ pub fn mask_code_blocks(input: &str) -> Cow<'_, str> {
     }
 }
 
+/// Reverses the effect of `mask_code_blocks`.
+///
+/// Converts the arbitrary invisible bytes back to their original `<`, `>`, and `$` characters
+/// right before generating the final AST text nodes.
 fn unmask_code(s: String) -> String {
     let mut bytes = s.into_bytes();
     for b in bytes.iter_mut() {
@@ -141,7 +158,7 @@ fn unmask_code(s: String) -> String {
 ///
 /// # Returns
 /// A tuple containing:
-/// 1. The processed `String` with math replaced by placeholders.
+/// 1. The processed `String` with math replaced by STX/ETX placeholders.
 /// 2. A `Vec<String>` (pool) of block math formulas (`$$`).
 /// 3. A `Vec<String>` (pool) of inline math formulas (`$`).
 pub fn extract_math(input: &str) -> (Cow<'_, str>, Vec<String>, Vec<String>) {
@@ -201,8 +218,10 @@ pub fn extract_math(input: &str) -> (Cow<'_, str>, Vec<String>, Vec<String>) {
     }
 }
 
-/// Enforces structural limits on the Markdown input to prevent excessive parsing times
-/// and potential resource exhaustion during the AST generation phase.
+/// Enforces structural limits on the Markdown input.
+///
+/// Prevents excessive parsing times and potential resource exhaustion (DoS attacks)
+/// by analyzing symbol density and structural ambiguity before the AST generation phase.
 fn verify_markdown_safety(text: &str) -> Result<(), ParseError> {
     if text.len() > 2_000_000 {
         return Err(ParseError::InputTooLong);
@@ -434,8 +453,9 @@ pub fn parse_markdown<'a>(
 }
 
 /// Scans text nodes for STX/ETX control character placeholders and reinjects the raw data.
+///
 /// If a JSX placeholder is found, it triggers the recursive `parse_jsx` function to
-/// build the sub-tree on the fly.
+/// build the sub-tree on the fly. Math placeholders are converted into specialized AstNodes.
 fn expand_text<'a>(
     text: &str,
     ph_re: &Regex,

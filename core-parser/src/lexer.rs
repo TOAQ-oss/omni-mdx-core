@@ -1,3 +1,10 @@
+//! Omni-Core Lexer & JSX Extractor
+//!
+//! This module acts as the first line of defense and pre-processing in the parsing pipeline.
+//! Because standard Markdown parsers struggle with complex, nested HTML/JSX (especially when
+//! attributes span multiple lines or contain expressions like `label={"<"}`), this lexer
+//! isolates custom components using a high-performance, byte-level state machine.
+
 use crate::ast::ParseError;
 use crate::markdown::make_placeholder;
 
@@ -12,13 +19,14 @@ use crate::markdown::make_placeholder;
 /// * `input` - The raw MDX string to be processed.
 ///
 /// # Returns
-/// A tuple containing:
-/// 1. The cloaked `String` safe for Markdown parsing.
-/// 2. A `Vec<String>` (the pool) containing the raw, extracted JSX blocks in order of their placeholders.
+/// * `Ok((String, Vec<String>))` - A tuple containing:
+///   1. The cloaked `String` safe for Markdown parsing.
+///   2. A `Vec<String>` (the pool) containing the raw, extracted JSX blocks in order of their placeholders.
 ///
 /// # Errors
-/// Returns [`ParseError::UnclosedJsxBlock`] if a JSX tag is opened but the file ends before it closes.
-/// Returns [`ParseError::InvalidUtf8`] if the byte slicing corrupts the string encoding.
+/// * Returns [`ParseError::UnclosedJsxBlock`] if a JSX tag is opened but the file ends before it closes.
+/// * Returns [`ParseError::InvalidUtf8`] if the byte slicing corrupts the string encoding.
+/// * Returns [`ParseError::TooManyJsxBlocks`] if the number of blocks exceeds the DoS protection limit (1000).
 pub fn extract_jsx(input: &str) -> Result<(String, Vec<String>), ParseError> {
     let mut pool: Vec<String> = Vec::new();
     let mut output = String::with_capacity(input.len());
@@ -65,7 +73,7 @@ pub fn extract_jsx(input: &str) -> Result<(String, Vec<String>), ParseError> {
     Ok((output, pool))
 }
 
-// Core state machine to traverse a JSX block and find its strict boundary.
+/// Core state machine to traverse a JSX block and find its strict boundary.
 ///
 /// This function operates directly on `&[u8]` for maximum performance, avoiding the overhead
 /// of UTF-8 boundary checks at every step. It intelligently handles quotes, nested braces,
@@ -73,11 +81,12 @@ pub fn extract_jsx(input: &str) -> Result<(String, Vec<String>), ParseError> {
 ///
 /// # State Variables
 /// * `depth` - Tracks the nesting level of paired tags (`<Box>` increases it, `</Box>` decreases it).
-/// * `in_tag` - True if the parser is currently scanning attributes inside an opening tag (`<Tag ... >`).
+/// * `in_tag` - `true` if the parser is currently scanning attributes inside an opening tag (`<Tag ... >`).
 /// * `quote` - Holds the current quote character (`"`, `'`, or `` ` ``) if inside a string literal.
 /// * `brace` - Tracks nesting of JSX expressions (`{...}`) to ignore `<` or `>` inside them.
 /// * `last_slash` - Flags if the last non-whitespace character in a tag was `/`, indicating a self-closing tag `/>`.
 ///
+/// # Note
 /// On entry, `*i` must point at the opening `<`.
 /// On success, `*i` points one byte past the closing `>`.
 pub(crate) fn scan_jsx_block_pub(bytes: &[u8], i: &mut usize, len: usize) -> Result<(), ()> {

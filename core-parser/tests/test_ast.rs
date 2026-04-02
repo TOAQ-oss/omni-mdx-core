@@ -1,17 +1,23 @@
-/// test_ast.rs — Structural correctness tests.
-///
-/// Parses a realistic MDX document and asserts that the output AST contains
-/// exactly the nodes, attributes, and children we expect.
-/// Run with: `cargo test --test test_ast --release -- --nocapture`
+//! Structural Correctness Tests for Omni-Core AST
+//!
+//! Parses realistic MDX documents and asserts that the output AST contains
+//! exactly the nodes, attributes, and children we expect.
+//!
+//! Run with: `cargo test --test test_ast --release -- --nocapture`
+
 use omni_mdx_core::ast::{AstNode, AttrValue};
 use omni_mdx_core::parser::parse_mdx;
 
-// Helpers
+// ============================================================================
+// Helper Functions
+// ============================================================================
 
+/// Finds the first child node matching the given `node_type` at the top level.
 fn find<'a>(nodes: &'a [AstNode], node_type: &str) -> Option<&'a AstNode<'a>> {
     nodes.iter().find(|n| n.node_type == node_type)
 }
 
+/// Recursively performs a Depth-First Search (DFS) to find all nodes of a specific type.
 fn find_all<'a>(nodes: &'a [AstNode], node_type: &str) -> Vec<&'a AstNode<'a>> {
     let mut result = Vec::new();
     for node in nodes {
@@ -25,6 +31,7 @@ fn find_all<'a>(nodes: &'a [AstNode], node_type: &str) -> Vec<&'a AstNode<'a>> {
     result
 }
 
+/// Extracts and concatenates all text content from the immediate children of a node.
 fn text_content(node: &AstNode) -> String {
     node.children
         .iter()
@@ -34,6 +41,7 @@ fn text_content(node: &AstNode) -> String {
         .join("")
 }
 
+/// Extracts the string value of a specific attribute, if it exists and is a text attribute.
 fn attr_text<'a>(node: &'a AstNode, key: &str) -> Option<&'a str> {
     match node.attributes.as_ref()?.get(key)? {
         AttrValue::Text(s) => Some(&*s),
@@ -41,7 +49,9 @@ fn attr_text<'a>(node: &'a AstNode, key: &str) -> Option<&'a str> {
     }
 }
 
-// Test document
+// ============================================================================
+// Mock Data
+// ============================================================================
 
 const MDX: &str = "
 # Titre principal
@@ -77,6 +87,10 @@ $$
 [Link text](https://example.com)
 ";
 
+// ============================================================================
+// Tests
+// ============================================================================
+
 #[test]
 fn test_markdown_headers_and_paragraphs() {
     let ast = parse_mdx(MDX).expect("parse_mdx failed");
@@ -110,7 +124,7 @@ fn test_jsx_note_component_with_inline_math() {
         .expect("InlineMath inside Note missing");
     assert_eq!(math.content.as_deref(), Some("t > 0"));
 
-    // Checking for non-wrapping (hoisting)
+    // Checking for non-wrapping (React hoisting rules)
     let is_wrapped = note
         .children
         .iter()
@@ -230,17 +244,17 @@ fn test_math_content_persistence() {
 
                 assert!(
                     child.content.is_some(),
-                    "FAILED : 'content' is None for InlineMath"
+                    "FAILED: 'content' is None for InlineMath"
                 );
 
                 let content = child.content.as_ref().unwrap();
                 assert!(
                     !content.is_empty(),
-                    "FAILED : The 'content' field is an empty string"
+                    "FAILED: The 'content' field is an empty string"
                 );
                 assert_eq!(
                     content, "e = mc^2",
-                    "FAILED : The formula content is altered"
+                    "FAILED: The formula content was altered"
                 );
             }
         }
@@ -248,7 +262,7 @@ fn test_math_content_persistence() {
 
     assert!(
         math_node_found,
-        "FAILED : The InlineMath node was not created in the AST"
+        "FAILED: The InlineMath node was not created in the AST"
     );
 }
 
