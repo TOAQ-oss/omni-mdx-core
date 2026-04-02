@@ -44,7 +44,7 @@ make build-web
 To keep this repository lightweight, all test applications and visual playgrounds have been moved to a dedicated sandbox repository.
 ```bash
 # Clone the sandbox repository next to or inside your workspace
-git clone [https://github.com/TOAQ-oss/omni-mdx-sandbox.git](https://github.com/TOAQ-oss/omni-mdx-sandbox.git) sandbox
+git clone https://github.com/TOAQ-oss/omni-mdx-sandbox.git sandbox
 
 # Example: Run the Next.js / React Playground
 cd sandbox/next

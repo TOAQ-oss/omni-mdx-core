@@ -11,16 +11,6 @@ on:
       - 'Cargo.toml'
       - 'Cargo.lock'
       - 'package.json'
-  pull_request:
-    branches:
-      - main
-      - canary
-    paths:
-      - 'core-parser/**'
-      - 'packages/**'
-      - 'Cargo.toml'
-      - 'Cargo.lock'
-      - 'package.json'
 
 permissions:
   contents: read

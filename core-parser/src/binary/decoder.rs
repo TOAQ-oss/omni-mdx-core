@@ -258,7 +258,8 @@ fn decode_node_inner(
                 };
 
                 attributes
-                    .get_or_insert_with(std::collections::HashMap::new)
+                    .as_mut()
+                    .expect("attributes must be initialized when attr_count > 0")
                     .insert(Cow::Owned(key), value);
             }
 
@@ -285,7 +286,7 @@ fn decode_node_inner(
                 let child = decode_node_inner(cursor, depth + 1)?;
 
                 // The encoder always places the injected content node first.
-                if i == 0 && child.node_type == "text" && child_count > 0 && !self_closing {
+                if i == 0 && child.node_type == "text" && !self_closing {
                     // Heuristic: if the element was encoded with injected content,
                     // the first child is a synthetic text node — restore it as content.
                     // We keep it as a child too so roundtrip is lossless at the

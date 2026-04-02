@@ -1,9 +1,4 @@
 #!/bin/bash
-
-# Le piège ABSOLU : laisse le terminal ouvert à la fin
-trap 'echo ""; echo "🛑 Fin de la vérification. Appuyez sur Entrée pour fermer la fenêtre..."; read' EXIT
-
-# Arrêt immédiat si la compilation échoue
 set -e
 
 echo "==================================================="
