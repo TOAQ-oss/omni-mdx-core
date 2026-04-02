@@ -11,6 +11,8 @@
 //! * `wasm`: Enables WebAssembly bindings for browser and Node.js execution.
 //! * `python`: Enables PyO3 bindings for native Python execution.
 
+#![doc = include_str!("../README.md")]
+
 #[cfg(feature = "wasm")]
 use wasm_bindgen::prelude::*;
 
