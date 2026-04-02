@@ -11,6 +11,7 @@ on:
       - 'Cargo.toml'
       - 'Cargo.lock'
       - 'package.json'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -153,7 +154,7 @@ jobs:
 
       - name: Install Maturin
         run: pip install maturin
-        
+
       - name: Build and install Rust extension
         working-directory: core-parser
         run: python -m maturin develop --release --features python
