@@ -156,7 +156,7 @@ jobs:
         working-directory: core-parser
         run: |
           pip install maturin pytest
-          pip install .
+          pip install -e .
         env:
           PYO3_PYTHON: ${{ steps.setup_python_step.outputs.python-path }}
  
