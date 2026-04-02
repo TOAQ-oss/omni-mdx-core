@@ -1,6 +1,12 @@
 name: Python PyPI Publish
 
 on:
+  push:
+    branches:
+      - canary
+    paths:
+      - 'core-parser/**'
+      - 'packages/mdx-python/**'
   workflow_dispatch:
     inputs:
       skip_version_check:
@@ -12,54 +18,58 @@ on:
 permissions:
   contents: read
   id-token: write
-  
+
 jobs:
+  # Étape 1 : Vérification de la version (uniquement pour le workflow_dispatch)
   check-version:
     runs-on: ubuntu-latest
-    if: >
-      github.event_name == 'workflow_dispatch'
     outputs:
-      version_changed: ${{ steps.check.outputs.version_changed }}
+      should_run: ${{ steps.decide.outputs.should_run }}
+      version_suffix: ${{ steps.suffix.outputs.val }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
 
-      - name: Check if package version changed
-        id: check
+      - name: Decide whether to run
+        id: decide
+        shell: bash
         run: |
-          if [ "${{ inputs.skip_version_check }}" == "true" ]; then
-            echo "Version check bypassed manually."
-            echo "version_changed=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          # Si déclenchement manuel sans bypass, on force aussi true
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            echo "Manual trigger without bypass — assuming version changed."
-            echo "version_changed=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          extract_version() {
-            git show "$1:packages/mdx-python/pyproject.toml" 2>/dev/null \
-              | grep -E '^version\s*=' | head -1 | sed 's/.*=\s*"\(.*\)"/\1/' \
-              || echo "none"
-          }
-          CURRENT=$(extract_version HEAD)
-          PREVIOUS=$(extract_version HEAD~1)
-          echo "Current version : $CURRENT"
-          echo "Previous version: $PREVIOUS"
-          if [ "$CURRENT" != "$PREVIOUS" ]; then
-            echo "version_changed=true"  >> "$GITHUB_OUTPUT"
+          if [ "${{ github.event_name }}" == "push" ]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
           else
-            echo "version_changed=false" >> "$GITHUB_OUTPUT"
+            if [ "${{ inputs.skip_version_check }}" == "true" ]; then
+              echo "should_run=true" >> "$GITHUB_OUTPUT"
+            else
+              extract_version() {
+                git show "$1:packages/mdx-python/pyproject.toml" 2>/dev/null \
+                  | grep -E '^version\s*=' | head -1 | sed 's/.*=\s*"\(.*\)"/\1/' \
+                  || echo "none"
+              }
+              CURRENT=$(extract_version HEAD)
+              PREVIOUS=$(extract_version HEAD~1)
+              if [ "$CURRENT" != "$PREVIOUS" ]; then
+                echo "should_run=true" >> "$GITHUB_OUTPUT"
+              else
+                echo "should_run=false" >> "$GITHUB_OUTPUT"
+              fi
+            fi
           fi
 
+      - name: Generate version suffix
+        id: suffix
+        run: |
+          if [ "${{ github.event_name }}" == "push" ]; then
+            echo "val=.dev$(date +%s)" >> "$GITHUB_OUTPUT"
+          else
+            echo "val=" >> "$GITHUB_OUTPUT"
+          fi
+
+  # Étape 2 : Build des Wheels multi-plateformes
   build-wheels:
     needs: check-version
-    if: needs.check-version.outputs.version_changed == 'true'
-    name: Build on ${{ matrix.os }}
+    if: needs.check-version.outputs.should_run == 'true'
+    name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -68,23 +78,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust nightly
+      - name: Install Rust
         uses: dtolnay/rust-toolchain@nightly
-
-      - name: Cache Rust Dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            core-parser/target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
+
+      - name: Inject Version Suffix (Canary only)
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          SUFFIX="${{ needs.check-version.outputs.version_suffix }}"
+          cd packages/mdx-python
+          sed -i.bak "s/version = \"\([^\"]*\)\"/version = \"\1$SUFFIX\"/" pyproject.toml
+          # Mise à jour du Cargo.toml pour maturin
+          sed -i.bak "s/version = \"\([^\"]*\)\"/version = \"\1$SUFFIX\"/" Cargo.toml || true
 
       - name: Build wheel
         working-directory: packages/mdx-python
@@ -98,19 +108,17 @@ jobs:
           name: wheels-${{ matrix.os }}
           path: packages/mdx-python/dist/*.whl
 
+  # Étape 3 : Publication sur PyPI via OIDC
   publish:
     name: Publish to PyPI
     needs: [check-version, build-wheels]
-    if: |
-      needs.check-version.outputs.version_changed == 'true' &&
-      needs.build-wheels.result == 'success'
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
-      id-token: write
+      id-token: write  # Obligatoire pour Trusted Publishing
       contents: read
     steps:
-      - name: Get all Wheels
+      - name: Download all wheels
         uses: actions/download-artifact@v4
         with:
           path: dist
@@ -120,4 +128,5 @@ jobs:
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
+          packages-dir: dist/
           skip-existing: true
