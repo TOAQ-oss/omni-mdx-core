@@ -1,6 +1,12 @@
 name: Publish @toaq-oss/omni-mdx
 
 on:
+  push:
+    branches:
+      - canary
+    paths:
+      - 'core-parser/**'
+      - 'packages/mdx-next/**'
   workflow_dispatch:
     inputs:
       skip_version_check:
@@ -17,64 +23,70 @@ on:
 permissions:
   contents: read
   id-token: write
-  
+
 jobs:
-  check-version:
+  prepare:
     runs-on: ubuntu-latest
-    if: >
-      github.event_name == 'workflow_dispatch'
     outputs:
-      version_changed: ${{ steps.check.outputs.version_changed }}
-      build_core: ${{ steps.core.outputs.build_core }}
+      is_canary: ${{ github.event_name == 'push' }}
+      should_run: ${{ steps.check.outputs.should_run }}
+      build_core: ${{ steps.check.outputs.build_core }}
+      version: ${{ steps.version.outputs.val }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
 
-      - name: Check if package version changed
+      - name: Determine Version and Run Logic
         id: check
+        shell: bash
         run: |
-          if [ "${{ inputs.skip_version_check }}" == "true" ]; then
-            echo "Version check bypassed manually."
-            echo "version_changed=true" >> "$GITHUB_OUTPUT"
-            exit 0
+          # Par défaut, on ne build pas
+          SHOULD_RUN="false"
+          BUILD_CORE="false"
+
+          if [ "${{ github.event_name }}" == "push" ]; then
+            # Mode Canary : Toujours exécuter
+            SHOULD_RUN="true"
+            BUILD_CORE="true"
+          else
+            # Mode Stable : Vérification manuelle
+            if [ "${{ inputs.skip_version_check }}" == "true" ]; then
+              SHOULD_RUN="true"
+            else
+              CURRENT=$(jq -r '.version' packages/mdx-next/package.json)
+              PREVIOUS=$(git show HEAD~1:packages/mdx-next/package.json 2>/dev/null | jq -r '.version' || echo "none")
+              if [ "$CURRENT" != "$PREVIOUS" ]; then SHOULD_RUN="true"; fi
+            fi
+
+            if [ "${{ inputs.force_core }}" == "true" ]; then
+              BUILD_CORE="true"
+            else
+              CORE_CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -c '^core-parser/' || true)
+              if [ "$CORE_CHANGED" -gt "0" ]; then BUILD_CORE="true"; fi
+            fi
           fi
 
-          CURRENT=$(git show HEAD:packages/mdx-next/package.json | jq -r '.version')
-          PREVIOUS=$(git show HEAD~1:packages/mdx-next/package.json 2>/dev/null | jq -r '.version' || echo "none")
-          echo "Current version : $CURRENT"
-          echo "Previous version: $PREVIOUS"
-          if [ "$CURRENT" != "$PREVIOUS" ]; then
-            echo "version_changed=true"  >> "$GITHUB_OUTPUT"
-          else
-            echo "version_changed=false" >> "$GITHUB_OUTPUT"
-          fi
+          echo "should_run=$SHOULD_RUN" >> "$GITHUB_OUTPUT"
+          echo "build_core=$BUILD_CORE" >> "$GITHUB_OUTPUT"
 
-      - name: Decide whether to build native core
-        id: core
+      - name: Compute Final Version String
+        id: version
+        shell: bash
         run: |
-          if [ "${{ inputs.force_core }}" == "true" ]; then
-            echo "Force Core build requested via UI."
-            echo "build_core=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          CORE_CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -c '^core-parser/' || true)
-          if [ "$CORE_CHANGED" -gt "0" ]; then
-            echo "build_core=true"  >> "$GITHUB_OUTPUT"
+          BASE_VER=$(jq -r '.version' packages/mdx-next/package.json)
+          if [ "${{ github.event_name }}" == "push" ]; then
+            FINAL_VER="${BASE_VER}-canary.$(date +%s)"
           else
-            echo "build_core=false" >> "$GITHUB_OUTPUT"
+            FINAL_VER="$BASE_VER"
           fi
+          echo "val=$FINAL_VER" >> "$GITHUB_OUTPUT"
 
   build-native:
-    needs: check-version
-    if: |
-      needs.check-version.outputs.version_changed == 'true' &&
-      needs.check-version.outputs.build_core == 'true'
-    permissions:
-      id-token: write
-      contents: read
+    needs: prepare
+    if: needs.prepare.outputs.should_run == 'true' && needs.prepare.outputs.build_core == 'true'
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         include:
           - os: macos-latest
@@ -86,19 +98,12 @@ jobs:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             name: win32-x64-msvc
-
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Add Rust target
-        run: rustup target add ${{ matrix.target }}
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: rustup target add ${{ matrix.target }}
+      - uses: actions/setup-node@v4
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
@@ -106,45 +111,41 @@ jobs:
       - name: Install napi-rs CLI
         run: npm install -g @napi-rs/cli
 
+      - name: Set Version for Build
+        shell: bash
+        run: cd core-parser && npm --no-git-tag-version version ${{ needs.prepare.outputs.version }}
+
       - name: Build native addon
         working-directory: core-parser
         run: napi build --platform --release --features node --target ${{ matrix.target }} --no-js
 
-      - name: Read version from core-parser/package.json
-        id: version
-        shell: bash
-        run: |
-          VERSION=$(jq -r '.version' core-parser/package.json)
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Create platform subpackage
+      - name: Create & Publish platform subpackage
         shell: bash
         run: |
           PKG_NAME="@toaq-oss/omni-mdx-${{ matrix.name }}"
-          VERSION="${{ steps.version.outputs.version }}"
           NODE_FILE=$(ls core-parser/omni-mdx-core.*.node | head -1)
           mkdir -p platform-pkg
           cp "$NODE_FILE" "platform-pkg/omni-mdx-core.${{ matrix.name }}.node"
+          
+          # Génération dynamique du package.json du subpackage
           cat > platform-pkg/package.json << PKGJSON
           {
             "name": "$PKG_NAME",
-            "version": "$VERSION",
-            "description": "Native addon for @toaq-oss/omni-mdx (${{ matrix.name }})",
-            "license": "MIT",
+            "version": "${{ needs.prepare.outputs.version }}",
             "main": "omni-mdx-core.${{ matrix.name }}.node",
-            "files": ["omni-mdx-core.${{ matrix.name }}.node"],
             "os": ["$(echo ${{ matrix.name }} | cut -d- -f1)"],
             "cpu": ["$(echo ${{ matrix.name }} | cut -d- -f2)"],
-            "repository": {
-              "type": "git",
-              "url": "git+https://github.com/TOAQ-oss/omni-mdx-core.git"
-            }
+            "publishConfig": { "access": "public" },
+            "repository": { "type": "git", "url": "git+https://github.com/TOAQ-oss/omni-mdx-core.git" }
           }
           PKGJSON
-
-      - name: Publish platform subpackage
-        working-directory: platform-pkg
-        run: npm publish --access public
+          
+          cd platform-pkg
+          if [ "${{ needs.prepare.outputs.is_canary }}" == "true" ]; then
+            npm publish --tag canary --provenance
+          else
+            npm publish --provenance
+          fi
 
       - name: Upload .node artifact
         uses: actions/upload-artifact@v4
@@ -154,59 +155,52 @@ jobs:
           retention-days: 1
 
   build-wasm:
-    needs: check-version
-    if: needs.check-version.outputs.version_changed == 'true'
+    needs: prepare
+    if: needs.prepare.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
-
-      - name: Install wasm-pack
-        uses: jetli/wasm-pack-action@v0.4.0
-        with:
-          version: 'latest'
-
+      - uses: jetli/wasm-pack-action@v0.4.0
+      
       - name: Build WASM
         working-directory: core-parser
         run: wasm-pack build --target web --features wasm
-
-      - name: Clean wasm-pack generated files
+        
+      - name: Clean wasm-pack noise
         working-directory: core-parser/pkg
         run: rm -f package.json README.md
 
-      - name: Upload WASM artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: wasm
+          name: wasm-artifact
           path: core-parser/pkg/
           retention-days: 1
 
   publish:
-    needs: [check-version, build-native, build-wasm]
+    needs: [prepare, build-native, build-wasm]
     if: |
-      always() &&
-      needs.check-version.outputs.version_changed == 'true' &&
+      always() && 
+      needs.prepare.outputs.should_run == 'true' &&
       needs.build-wasm.result == 'success' &&
       (needs.build-native.result == 'success' || needs.build-native.result == 'skipped')
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Download native .node artifacts
+      - name: Download WASM
+        uses: actions/download-artifact@v4
+        with:
+          name: wasm-artifact
+          path: packages/mdx-next/wasm/
+
+      - name: Download Native (if built)
         if: needs.build-native.result == 'success'
         uses: actions/download-artifact@v4
         with:
@@ -214,20 +208,15 @@ jobs:
           path: packages/mdx-next/native/
           merge-multiple: true
 
-      - name: Download WASM artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: wasm
-          path: packages/mdx-next/wasm/
-
-      - name: Install dependencies
+      - name: Finalize version and Publish
         working-directory: packages/mdx-next
-        run: npm install --ignore-scripts
-
-      - name: Build JS package
-        working-directory: packages/mdx-next
-        run: npm run build
-
-      - name: Publish @toaq-oss/omni-mdx
-        working-directory: packages/mdx-next
-        run: npm publish --access public
+        run: |
+          npm --no-git-tag-version version ${{ needs.prepare.outputs.version }}
+          npm install --ignore-scripts
+          npm run build
+          
+          if [ "${{ needs.prepare.outputs.is_canary }}" == "true" ]; then
+            npm publish --access public --tag canary --provenance
+          else
+            npm publish --access public --provenance
+          fi
