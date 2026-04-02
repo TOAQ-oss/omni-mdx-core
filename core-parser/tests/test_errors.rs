@@ -1,11 +1,19 @@
-/// Test 2 — Error handling
-///
-/// Checks that the parser correctly detects and reports errors
-/// in a malformed MDX query, without panicking or silently returning
-/// an incorrect result.
-/// Run with: `cargo test --test test_errors --release -- --nocapture`
+//! Error Handling Tests for Omni-Core
+//!
+//! Checks that the parser correctly detects and reports errors
+//! in malformed MDX queries, without panicking or silently returning
+//! incorrect/corrupted results.
+//!
+//! Run with: `cargo test --test test_errors --release -- --nocapture`
+
 use omni_mdx_core::parser::parse_mdx;
 
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/// Asserts that a parsing result is an `Err` and that the error message contains
+/// the expected keyword.
 fn assert_err(
     result: Result<Vec<omni_mdx_core::ast::AstNode>, omni_mdx_core::ast::ParseError>,
     expected_kind: &str,
@@ -30,13 +38,16 @@ fn assert_err(
     }
 }
 
+/// Recursively checks if a specific node type exists anywhere in the tree.
 fn has_node_type(nodes: &[omni_mdx_core::ast::AstNode], node_type: &str) -> bool {
     nodes
         .iter()
         .any(|n| n.node_type == node_type || has_node_type(&n.children, node_type))
 }
 
-// Test cases
+// ============================================================================
+// Test Cases
+// ============================================================================
 
 #[test]
 #[cfg(feature = "dev-tools")]
@@ -121,24 +132,23 @@ fn test_whitespace_only() {
 #[test]
 #[cfg(feature = "dev-tools")]
 fn test_mismatched_nesting_order() {
-    // [9] Balises qui se croisent (Inversion de l'ordre de fermeture)
-    // Devrait être capturé par la pile (stack) du parser JSX.
+    // [9] Intersecting tags (Inverted closing order)
+    // Should be caught by the JSX parser stack.
     let mdx = "<Outer><Inner></Outer></Inner>";
     let result = parse_mdx(mdx);
 
-    // On utilise ton helper pour vérifier que l'erreur parle bien de "mismatch" ou de "closing"
     assert!(result.is_err(), "Mismatched nesting should be an error");
 }
 
 #[test]
 #[cfg(feature = "dev-tools")]
 fn test_broken_attribute_expression() {
-    // [10] Expression JS malformée dans un attribut (accolade jamais fermée)
+    // [10] Malformed JS expression in an attribute (brace never closed)
     let mdx = "<Component data={{ prop: 'value'  >";
     let result = parse_mdx(mdx);
 
-    // Ici on veut s'assurer que le lexer ne "mange" pas tout le reste du document
-    // en cherchant une accolade qui n'existe pas.
+    // We want to ensure the lexer does not consume the rest of the document
+    // looking for a brace that does not exist.
     assert!(
         result.is_err(),
         "Unclosed JS expression in attribute must error"
@@ -148,13 +158,13 @@ fn test_broken_attribute_expression() {
 #[test]
 #[cfg(feature = "dev-tools")]
 fn test_math_placeholder_collision() {
-    // [11] Tentative d'injection de placeholders internes
-    // Vérifie que si un utilisateur écrit manuellement le caractère de contrôle \x02,
-    // le parser ne casse pas ou ne tente pas d'accéder à un index de pool inexistant.
-    let mdx = "Essai d'injection : \x02JSX999\x03";
+    // [11] Attempt to inject internal placeholders manually
+    // Verifies that if a user manually types the \x02 control character,
+    // the parser does not crash or attempt to access a non-existent pool index.
+    let mdx = "Injection attempt: \x02JSX999\x03";
     let result = parse_mdx(mdx);
 
-    // Le parser doit soit échapper le caractère, soit l'ignorer, mais ne JAMAIS paniquer.
+    // The parser must either escape the character or ignore it, but NEVER panic.
     assert!(
         result.is_ok(),
         "Internal placeholder injection should not cause panic"
@@ -169,8 +179,8 @@ fn test_math_placeholder_collision() {
 #[test]
 #[cfg(feature = "dev-tools")]
 fn test_unclosed_inline_math_at_eof() {
-    // [12] Math inline ouvert mais jamais fermé à la fin du fichier
-    let mdx = "Voici une équation non finie $e = mc^2";
+    // [12] Inline math opened but never closed at the end of the file
+    let mdx = "Here is an unfinished equation $e = mc^2";
     let result = parse_mdx(mdx);
 
     assert!(
@@ -187,12 +197,12 @@ fn test_unclosed_inline_math_at_eof() {
 #[test]
 #[cfg(feature = "dev-tools")]
 fn test_jsx_tag_with_no_name() {
-    // [13] Balise vide ou mal formée
-    let mdx = "< > contenu </ >";
+    // [13] Empty or malformed tag
+    let mdx = "< > content </ >";
     let result = parse_mdx(mdx);
 
-    // Devrait être traité comme du texte (Markdown standard) ou Erreur,
-    // mais pas comme un composant AstNode valide.
+    // Should be treated as plain text (standard Markdown) or an Error,
+    // but never as a valid AstNode component.
     if let Ok(nodes) = result {
         assert!(
             !has_node_type(&nodes, " "),

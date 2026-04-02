@@ -1,14 +1,25 @@
+//! Omni-Core Foreign Function Interfaces (FFI)
+//!
+//! This module provides bindings to execute the Omni-Core MDX engine from other programming
+//! languages. It includes:
+//! * **C-FFI:** Standard C ABI bindings (`mdx_parse`, `mdx_free`) for integration with C, C++, or Python/Ruby via `ctypes`.
+//! * **Node.js (N-API):** Highly optimized, zero-copy bindings for JavaScript environments.
+
 use crate::parser::parse_mdx;
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
-/// Parses a raw MDX string from the host environment (e.g., JavaScript/WASM or C)
+// ============================================================================
+// Standard C-ABI Bindings
+// ============================================================================
+
+/// Parses a raw MDX string from the host environment (e.g., C, C++, or Python via ctypes)
 /// and returns a serialized JSON representation of the AST.
 ///
 /// # Safety
 /// * `input` must be a valid, non-null, null-terminated UTF-8 C string.
 /// * The returned pointer is heap-allocated by Rust. The host **must** free this
-///   pointer by calling [`mdx_free`] after consuming the string.
+///   pointer by calling [`mdx_free`] after consuming the string to prevent memory leaks.
 #[no_mangle]
 pub unsafe extern "C" fn mdx_parse(input: *const c_char) -> *mut c_char {
     if input.is_null() {
@@ -60,23 +71,26 @@ fn error_json(msg: &str) -> *mut c_char {
     }
 }
 
+// ============================================================================
 // Node.js native bindings (N-API)
-//
-// The architecture below eliminates the FFI serialization bottleneck.
-// Instead of converting the entire AST to JSON on every call, the AST is stored
-// in Rust memory (behind an Arc) and accessed lazily from JavaScript via
-// lightweight napi method calls.
-//
-// Memory management is handled automatically:
-//   - `MdxAst` wraps the AST in an `Arc<Vec<AstNode>>`.
-//   - Each `MdxNode` holds a clone of that `Arc`, keeping the allocation alive
-//     as long as any node is referenced from JavaScript.
-//   - When all JS references (MdxAst + all MdxNodes) are garbage collected,
-//     the Arc refcount drops to zero and Rust frees the memory.
-//   - No manual `free()` call is needed from userland.
+// ============================================================================
 
 #[cfg(feature = "node")]
-mod node {
+pub mod node {
+    //! Node.js N-API Bindings
+    //!
+    //! The architecture below eliminates the FFI serialization bottleneck.
+    //! Instead of converting the entire AST to JSON on every call (which is slow),
+    //! the AST is stored in Rust memory (behind an `Arc`) and accessed lazily from
+    //! JavaScript via lightweight N-API method calls.
+    //!
+    //! # Memory Management
+    //! Management is handled automatically via JS Garbage Collection:
+    //! * `MdxAst` wraps the AST in an `Arc<Vec<AstNode>>`.
+    //! * Each `MdxNode` holds a clone of that `Arc`, keeping the allocation alive as long as any node is referenced from JavaScript.
+    //! * When all JS references (`MdxAst` + all `MdxNode`s) are garbage collected by V8, the Arc refcount drops to zero and Rust frees the memory.
+    //! * No manual `free()` call is needed from userland.
+
     use super::*;
     use crate::ast::{AstNode, AttrValue};
     use napi::bindgen_prelude::*;
@@ -84,20 +98,17 @@ mod node {
     use std::collections::HashMap;
     use std::sync::Arc;
 
-    // MdxNode
-    //
-    // Represents a single AST node. Holds a reference to the shared Arc so the
-    // underlying allocation stays alive regardless of the MdxAst lifetime.
-    // The `path` field encodes the position of this node within the tree as a
-    // sequence of child indices, avoiding any copy of the node data itself.
-
+    /// Represents a single AST node inside JavaScript.
+    ///
+    /// Holds a reference to the shared `Arc` so the underlying allocation stays alive
+    /// regardless of the `MdxAst` lifetime. The `path` field encodes the position of this
+    /// node within the tree as a sequence of child indices, avoiding any memory copying.
     #[napi]
     pub struct MdxNode {
         /// Shared ownership of the root AST — keeps memory alive.
         // codeql[rust/access-invalid-pointer] : False positive. The AST is converted to owned data (Cow::Owned) preventing any Use-After-Free across the FFI boundary.
         ast: Arc<Vec<AstNode<'static>>>,
-        /// Path from root to this node, e.g. [2, 0, 1] means
-        /// root[2].children[0].children[1].
+        /// Path from root to this node, e.g. [2, 0, 1] means root[2].children[0].children[1].
         path: Vec<usize>,
     }
 
@@ -177,7 +188,7 @@ mod node {
             }
         }
 
-        /// Returns the raw JSX/HTML attributes as a plain JavaScript object.
+        /// Returns the raw JSX/HTML attributes as a serialized JSON string representing a plain JS Object.
         /// Expression values are returned as strings; AST values are serialized to JSON.
         #[napi(getter)]
         pub fn attributes(&self) -> Option<String> {
@@ -209,14 +220,10 @@ mod node {
         }
     }
 
-    // MdxAst
-    //
-    // The root container returned by `parse()`. Wraps the AST in an Arc so that
-    // MdxNode instances can safely outlive the MdxAst object itself.
-    // When both MdxAst and all derived MdxNodes are garbage collected by the JS
-    // runtime, the Arc refcount drops to zero and Rust reclaims the memory —
-    // no manual `free()` call is needed from userland.
-
+    /// The root AST container returned by the parser for Node.js.
+    ///
+    /// Wraps the AST in an `Arc` so that `MdxNode` instances can safely outlive
+    /// the `MdxAst` object itself during JavaScript runtime execution.
     #[napi]
     pub struct MdxAst {
         /// Shared ownership of the parsed AST.
@@ -266,8 +273,6 @@ mod node {
                 .map_err(|e| napi::Error::from_reason(e.to_string()))
         }
     }
-
-    // Entry point
 
     /// Parses an MDX string and returns an `MdxAst` handle backed by Rust memory.
     ///

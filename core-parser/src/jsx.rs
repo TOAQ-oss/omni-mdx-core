@@ -1,3 +1,10 @@
+//! Omni-Core JSX Parser
+//!
+//! This module handles the extraction and parsing of JSX/MDX components.
+//! It transforms raw JSX strings (isolated by the lexer) into structured AST nodes.
+//! It supports complex React paradigms including nested components, self-closing tags,
+//! boolean attributes, and dynamic `{expression}` properties.
+
 use crate::ast::{AstNode, AttrValue, ParseError};
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -15,7 +22,8 @@ use std::collections::HashMap;
 /// * `inline_math` - The pool of extracted inline math blocks.
 ///
 /// # Errors
-/// Returns a [`ParseError`] if the input does not start with a valid tag or is malformed.
+/// Returns a [`ParseError`] if the input does not start with a valid tag, is malformed,
+/// or exceeds the maximum allowed nesting depth.
 pub fn parse_jsx<'a>(
     input: &'a str,
     block_math: &'a [String],
@@ -24,6 +32,7 @@ pub fn parse_jsx<'a>(
     parse_jsx_depth(input, block_math, inline_math, 0)
 }
 
+/// Internal recursive JSX parser with depth tracking to prevent Stack Overflow (DoS) attacks.
 fn parse_jsx_depth<'a>(
     input: &'a str,
     block_math: &'a [String],
@@ -77,8 +86,8 @@ fn parse_jsx_depth<'a>(
 ///
 /// # Returns
 /// A tuple containing:
-/// 1. `String`: The tag name.
-/// 2. `HashMap<String, AttrValue>`: The extracted attributes.
+/// 1. `Cow<'a, str>`: The tag name.
+/// 2. `HashMap<Cow<'a, str>, AttrValue<'a>>`: The extracted attributes.
 /// 3. `bool`: True if the tag is self-closing (`/>`).
 /// 4. `usize`: The byte offset immediately following the closing `>`.
 #[allow(clippy::type_complexity)]
@@ -243,7 +252,7 @@ fn parse_open_tag<'a>(
     }
 }
 
-// Parses the inner content of a paired JSX tag into a list of child nodes.
+/// Parses the inner content of a paired JSX tag into a list of child nodes.
 ///
 /// This function acts as a mini-router:
 /// - If it spots a nested custom JSX component, it isolates it via the lexer and recursively calls `parse_jsx`.

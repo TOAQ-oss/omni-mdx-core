@@ -90,7 +90,7 @@ jobs:
 
       - name: Build WASM
         working-directory: core-parser
-        run: wasm-pack build --target web --features wasm
+        run: wasm-pack build --target web -- --features wasm
 
       - name: Clean wasm-pack generated files
         working-directory: core-parser/pkg
@@ -143,28 +143,19 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2026-03-23
+          components: rustc, cargo, rust-std
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
+        id: setup_python_step
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Build and install Rust extension (Linux/Mac)
-        if: runner.os != 'Windows'
+      - name: Build and install Rust extension
         working-directory: core-parser
-        run: |
-          pip install maturin
-          maturin build --features python --release --out /tmp/maturin-wheels
-          pip install --force-reinstall /tmp/maturin-wheels/*.whl
- 
-      - name: Build and install Rust extension (Windows)
-        if: runner.os == 'Windows'
-        working-directory: core-parser
-        run: |
-          pip install maturin
-          maturin build --features python --release --out C:\tmp\maturin-wheels
-          $wheel = Get-ChildItem C:\tmp\maturin-wheels\*.whl | Select-Object -First 1
-          pip install --force-reinstall $wheel.FullName
+        run: maturin develop --release --features python
+        env:
+          PYO3_PYTHON: ${{ steps.setup_python_step.outputs.python-path }}
  
       - name: Install Python dependencies
         working-directory: packages/mdx-python

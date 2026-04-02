@@ -3,8 +3,11 @@ use rand::Rng;
 const NODE_TEXT: u8 = 0x01;
 const NODE_ELEMENT: u8 = 0x02;
 const ATTR_TEXT: u8 = 0x10;
+#[allow(dead_code)]
 const ATTR_EXPRESSION: u8 = 0x11;
+#[allow(dead_code)]
 const ATTR_BOOLEAN: u8 = 0x12;
+#[allow(dead_code)]
 const ATTR_AST: u8 = 0x13;
 
 /// Generates a mutated version of a valid OCP payload.
@@ -35,6 +38,7 @@ pub fn mutate_ocp_payload(rng: &mut impl Rng, original: &[u8]) -> Vec<u8> {
                 data[index] = boundaries[rng.gen_range(0..boundaries.len())];
             }
             // Block deletion -> triggers “Unexpected EOF”
+            #[allow(clippy::collapsible_match)]
             3 => {
                 if data.len() > 1 {
                     data.remove(index);

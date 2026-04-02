@@ -1,7 +1,22 @@
 [package]
 name    = "omni-mdx"
-version = "0.2.4"
+version = "0.2.5"
 edition = "2021"
+description = "A highly secure, DoS-resistant MDX parser and OCP binary protocol engine."
+license = "MIT"
+authors = [
+    "Bruneteau Côme <dev@toaq.fr>",
+    "TOAQ <oss@toaq.fr>"
+]
+repository = "https://github.com/TOAQ-oss/omni-mdx-core"
+homepage    = "https://omni-core.org/mdx"
+readme = "README.md"
+keywords = ["mdx", "markdown", "parser", "security"]
+categories = ["parsing", "text-processing"]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [lib]
 name       = "omni_mdx_core"

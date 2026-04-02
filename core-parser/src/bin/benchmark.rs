@@ -1,3 +1,13 @@
+//! Omni-Core Performance Benchmark
+//!
+//! A minimal, standalone benchmarking tool to measure the end-to-end latency
+//! of the `parse_mdx` and `compile_to_jsx` pipeline. It processes a heavily
+//! nested MDX payload to simulate worst-case, real-world rendering scenarios.
+//!
+//! Note: While this provides a fast, CI-friendly latency check, for highly
+//! rigorous statistical micro-benchmarking, the Rust community standard is
+//! the `criterion` crate.
+
 use omni_mdx_core::compiler::compile_to_jsx;
 use omni_mdx_core::parser::parse_mdx;
 use std::time::Instant;
@@ -31,10 +41,12 @@ fn main() {
 
     let iterations = 1000;
     println!(
-        "🚀 Lancement du benchmark Rust pur ({} itérations)...",
+        "🚀 Starting pure Rust benchmark ({} iterations)...",
         iterations
     );
 
+    // Warm-up phase: Ensure any lazy static initializations (like the Regex pools
+    // in the Markdown module) are compiled and cached before starting the timer.
     let _ = parse_mdx(complex_mdx);
 
     let start = Instant::now();

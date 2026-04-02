@@ -1,6 +1,27 @@
+//! Omni-Core JSX Compiler
+//!
+//! This module handles the reverse operation of the parser: converting the safe,
+//! validated Abstract Syntax Tree (AST) back into a raw JSX string.
+//!
+//! This is the critical final step for environments that need to render the MDX
+//! directly into React, Preact, or Vue components (e.g., Next.js pipelines).
+//! The compiler uses highly optimized, zero-allocation string mutations
+//! to generate the output as fast as possible.
+
 use crate::ast::{AstNode, AttrValue};
 
-/// Compiles a complete AST directly into a JSX string
+/// Compiles a complete AST directly into a JSX string.
+///
+/// # Performance
+/// This function generously pre-allocates memory (`nodes.len() * 128` bytes)
+/// to prevent the underlying `String` buffer from reallocating during the
+/// recursive AST traversal.
+///
+/// # Arguments
+/// * `nodes` - A slice of root `AstNode`s to compile.
+///
+/// # Returns
+/// A `String` containing valid JSX syntax ready to be evaluated by a bundler or JS engine.
 pub fn compile_to_jsx(nodes: &[AstNode]) -> String {
     // We generously pre-allocate memory to avoid reallocating the string
     let mut out = String::with_capacity(nodes.len() * 128);
@@ -10,6 +31,13 @@ pub fn compile_to_jsx(nodes: &[AstNode]) -> String {
     out
 }
 
+/// Recursively traverses an AST node and appends its JSX representation to the output buffer.
+///
+/// # Attribute Handling
+/// * **Text:** Escapes double quotes to `&quot;` to prevent HTML injection/breakage.
+/// * **Expressions:** Wraps the raw string in curly braces `{...}`.
+/// * **Booleans:** Appends just the key name (e.g., `<input disabled />`).
+/// * **Nested ASTs:** Currently stubbed as `={null}` for performance benchmarking constraints.
 fn render_node(node: &AstNode, out: &mut String) {
     // 1. Plain text
     if node.node_type == "text" {
