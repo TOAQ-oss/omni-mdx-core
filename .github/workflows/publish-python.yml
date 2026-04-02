@@ -20,7 +20,6 @@ permissions:
   id-token: write
 
 jobs:
-  # Étape 1 : Vérification de la version (uniquement pour le workflow_dispatch)
   check-version:
     runs-on: ubuntu-latest
     outputs:
@@ -65,7 +64,6 @@ jobs:
             echo "val=" >> "$GITHUB_OUTPUT"
           fi
 
-  # Étape 2 : Build des Wheels multi-plateformes
   build-wheels:
     needs: check-version
     if: needs.check-version.outputs.should_run == 'true'
@@ -108,14 +106,13 @@ jobs:
           name: wheels-${{ matrix.os }}
           path: packages/mdx-python/dist/*.whl
 
-  # Étape 3 : Publication sur PyPI via OIDC
   publish:
     name: Publish to PyPI
     needs: [check-version, build-wheels]
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
-      id-token: write  # Obligatoire pour Trusted Publishing
+      id-token: write
       contents: read
     steps:
       - name: Download all wheels
