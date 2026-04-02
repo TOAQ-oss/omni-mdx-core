@@ -4,14 +4,27 @@ build-backend = "maturin"
 
 [project]
 name = "omni-mdx"
-version = "0.1.17"
+version = "0.1.18"
 description = "Ultra-fast MDX rendering engine powered by Rust and WebAssembly."
 readme = "README.md"
 requires-python = ">=3.8"
-keywords = ["mdx", "rust", "parser"]
+license = { text = "MIT" }
+keywords = ["mdx", "markdown", "parser", "rust", "security"]
+authors = [
+    { name = "Côme Bruneteau", email = "oss@toaq.fr" },
+    { name = "TOAQ-oss" }
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Rust",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Text Processing :: Markup",
+    "Intended Audience :: Developers",
+]
 
 [project.urls]
-"Homepage" = "https://github.com/TOAQ-oss/omni-mdx-core"
+"Homepage" = "https://omni-core.org"
 "Bug Tracker" = "https://github.com/TOAQ-oss/omni-mdx-core/issues"
 "Source Code" = "https://github.com/TOAQ-oss/omni-mdx-core"
 
