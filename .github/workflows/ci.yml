@@ -90,7 +90,7 @@ jobs:
 
       - name: Build WASM
         working-directory: core-parser
-        run: wasm-pack build --target web --features wasm
+        run: wasm-pack build --target web -- --features wasm
 
       - name: Clean wasm-pack generated files
         working-directory: core-parser/pkg
