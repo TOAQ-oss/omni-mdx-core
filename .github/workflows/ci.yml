@@ -151,9 +151,12 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Install Maturin
+        run: pip install maturin
+        
       - name: Build and install Rust extension
         working-directory: core-parser
-        run: maturin develop --release --features python
+        run: python -m maturin develop --release --features python
         env:
           PYO3_PYTHON: ${{ steps.setup_python_step.outputs.python-path }}
  
