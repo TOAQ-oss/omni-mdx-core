@@ -50,13 +50,18 @@ jobs:
         run: |
           VERSION=$(grep -m 1 '^version =' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
           
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://crates.io/api/v1/crates/omni-mdx/$VERSION")
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "User-Agent: Omni-MDX-CI (oss@toaq.fr)" \
+            "https://crates.io/api/v1/crates/omni-mdx/$VERSION")
 
           if [ "$HTTP_STATUS" -eq 200 ]; then
-            echo "⚠️ Version $VERSION already exists on crates.io (HTTP 200). Skipping publish."
-          else
-            echo "🚀 Version $VERSION not found (HTTP $HTTP_STATUS). Publishing..."
+            echo "⚠️ Version $VERSION already exists on crates.io. Skipping publish."
+          elif [ "$HTTP_STATUS" -eq 404 ]; then
+            echo "🚀 Version $VERSION not found. Publishing..."
             cargo publish
+          else
+            echo "❌ Unexpected API response (HTTP $HTTP_STATUS). Manual check required."
+            exit 1
           fi
 
       - name: Update GitHub Release (Rust)
