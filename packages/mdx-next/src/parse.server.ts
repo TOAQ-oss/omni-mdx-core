@@ -3,7 +3,8 @@ import { createRequire } from "module";
 import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
 import { MdxBinaryDecoder } from "./utils/binaryDecoder";
-import { MdxInput } from "./types/MdxInput";
+import { MdxInput, OmniMdxOptions } from "./types/MdxInput";
+import { runUnifiedPipeline, runUnifiedPipelineSync } from "./utils/unifiedBridge";
 
 declare const __non_webpack_require__: NodeRequire | undefined;
 
@@ -75,16 +76,6 @@ function getNativeModuleSync():any {
   );
 }
 
-function getParseFn(native: any): (mdx: string | Buffer | Uint8Array) => any {
-  if (typeof native.parseToBinary === "function") return native.parseToBinary;
-  if (typeof native.parse_to_binary === "function") return native.parse_to_binary;
-  if (typeof native.parse === "function") return native.parse;
-  if (typeof native.parseToJson === "function") return native.parseToJson;
-  if (typeof native.parse_to_json === "function") return native.parse_to_json;
-
-  throw new Error("[toaq-oss/omni-mdx] Native parser lacks a valid parse function.");
-}
-
 function normalizeToBuffer(input: any): Buffer {
   if (Buffer.isBuffer(input)) return input;
   if (input instanceof Uint8Array) return Buffer.from(input.buffer, input.byteOffset, input.byteLength);
@@ -94,7 +85,25 @@ function normalizeToBuffer(input: any): Buffer {
   return Buffer.from(String(input), 'utf-8');
 }
 
-export async function parseMdx(mdx: MdxInput): Promise<AstNode[]> {
+/**
+ * Asynchronously parses raw MDX content into an Abstract Syntax Tree (AST).
+ * This is the primary function intended for use in Next.js Server Components and API routes.
+ *
+ * @param mdx - The raw MDX content as a string, or a binary buffer for optimal performance.
+ * @param options - Optional configuration to inject `unified` plugins (e.g., `rehypePlugins`).
+ * @returns A promise that resolves to an array of `AstNode` representing the parsed MDX.
+ * @throws {MDXParseError} If the MDX syntax is invalid or the underlying native parser fails.
+ * @example
+ * ```typescript
+ * import { parseMdx } from '@toaq-oss/omni-mdx/server';
+ * import rehypeHighlight from 'rehype-highlight';
+ * 
+ * const ast = await parseMdx("# Hello World", {
+ *  rehypePlugins: [rehypeHighlight]
+ * });
+ * ```
+ */
+export async function parseMdx(mdx: MdxInput, options?: OmniMdxOptions): Promise<AstNode[]> {
   const native = getNativeModuleSync();
   let result: any;
   
@@ -120,36 +129,58 @@ export async function parseMdx(mdx: MdxInput): Promise<AstNode[]> {
   }
   
 
+  let parsedAst: AstNode[] = [];
+
   if (result instanceof Uint8Array || Buffer.isBuffer(result)) {
     const decoder = new MdxBinaryDecoder(result);
-    return decoder.decode();
-  }
-
-  if (typeof result === "string") {
-    try { return JSON.parse(result) as AstNode[]; } catch { throw new Error("Invalid JSON string."); }
-  }
-
-  if (typeof result === "object" && result !== null) {
+    parsedAst = decoder.decode();
+  } 
+  else if (typeof result === "string") {
+    try { 
+      parsedAst = JSON.parse(result) as AstNode[]; 
+    } catch { 
+      throw new Error("Invalid JSON string."); 
+    }
+  } 
+  else if (typeof result === "object" && result !== null) {
     if (typeof result.toJson === "function") {
       try {
         const jsonString = result.toJson();
-        return JSON.parse(jsonString) as AstNode[];
+        parsedAst = JSON.parse(jsonString) as AstNode[];
       } catch (e) {
         throw new Error("[toaq-oss/omni-mdx] Failed to serialize MdxAst to JSON.");
       }
+    } 
+    else if (typeof result.to_json === "function") {
+      try { 
+        parsedAst = JSON.parse(result.to_json()) as AstNode[]; 
+      } catch (e) {}
+    } 
+    else if (Array.isArray(result)) {
+      parsedAst = result as AstNode[];
     }
-    
-    if (typeof result.to_json === "function") {
-      try { return JSON.parse(result.to_json()) as AstNode[]; } catch (e) {}
-    }
-    
-    if (Array.isArray(result)) return result as AstNode[];
   }
 
-  throw new Error("[toaq-oss/omni-mdx] Unrecognized return format from Rust parser. Available properties: " + Object.keys(result.__proto__ || result).join(", "));
+  if (!parsedAst || parsedAst.length === 0 && !Array.isArray(parsedAst)) {
+    throw new Error("[toaq-oss/omni-mdx] Unrecognized return format from Rust parser. Available properties: " + Object.keys(result.__proto__ || result).join(", "));
+  }
+
+  if (options?.rehypePlugins && options.rehypePlugins.length > 0) {
+    return await runUnifiedPipeline(parsedAst, options.rehypePlugins);
+  }
+
+  return parsedAst;
 }
 
-export function parseMdxSync(mdx: MdxInput): AstNode[] {
+/**
+ * Synchronously parses raw MDX content into an Abstract Syntax Tree (AST).
+ * @param mdx - The raw MDX content as a string, or a binary buffer for optimal performance.
+ * @param options - Optional configuration to inject `unified` plugins. 
+ * **Warning:** Any plugins provided here MUST be entirely synchronous.
+ * @returns An array of `AstNode` representing the parsed MDX.
+ * @throws {MDXParseError} If the MDX syntax is invalid or the underlying native parser fails.
+ */
+export function parseMdxSync(mdx: MdxInput, options?: OmniMdxOptions): AstNode[] {
   const native = getNativeModuleSync();
   let result: any;
 
@@ -172,26 +203,46 @@ export function parseMdxSync(mdx: MdxInput): AstNode[] {
     throw new MDXParseError(err?.message ?? String(err), sourceSnippet);
   }
 
+  let parsedAst: AstNode[] = [];
+
   if (result instanceof Uint8Array || Buffer.isBuffer(result)) {
     const decoder = new MdxBinaryDecoder(result);
-    return decoder.decode();
-  }
-  
-  if (typeof result === "string") {
-    try { return JSON.parse(result) as AstNode[]; } catch { throw new Error("Invalid JSON"); }
+    parsedAst = decoder.decode();
+  } 
+  else if (typeof result === "string") {
+    try { parsedAst = JSON.parse(result) as AstNode[]; } catch { throw new Error("Invalid JSON"); }
+  } 
+  else if (typeof result === "object" && result !== null) {
+    if (typeof result.toJson === "function") {
+      try { parsedAst = JSON.parse(result.toJson()) as AstNode[]; } catch { throw new Error("Invalid JSON"); }
+    } 
+    else if (typeof result.to_json === "function") {
+      try { parsedAst = JSON.parse(result.to_json()) as AstNode[]; } catch { throw new Error("Invalid JSON"); }
+    }
+    else if (Array.isArray(result)) {
+      parsedAst = result as AstNode[];
+    }
   }
 
-  if (typeof result === "object" && result !== null && typeof result.toJson === "function") {
-    try { return JSON.parse(result.toJson()) as AstNode[]; } catch { throw new Error("Invalid JSON"); }
+  if (!parsedAst || (parsedAst.length === 0 && !Array.isArray(parsedAst))) {
+    throw new Error("[toaq-oss/omni-mdx] Unrecognized return format from Rust parser.");
   }
 
-  if (typeof result === "object" && result !== null && typeof result.to_json === "function") {
-    try { return JSON.parse(result.to_json()) as AstNode[]; } catch { throw new Error("Invalid JSON"); }
+  if (options?.rehypePlugins && options.rehypePlugins.length > 0) {
+    return runUnifiedPipelineSync(parsedAst, options.rehypePlugins);
   }
 
   throw new Error("[toaq-oss/omni-mdx] Unrecognized return format from Rust parser.");
 }
 
+/**
+ * Asynchronously compiles MDX directly into a raw JSX string using the Rust core.
+ * Note: This bypasses the React AST rendering step entirely.
+ * @param mdx - The raw MDX content to compile.
+ * @returns A promise that resolves to the compiled JSX string.
+ * @throws {Error} If the underlying native module version does not support JSX compilation.
+ * @throws {MDXParseError} If the MDX syntax is invalid.
+ */
 export async function compileToJsx(mdx: MdxInput): Promise<string> {
   const native = getNativeModuleSync();
   const compileFn = native.compileToJsx || native.compile_to_jsx;
@@ -208,6 +259,14 @@ export async function compileToJsx(mdx: MdxInput): Promise<string> {
   }
 }
 
+/**
+ * Synchronously compiles MDX directly into a raw JSX string using the Rust core.
+ * Note: This bypasses the React AST rendering step entirely.
+ * @param mdx - The raw MDX content to compile.
+ * @returns The compiled JSX string.
+ * @throws {Error} If the underlying native module version does not support JSX compilation.
+ * @throws {MDXParseError} If the MDX syntax is invalid.
+ */
 export function compileToJsxSync(mdx: MdxInput): string {
   const native = getNativeModuleSync();
   const compileFn = native.compileToJsx || native.compile_to_jsx;
@@ -224,8 +283,14 @@ export function compileToJsxSync(mdx: MdxInput): string {
   }
 }
 
+/**
+ * Custom error class thrown when the Omni-Core parser encounters an invalid MDX syntax
+ * or malformed binary input data.
+ */
 export class MDXParseError extends Error {
+  /** The snippet of source code (or binary indicator) where the error occurred. */
   readonly source: string;
+  
   constructor(message: string, source: string) {
     super(`MDX parse error: ${message}`);
     this.name   = "MDXParseError";
