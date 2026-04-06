@@ -40,7 +40,7 @@ jobs:
         id: get_version
         shell: bash
         run: |
-          VERSION=$(grep -m 1 '^version =' core-parser/Cargo.toml | sed 's/version = "\(.*\)"/\1/')
+          VERSION=$(grep -m 1 '^version =' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
           echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Publish to crates.io
