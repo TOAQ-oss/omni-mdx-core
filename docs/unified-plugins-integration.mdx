@@ -24,7 +24,9 @@ In the traditional `unified` ecosystem, there are two main steps:
 
 **Omni-MDX skips the Remark phase entirely.** Because our Rust core directly generates HTML-equivalent nodes (e.g., `<h1>`, `<div>`, `<pre>`) to ensure the fastest possible React rendering, our AST translates directly to **HAST**. 
 
-> 💡 **Rule of thumb:** Always use `rehype-*` plugins with Omni-MDX, not `remark-*` plugins.
+<Note type="info">
+**Rule of thumb:** Always use `rehype-*` plugins with Omni-MDX, not `remark-*` plugins.
+</Note>
 
 ---
 
@@ -79,8 +81,9 @@ export function LiveEditor({ rawText }) {
 }
 ```
 
-⚠️ **Warning for Client-Side Plugins:** Ensure the plugins you provide to the client parser are browser-safe. Some `rehype` plugins rely on Node.js native APIs (`fs`, `path`) and will crash your bundler (Webpack/Turbopack) if imported into a `"use client"` file.
-
+<Note type="warning">
+**Warning for Client-Side Plugins:** Ensure the plugins you provide to the client parser are browser-safe. Some `rehype` plugins rely on Node.js native APIs (`fs`, `path`) and will crash your bundler (Webpack/Turbopack) if imported into a `"use client"` file.
+</Note>
 ---
 
 ## Synchronous Parsing
