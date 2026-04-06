@@ -127,3 +127,11 @@ jobs:
         with:
           packages-dir: dist/
           skip-existing: true
+
+      - name: Update GitHub Release (Python Wheels)
+        if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.check-version.outputs.version_suffix }}
+          files: dist/*.whl
+          draft: true
