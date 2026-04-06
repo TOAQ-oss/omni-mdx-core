@@ -127,7 +127,6 @@ jobs:
           mkdir -p platform-pkg
           cp "$NODE_FILE" "platform-pkg/omni-mdx-core.${{ matrix.name }}.node"
           
-          # Génération dynamique du package.json du subpackage
           cat > platform-pkg/package.json << PKGJSON
           {
             "name": "$PKG_NAME",
@@ -220,3 +219,14 @@ jobs:
           else
             npm publish --access public --provenance
           fi
+      
+      - name: Update GitHub Release (NPM & WASM)
+        if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.prepare.outputs.version }}
+          files: |
+            packages/mdx-next/wasm/*.wasm
+            packages/mdx-next/native/*.node
+          draft: true
+          generate_release_notes: true

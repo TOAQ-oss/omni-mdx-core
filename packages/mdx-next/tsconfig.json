@@ -14,9 +14,9 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "baseUrl": ".",
     "verbatimModuleSyntax": false,
     "allowJs": true,
+    "types": ["node"]
   },
   "include": [
     "src/**/*.ts",

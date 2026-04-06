@@ -1,7 +1,7 @@
 {
   "name": "@toaq-oss/omni-mdx",
-  "version": "0.1.28",
-  "description": "MDX parser + renderer for Next.js \u2014 Rust core, RSC-compatible",
+  "version": "1.0.0",
+  "description": "MDX parser + renderer for Next.js — Rust core, RSC-compatible",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,
@@ -38,10 +38,6 @@
       "types": "./dist/client.d.ts",
       "import": "./dist/client.js",
       "require": "./dist/client.cjs"
-    },
-    "./wasm": {
-      "import": "./wasm/mdx_parser.js",
-      "require": "./wasm/mdx_parser.js"
     }
   },
   "main": "./dist/index.cjs",
@@ -56,23 +52,25 @@
     "test": "vitest run"
   },
   "optionalDependencies": {
-    "@toaq-oss/omni-mdx-darwin-arm64": "0.2.11",
-    "@toaq-oss/omni-mdx-darwin-x64": "0.2.11",
-    "@toaq-oss/omni-mdx-linux-x64-gnu": "0.2.11",
-    "@toaq-oss/omni-mdx-win32-x64-msvc": "0.2.11"
+    "@toaq-oss/omni-mdx-darwin-arm64": "1.0.0",
+    "@toaq-oss/omni-mdx-darwin-x64": "1.0.0",
+    "@toaq-oss/omni-mdx-linux-x64-gnu": "1.0.0",
+    "@toaq-oss/omni-mdx-win32-x64-msvc": "1.0.0"
   },
   "peerDependencies": {
     "react": ">=18.0.0"
   },
   "peerDependenciesMeta": {},
   "devDependencies": {
+    "@types/hast": "^3.0.4",
     "@types/katex": "^0.16.0",
-    "@types/node": "^25.5.0",
+    "@types/node": "^25.5.2",
     "@types/react": "^18.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "katex": "^0.16.0"
+    "katex": "^0.16.0",
+    "unified": "^11.0.5"
   }
 }

@@ -25,10 +25,17 @@ jobs:
     outputs:
       should_run: ${{ steps.decide.outputs.should_run }}
       version_suffix: ${{ steps.suffix.outputs.val }}
+      base_version: ${{ steps.get_version.outputs.val }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
+
+      - name: Get base version
+        id: get_version
+        run: |
+          V=$(grep -E '^version\s*=' packages/mdx-python/pyproject.toml | head -1 | sed 's/.*=\s*"\(.*\)"/\1/')
+          echo "val=$V" >> "$GITHUB_OUTPUT"
 
       - name: Decide whether to run
         id: decide
@@ -86,13 +93,24 @@ jobs:
 
       - name: Inject Version Suffix (Canary only)
         if: github.event_name == 'push'
-        shell: bash
+        shell: python
         run: |
-          SUFFIX="${{ needs.check-version.outputs.version_suffix }}"
-          cd packages/mdx-python
-          sed -i.bak "s/version = \"\([^\"]*\)\"/version = \"\1$SUFFIX\"/" pyproject.toml
-          # Mise à jour du Cargo.toml pour maturin
-          sed -i.bak "s/version = \"\([^\"]*\)\"/version = \"\1$SUFFIX\"/" Cargo.toml || true
+          import os
+          suffix = "${{ needs.check-version.outputs.version_suffix }}"
+          
+          path = "packages/mdx-python/pyproject.toml"
+          with open(path, "r") as f:
+              content = f.read()
+          with open(path, "w") as f:
+              import re
+              f.write(re.sub(r'^version\s*=\s*"([^"]*)"', f'version = "\\1{suffix}"', content, flags=re.M))
+              
+          cargo_path = "packages/mdx-python/Cargo.toml"
+          if os.path.exists(cargo_path):
+              with open(cargo_path, "r") as f:
+                  content = f.read()
+              with open(cargo_path, "w") as f:
+                  f.write(re.sub(r'^version\s*=\s*"([^"]*)"', f'version = "\\1{suffix}"', content, flags=re.M))
 
       - name: Build wheel
         working-directory: packages/mdx-python
@@ -113,7 +131,7 @@ jobs:
     environment: pypi
     permissions:
       id-token: write
-      contents: read
+      contents: write
     steps:
       - name: Download all wheels
         uses: actions/download-artifact@v4
@@ -127,3 +145,11 @@ jobs:
         with:
           packages-dir: dist/
           skip-existing: true
+
+      - name: Update GitHub Release (Python Wheels)
+        if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.check-version.outputs.base_version }}
+          files: dist/*.whl
+          draft: true

@@ -10,6 +10,7 @@ from __future__ import annotations
 import re
 from typing import Optional
 
+# Tables mapping common LaTeX commands to their Unicode equivalents
 _GREEK = {
     r"\alpha":"α", r"\beta":"β", r"\gamma":"γ", r"\delta":"δ",
     r"\epsilon":"ε", r"\varepsilon":"ε", r"\zeta":"ζ", r"\eta":"η",
@@ -50,10 +51,12 @@ _ALL_SYMBOLS = {**_GREEK, **_OPERATORS}
 
 
 def _convert_frac(s: str) -> str:
+    """Internal helper to convert \\frac{a}{b} into (a/b)."""
     return re.sub(r'\\frac\{([^}]*)\}\{([^}]*)\}',
                   lambda m: f"({m.group(1).strip()}/{m.group(2).strip()})", s)
 
 def _convert_scripts(s: str) -> str:
+    """Internal helper to replace ^ and _ patterns with Unicode super/subscript chars."""
     s = re.sub(r'\^\{([^}]*)\}', lambda m: "".join(_SUPERSCRIPTS.get(c,c) for c in m.group(1)), s)
     s = re.sub(r'_\{([^}]*)\}',  lambda m: "".join(_SUBSCRIPTS.get(c,c)  for c in m.group(1)), s)
     s = re.sub(r'\^(.)', lambda m: _SUPERSCRIPTS.get(m.group(1), f"^{m.group(1)}"), s)
@@ -61,12 +64,16 @@ def _convert_scripts(s: str) -> str:
     return s
 
 def _convert_commands(s: str) -> str:
+    """Internal helper to replace LaTeX commands (like \\alpha) with their Unicode symbols."""
     for cmd, sym in sorted(_ALL_SYMBOLS.items(), key=lambda x: -len(x[0])):
         s = s.replace(cmd, sym)
     return s
 
 def latex_to_unicode(latex: str) -> str:
-    """Convert LaTeX to readable Unicode text."""
+    """
+    Main utility to convert a LaTeX string into readable Unicode text.
+    Handles fractions, Greek letters, operators, and scripts.
+    """
     s = latex.strip()
     s = _convert_frac(s)
     s = _convert_commands(s)
@@ -75,6 +82,7 @@ def latex_to_unicode(latex: str) -> str:
     return re.sub(r' {2,}', ' ', s).strip()
 
 def latex_to_pixmap_available() -> bool:
+    """Checks if the matplotlib library is available in the current environment."""
     try:
         import matplotlib  # noqa
         return True
@@ -85,14 +93,15 @@ def latex_to_pixmap_available() -> bool:
 def latex_to_pixmap(latex: str, font_size: int = 14, dpi: int = 150,
                     bg: str = "#faf5ff", fg: str = "#3b0764"):
     """
-    Render a LaTeX formula as a QPixmap using matplotlib.mathtext.
+    Renders a LaTeX formula as a high-quality QPixmap using matplotlib.mathtext.
 
-    Returns None silently if :
-    - matplotlib is not installed
-    - the formula contains syntax not supported by mathtext
-    - any other error
+    This function performs a two-pass render:
+    1. A 'probe' pass to determine the exact bounding box of the rendered text.
+    2. A 'final' pass on a precisely sized canvas to avoid excessive whitespace.
 
-    The caller is responsible for displaying a fallback Unicode in this case.
+    Returns:
+        QPixmap: The rendered image if successful.
+        None: If matplotlib is missing or the formula is syntactically invalid.
     """
     import matplotlib
     matplotlib.use("Agg")

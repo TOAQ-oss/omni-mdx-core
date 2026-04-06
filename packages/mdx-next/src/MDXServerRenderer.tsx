@@ -23,11 +23,15 @@ import type { AttrValueKind, AstNode, MDXComponents } from "./types/MdxAST";
 import { BASIC_STYLES } from "./utils/basicStyles";
 
 /**
- * Converts a raw AttrValueKind from the Rust AST into a React-usable prop value.
- *   text       → string
- *   expression → attempt JSON/JS parse, fallback to string
- *   boolean    → true
- *   ast        → <MDXServerRenderer ast={...} components={...} />
+ * Converts a raw `AttrValueKind` from the Rust AST into a React-usable prop value.
+ * - `text` evaluates to a string.
+ * - `expression` attempts to parse as JSON or JS, falling back to a string.
+ * - `boolean` evaluates to `true`.
+ * - `ast` recursively renders nested MDX elements via `<MDXServerRenderer>`.
+ *
+ * @param attr - The attribute node from the AST.
+ * @param components - The component registry to pass down to nested AST nodes.
+ * @returns The resolved React node, string, or boolean.
  */
 function resolveAttr(
   attr: AttrValueKind,
@@ -71,12 +75,28 @@ const HTML_TAGS = new Set([
   "u","ul","var","wbr",
 ]);
 
+/**
+ * Recursively extracts plain text content from an AST node and its children.
+ * Useful for extracting raw strings for math rendering or code blocks.
+ *
+ * @param node - The AST node to extract text from.
+ * @returns The concatenated plain text string.
+ */
 function extractText(node: AstNode): string {
   if (node.node_type === "text") return node.content ?? "";
   if (node.content) return node.content;
   return (node.children ?? []).map(extractText).join("");
 }
 
+/**
+ * Recursively renders a single AST node into a React node.
+ * Handles text nodes, fragments, math blocks (KaTeX), HTML tags, and custom components.
+ *
+ * @param node - The current AST node to render.
+ * @param index - The index of the node within its parent's children array (used for React keys).
+ * @param components - The registry of custom MDX components.
+ * @returns The constructed React node.
+ */
 function renderNode(
   node: AstNode,
   index: number,
@@ -212,8 +232,21 @@ function renderNode(
   }
 
   if (node.node_type === "pre") {
-    const rawText = extractText(node);
-    return <pre key={key} {...resolvedProps}><code>{rawText}</code></pre>;
+    const hasCodeChild = node.children?.some(c => c.node_type === "code");
+    
+    if (hasCodeChild) {
+      return (
+        <pre key={key} {...resolvedProps}>
+          {renderedChildren}
+        </pre>
+      );
+    }
+    
+    return (
+      <pre key={key} {...resolvedProps}>
+        <code>{renderedChildren}</code>
+      </pre>
+    );
   }
 
   if (HTML_TAGS.has(node.node_type)) {
@@ -238,11 +271,40 @@ function renderNode(
   );
 }
 
+/**
+ * Helper function to map over an AST node's children and render them.
+ *
+ * @param node - The parent AST node containing children.
+ * @param components - The registry of custom MDX components.
+ * @returns An array of rendered React nodes.
+ */
 function renderChildren(node: AstNode, components: MDXComponents): ReactNode[] {
   if (!node.children?.length) return [];
   return node.children.map((child, i) => renderNode(child, i, components));
 }
-
+/**
+ * A React Server Component that renders an Omni-MDX AST into an interactive React tree.
+ * Designed to be a drop-in, highly performant replacement for `<MDXRemote>`.
+ *
+ * @param props - Component properties including the parsed `ast` and an optional `components` mapping.
+ * @returns The rendered React element tree.
+ *
+ * @example
+ * ```tsx
+ * import { MDXServerRenderer, parseMdx } from '@toaq-oss/omni-mdx/server';
+ * import { MyCustomAlert } from './components/Alert';
+ *
+ * export default async function Page() {
+ *  const ast = await parseMdx('<MyCustomAlert>Warning!</MyCustomAlert>');
+ *  return (
+ *    <MDXServerRenderer 
+ *      ast={ast} 
+ *      components={{ MyCustomAlert }} 
+ *    />
+ *  );
+ * }
+ * ```
+ */
 interface MDXServerRendererProps {
   /** AST produced by parseMdx() — JSON-serialisable. */
   ast: AstNode[];

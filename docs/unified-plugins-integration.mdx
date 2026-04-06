@@ -1,0 +1,121 @@
+# Unified & Plugin Ecosystem Integration
+
+*Last Updated April 4, 2026*
+
+The `@toaq-oss/omni-mdx` parser is entirely written in Rust for maximum performance, but it doesn't operate in an isolated bubble. We provide a seamless, zero-config bridge to the **[unified](https://unifiedjs.com/)** ecosystem, allowing you to use hundreds of existing community plugins.
+
+## Why Ecosystem Compatibility Matters
+
+The MDX and Markdown communities have spent years building incredible tools to transform content: syntax highlighters (`rehype-highlight`), heading anchor generators (`rehype-slug`), table of contents builders, and more. 
+
+Reinventing these tools in Rust would take years and lock users into a proprietary ecosystem. Instead, Omni-MDX offers the best of both worlds:
+1. **The speed of Rust:** The heavy lifting of parsing raw text into an Abstract Syntax Tree (AST) is done natively.
+2. **The flexibility of JavaScript:** The resulting AST is mapped to the standard `hast` (HTML AST) format, allowing any existing `rehype` plugin to modify it before it reaches React.
+
+
+
+---
+
+## The Architecture: Rehype vs Remark
+
+In the traditional `unified` ecosystem, there are two main steps:
+1. **Remark:** Parses Markdown into an `mdast` (Markdown AST).
+2. **Rehype:** Transforms the `mdast` into a `hast` (HTML AST).
+
+**Omni-MDX skips the Remark phase entirely.** Because our Rust core directly generates HTML-equivalent nodes (e.g., `<h1>`, `<div>`, `<pre>`) to ensure the fastest possible React rendering, our AST translates directly to **HAST**. 
+
+<Note type="info">
+**Rule of thumb:** Always use `rehype-*` plugins with Omni-MDX, not `remark-*` plugins.
+</Note>
+
+---
+
+## Usage in Server Components (Async)
+
+Injecting plugins into the Omni-MDX pipeline is as simple as passing an options object to `parseMdx`. Because many plugins perform asynchronous operations (like loading language grammars for syntax highlighting), this is the recommended approach.
+
+Here is an example using `rehype-highlight` in a Next.js Server Component:
+
+```tsx
+import { parseMdx, MDXServerRenderer } from "@toaq-oss/omni-mdx/server";
+import rehypeHighlight from "rehype-highlight";
+// Don't forget to import the CSS theme in your layout or page!
+import "highlight.js/styles/github-dark.css";
+
+export default async function BlogPost({ content }) {
+  // 1. The Rust core parses the text at lightning speed.
+  // 2. The unified bridge converts it to HAST.
+  // 3. rehype-highlight injects <span> tags with color classes.
+  const ast = await parseMdx(content, {
+    rehypePlugins: [rehypeHighlight],
+  });
+
+  return <MDXServerRenderer ast={ast} />;
+}
+```
+
+---
+
+## Usage in the Browser (Client-Side)
+
+If you are building a live MDX editor, you can also use plugins directly in the browser via WebAssembly. 
+
+```tsx
+"use client";
+import { useState, useEffect } from "react";
+import { parseMdx, MDXClientRenderer } from "@toaq-oss/omni-mdx/client";
+import rehypeSlug from "rehype-slug";
+
+export function LiveEditor({ rawText }) {
+  const [ast, setAst] = useState(null);
+
+  useEffect(() => {
+    // parseMdx compiles via WASM and applies the plugins directly in the browser
+    parseMdx(rawText, {
+      rehypePlugins: [rehypeSlug] // Automatically adds id="" to all headings
+    }).then(setAst);
+  }, [rawText]);
+
+  if (!ast) return <div>Loading engine...</div>;
+  return <MDXClientRenderer ast={ast} />;
+}
+```
+
+<Note type="warning">
+**Warning for Client-Side Plugins:** Ensure the plugins you provide to the client parser are browser-safe. Some `rehype` plugins rely on Node.js native APIs (`fs`, `path`) and will crash your bundler (Webpack/Turbopack) if imported into a `"use client"` file.
+</Note>
+---
+
+## Synchronous Parsing
+
+If you are in an environment where you cannot use `await` (e.g., a legacy synchronous data pipeline), you can use `parseMdxSync`. 
+
+```tsx
+import { parseMdxSync } from "@toaq-oss/omni-mdx/server";
+import rehypeSlug from "rehype-slug";
+
+const ast = parseMdxSync("# Hello", {
+  rehypePlugins: [rehypeSlug]
+});
+```
+
+**Limitations of Sync:**
+The `unified` ecosystem is asynchronous by default. If you use `parseMdxSync` and provide a plugin that attempts to perform an asynchronous task (like reading a file or making a network request), the unified engine will throw an error: *"Cannot call `runSync` on an async plugin"*. Whenever possible, prefer the standard async `parseMdx` function.
+
+---
+
+## Passing Options to Plugins
+
+Omni-MDX accepts standard `unified` `PluggableList` types. This means you can pass configurations to your plugins using nested arrays, exactly as you would in standard MDX setups:
+
+```tsx
+import rehypeAutolinkHeadings from "rehype-autolink-headings";
+import rehypeSlug from "rehype-slug";
+
+const ast = await parseMdx(content, {
+  rehypePlugins: [
+    rehypeSlug,
+    [rehypeAutolinkHeadings, { behavior: 'wrap' }] // Plugin with options
+  ]
+});
+```

@@ -1,89 +1,97 @@
 # omni-mdx
 
-**A blazingly fast, headless MDX engine for Python, powered by a Rust core.**
+**A blazingly fast, headless MDX engine for Python, powered by a native Rust core.**
 
-`omni-mdx` provides a bridge between the high-performance `pulldown-cmark` Rust parser and native Python applications. It parses MDX (Markdown + JSX) into a deeply manipulable Abstract Syntax Tree (AST) and offers zero-dependency native rendering solutions for both the Web (HTML/KaTeX) and Desktop (PyQt5/Matplotlib).
+`omni-mdx` provides a high-performance bridge between the `pulldown-cmark` Rust parser and native Python applications. It parses MDX (Markdown + JSX) into a deeply manipulable Abstract Syntax Tree (AST) and offers zero-dependency native rendering solutions for both the Web (HTML/KaTeX) and Desktop (PyQt5/Matplotlib).
 
 
+## ⚡ Key Features
 
-## 🚀 Features
-
-- **Blazing Fast**: The core parsing is handled by a pre-compiled Rust binary.
-- **Headless AST**: Manipulate Markdown and JSX tags as pure Python objects (`AstNode`).
-- **Zero-HTML Desktop Rendering**: Render rich text, complex layouts, and math equations natively in PyQt5 without relying on heavy WebEngine components.
-- **Universal Math Support**: 
-  - Generates `data-math` attributes for KaTeX on the web.
-  - Generates native `QPixmap` images using Matplotlib for desktop apps.
-- **Fat Wheel Distribution**: The Rust binary is bundled directly into the Python package. No Rust toolchain is required for end-users.
+* **🚀 Blazing Fast:** Parsing is handled by a pre-compiled Rust binary. Experience performance up to 10x faster than pure Python parsers.
+* **🧠 Headless AST:** Manipulate Markdown and JSX tags as pure Python objects (`AstNode`). Perfect for data extraction and content analysis.
+* **🖼️ Zero-HTML Desktop Rendering:** Render rich text, complex layouts, and math equations natively in PyQt5 without the overhead of heavy WebEngine/Chromium components.
+* **📐 Universal Math Support:**
+    * **Web:** Generates `data-math` attributes compatible with KaTeX.
+    * **Desktop:** Generates high-quality native images via **Matplotlib** with automatic Unicode fallback.
+* **📦 Fat Wheel Distribution:** The Rust binary is bundled directly into the Python package. **No Rust toolchain required** for end-users.
 
 ## 📦 Installation
 
 ```bash
 pip install omni-mdx
+
+# Optional: Required for high-quality Desktop math rendering
+pip install matplotlib PyQt5
 ```
 
 ## 🛠️ Quick Start
 ### 1. Parsing MDX to AST
-The core feature of omni-mdx is transforming text into a structured, easily searchable AST.
+The core strength of `omni-mdx` is transforming raw text into a structured, searchable tree.
 
 ```python
 import omni_mdx
 
-mdx_content = """
+mdx_content = r"""
 # Physics 101
 The kinetic energy is defined as:
-$$E_k = \\frac{1}{2}mv^2$$
+$$\zeta(s) = \sum_{n=1}^\infty \frac{1}{n^s}$$
 
 <Note type="warning">Check your units!</Note>
 """
 
 # Parse the text into a list of AstNode objects
-ast = omni_mdx.parse(mdx_content)
+nodes = omni_mdx.parse(mdx_content)
 
-# Easily search the AST
-math_blocks = [n for n in ast.nodes if n.node_type == "BlockMath"]
-print(math_blocks[0].content) # Output: E_k = \frac{1}{2}mv^2
+# Search the AST for specific elements
+math_blocks = [n for n in nodes if n.node_type == "BlockMath"]
+if math_blocks:
+    print(f"Formula found: {math_blocks[0].content}") 
+    # Output: \zeta(s) = \sum_{n=1}^\infty \frac{1}{n^s}
 ```
 
 ### 2. Web Rendering (HTML)
-Generate clean, highly customizable HTML, perfectly suited for modern web frameworks like Next.js or FastAPI.
+Generate clean, standards-compliant HTML for FastAPI, Flask, or static site generators.
 
 ```python
-from omni_mdx import HtmlRenderer, parse
+from omni_mdx import render_html, parse
 
-ast = parse("<Speaker name='Leon'>Welcome to the show.</Speaker>")
+nodes = parse("<Speaker name='Leon'>Welcome to the show.</Speaker>")
 
 # Register custom rendering logic for JSX components
 def render_speaker(node, ctx):
     name = node.attr_text("name")
-    return f'<div class="speaker-tag">{name}</div><p>{node.text_content()}</p>'
+    return f'<div class="speaker-tag"><b>{name}:</b> {node.text_content()}</div>'
 
-renderer = HtmlRenderer(components={"Speaker": render_speaker})
-html_output = renderer.render(ast.nodes)
+html_output = render_html(nodes, components={"Speaker": render_speaker})
 ```
 
 ### 3. Native Desktop Rendering (PyQt5)
-Render MDX content directly into native Qt Widgets. Math equations are seamlessly converted to high-quality images via Matplotlib.
+Render MDX content directly into native Qt Widgets. No browser engine needed.
 
 ```python
+from PyQt5.QtWidgets import QScrollArea
 from omni_mdx.qt_renderer import QtRenderer
 
-ast = parse("# Hello\\nNative rendering without WebViews!")
+# 1. Parse content
+nodes = omni_mdx.parse("# Hello Native!")
+
+# 2. Render to Widget
 renderer = QtRenderer()
-widget = renderer.render(ast.nodes, parent=window)
+content_widget = renderer.render(nodes)
+
+# 3. Add to your UI (using a ScrollArea is recommended)
+scroll = QScrollArea()
+scroll.setWidget(content_widget)
+scroll.setWidgetResizable(True)
 ```
 
 ## 🧠 Advanced AST Manipulation
-Because the parser generates a typed AstNode tree, it is an ideal tool for large-scale text analysis, data extraction, or automated moderation.
-
-For instance, when processing researcher submissions or generating structured vocal datasets for distinct podcast series, you can programmatically extract specific nodes while ignoring the rest of the document formatting:
+Because `omni-mdx` generates a typed `AstNode` tree, it is an ideal tool for large-scale text analysis, TTS (Text-To-Speech) dataset generation, or automated content moderation.
 
 ```python
 from omni_mdx import parse
 
 script = """
-# Episode 4: Quantum Mechanics
-
 <Speaker name="Dr. Aris" voiceId="v2">
 We must look closer at the probability wave.
 </Speaker>
@@ -93,29 +101,30 @@ Are you certain?
 </Speaker>
 """
 
-ast = parse(script)
+nodes = parse(script)
 
-# Extract dialogue for Text-To-Speech (TTS) dataset generation
-dataset_entries = []
-for node in ast.nodes:
+# Extract dialogue for dataset generation
+dataset = []
+for node in nodes:
     if node.node_type == "Speaker":
-        dataset_entries.append({
+        dataset.append({
             "character": node.attr_text("name"),
             "voice_profile": node.attr_text("voiceId"),
             "text": node.text_content().strip()
         })
 
-import json
-print(json.dumps(dataset_entries, indent=2))
+print(dataset[0]["text"]) # "We must look closer at the probability wave."
 ```
 
 ## 🏗️ Architecture
-* `parser.py`: High-level wrapper calling the Rust _core.pyd binary.
+|**Module**|**Description**|
+|:---|:---|
+|`core_interface`|Bridge to the native Rust `_core` binary.|
+|`renderer`|High-performance HTML generator.|
+|`qt_renderer`|Native PyQt5 layout engine (uses a custom `FlowLayout`).|
+|`math_render`|LaTeX logic: Unicode mapping & Matplotlib integration.|
 
-* `ast.py`: Python dataclasses representing the parsed nodes and attributes.
-
-* `renderer.py`: Web-ready HTML generator.
-
-* `qt_renderer.py` / `engine.py`: Native PyQt5 widget generator.
-
-* `math_render.py`: Utilites for converting LaTeX strings to Unicode or QPixmap.
+## 🤝 Contributing
+This package is part of the **TOAQ** open-source ecosystem.
+* **Core Engine (Rust):** [TOAQ-oss/omni-mdx-core](https://github.com/TOAQ-oss/omni-mdx-core)
+* **Bug Tracker:** [GitHub Issues](https://github.com/TOAQ-oss/omni-mdx-core/security/advisories)

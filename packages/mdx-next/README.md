@@ -9,53 +9,24 @@
 
 ## ⚡ Why Omni-MDX?
 
-Traditional MDX pipelines are often slow or require complex client-side hydration. `omni-mdx` solves this by moving the heavy lifting to Rust, providing a seamless bridge between raw content and React components.
+Traditional MDX pipelines can be slow and often require heavy client-side hydration. `omni-mdx` offloads the heavy lifting to Rust while providing a **seamless bridge to the JS ecosystem**.
 
-- **Dual-Engine Architecture:** Uses native `.node` binaries on the server for maximum speed and **WASM** in the browser for instant live previews.
-- **Zero-Hydration Math:** LaTeX is pre-parsed by Rust and rendered via KaTeX with zero layout shift.
-- **RSC Optimized:** Built from the ground up for Next.js App Router and Server Components.
-- **Non-Blocking:** Offloads parsing from the Node.js main thread to Rust, keeping your server responsive even under heavy load.
+* 🚀 **Extreme Performance:** Parsing is done in native Rust (Server) or WASM (Client), up to 10x faster than pure JS alternatives.
 
----
+* 🔌 **Unified/Rehype Bridge:** Native Rust core with full support for standard **Rehype plugins** (Highlighting, Slugs, Autolink, etc.).
 
-## 📖 Documentation
+* 📐 **Built-in Features:** GFM Tables, KaTeX math, and JSX components are handled natively—no extra configuration required.
 
-For full guides, API references, and advanced configuration, visit:
-👉 **[omni-core.org/mdx](https://omni-core.org/mdx)**
-
----
-
-## 📦 Installation
-
-```bash
-npm install @toaq-oss/omni-mdx
-# KaTeX is required for math rendering
-npm install katex
-```
-
-## Next.js Configuration
-To enable the WebAssembly engine for client-side rendering, update your `next.config.js`:
-```typescript
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  webpack: (config) => {
-    config.experiments = { ...config.experiments, asyncWebAssembly: true };
-    config.module.rules.push({
-      test: /\.wasm$/,
-      type: "asset/resource",
-    });
-    return config;
-  },
-};
-
-export default nextConfig;
-```
+* ⚛️ ***RSC Optimized:*** Built for Next.js App Router and Server Components with zero-hydration math rendering.
+* 🧵 **Non-Blocking:** Offloads parsing from the Node.js main thread, keeping your server responsive.
 
 ---
 
 ## 🚀 Usage
-### 1. Server-Side Rendering (RSC)
+### 1. Server-Side Rendering (RSC) with Plugins
 Recommended for documentation, blogs, and research papers.
+
+*Plugins are optional. Omni-Core lets you choose whether to use plugins or not !*
 
 > Full example available here :
 > * Basic setup: [TOAQ-oss/omni-core-sandox](https://github.com/TOAQ-oss/omni-mdx-sandbox/tree/main/next/basic-setup)
@@ -63,16 +34,19 @@ Recommended for documentation, blogs, and research papers.
 
 ```tsx
 import { parseMdx, MDXServerRenderer } from "@toaq-oss/omni-mdx/server";
+import rehypeHighlight from "rehype-highlight";
 import { MyComponent } from "@/components/mdx";
 
 export default async function Page({ content }) {
-  // Parsed via Native Rust Addon (.node)
+  // 1. Parse via Native Rust Addon (.node)
   const ast = await parseMdx(content);
 
   return (
     <MDXServerRenderer 
       ast={ast} 
       components={{ MyComponent }} 
+      // 2. Seamlessly use your favorite Rehype plugins
+      rehypePlugins={[rehypeHighlight]}
     />
   );
 }
@@ -106,32 +80,59 @@ export default function Editor() {
 }
 ```
 
+## 📦 Installation
+
+```bash
+npm install @toaq-oss/omni-mdx
+# Required for math styles
+npm install katex
+```
+
+## Next.js Configuration
+To enable the WebAssembly engine for client-side rendering, update your `next.config.js`:
+```typescript
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  webpack: (config) => {
+    config.experiments = { ...config.experiments, asyncWebAssembly: true };
+    config.module.rules.push({
+      test: /\.wasm$/,
+      type: "asset/resource",
+    });
+    return config;
+  },
+};
+
+export default nextConfig;
+```
+
 ---
+
+## 🧩 Features
+### 🔌 Extensibility (Rehype Support)
+Omni-MDX uses a unique "Bridge" architecture. It parses Markdown to a high-performance AST in Rust, then optionally passes it through the Unified/Rehype pipeline in JS for transformations.
+* **Support:** `rehype-slug`, `rehype-highlight`, `rehype-autolink-headings`, etc.
+* **Performance:** Plugins only run on the final tree, keeping the heavy parsing phase in Rust.
+
+### 📐 Native Professional Math
+Math is handled via KaTeX. Include the CSS in your `layout.tsx`:
+`import "katex/dist/katex.min.css";`
+* **Inline:** `$E=mc^2$`
+* **Block:** `$$\zeta(s) = \sum_{1}^{\infty} n^{-s}$$`
+
+### 🎨 Hybrid Components
+Mix standard HTML tags with custom React components. Omni-MDX preserves props and nested children perfectly between the Rust parser and your React tree.
+
+---
+## 📖 Documentation & Support
+
+Full guides and API references: **[omni-core.org/mdx](https://omni-core.org/mdx)**
+
 |Environment|Backend|Entry Point|
 |:---|:---|:---|
 |**Server** (Node.js)|Native Addon (`.node`)|`@toaq-oss/omni-mdx/server`|
 |**Client** (Browser)|WebAssembly (`.wasm`)|`@toaq-oss/omni-mdx/client`|
 |**Edge** (Vercel)|Native Addon (`.wasm`)|`@toaq-oss/omni-mdx/client`|
-
----
-
-## 🧩 Features
-### 📐 Professional Math
-Math is handled via KaTeX. Simply include the CSS in your `layout.tsx`:
-```tsx
-import "katex/dist/katex.min.css";
-```
-* **Inline:** $E=mc^2$
-* **Block:** $$\int f(x)dx$$
-
-### 🎨 Custom Components
-Register any React component (Server or Client) to handle custom tags:
-```tsx
-const components = {
-  Callout: ({ children }) => <div className="p-4 bg-blue-50">{children}</div>,
-  VocalDataset: dynamic(() => import('./VocalDataset'), { ssr: false })
-};
-```
 
 ---
 ## 🤝 Contributing

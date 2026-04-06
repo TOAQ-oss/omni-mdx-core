@@ -28,7 +28,11 @@ from PyQt5.QtGui import QFont, QPixmap
 from .math_render import latex_to_unicode, latex_to_pixmap, latex_to_pixmap_available
 
 class FlowLayout(QLayout):
-    """Dispose the widgets in lines with automatic line break (word-wrap)."""
+    """
+    A custom QLayout that disposes widgets in lines with automatic word-wrapping.
+    Essential for rendering paragraphs containing multiple styled inline widgets 
+    (text, bold, code, links) that must wrap according to the window width.
+    """
 
     def __init__(self, parent=None, h_spacing=2, v_spacing=4):
         super().__init__(parent)
@@ -50,6 +54,7 @@ class FlowLayout(QLayout):
         return s
 
     def heightForWidth(self, width):
+        """Calculates the necessary height for a given width based on wrapped lines."""
         return self._layout(QRect(0, 0, width, 0), test=True)
 
     def setGeometry(self, rect):
@@ -57,6 +62,7 @@ class FlowLayout(QLayout):
         self._layout(rect, test=False)
 
     def _layout(self, rect, test):
+        """Internal logic to position widgets or calculate total height."""
         x, y, line_h = rect.x(), rect.y(), 0
         for item in self._items:
             w = item.widget()
@@ -64,6 +70,7 @@ class FlowLayout(QLayout):
                 continue
             iw = item.sizeHint().width()
             ih = item.sizeHint().height()
+            # Wrap to next line if horizontal space is exceeded
             if x + iw > rect.right() and x > rect.x():
                 x, y, line_h = rect.x(), y + line_h + self._v, 0
             if not test:
@@ -73,12 +80,17 @@ class FlowLayout(QLayout):
         return y + line_h - rect.y()
 
 class InlineLabel(QLabel):
+    """
+    A specialized QLabel for rendering styled inline content.
+    Automatically handles font family, colors, and borders for 'code' and 'math' styles.
+    """
     def __init__(self, text: str, bold=False, italic=False,
                  strike=False, code=False, math_inline=False, parent=None):
         super().__init__(text, parent)
         self.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.setWordWrap(False)
 
+        # Apply specific fonts for code/math vs regular text
         if code or math_inline:
             font = QFont("JetBrains Mono", 10)
         else:
@@ -88,6 +100,7 @@ class InlineLabel(QLabel):
         font.setStrikeOut(strike)
         self.setFont(font)
 
+        # Style sheet injection based on semantic type
         if code:
             self.setStyleSheet(
                 "background:#f3f4f6;color:#be185d;padding:1px 5px;"
@@ -106,84 +119,48 @@ _BUILTIN_COMPONENTS = {"Note", "Details"}
 
 class QtRenderer:
     """
-    Converts a list of Anys into native Qt widgets.
+    The core renderer class that transforms MDX AST nodes into a hierarchy of native PyQt5 widgets.
 
     Rendering priority for a JSX component:
-    1. Component registered by the developer  (via ``components=`` or ``register()``)
-    2. Built-in component                       (Note, Details)
-    3. Generic fallback                       (purple box with the name)
-
-    Parameters
-    ----------
-    components: dict, optional
-        Initial registry of custom components.
-        Signature: ``fn(node: Any, renderer: QtRenderer) -> QWidget``
-
-        Example — override Note with a custom style ::
-
-            from PyQt5.QtWidgets import QFrame, QVBoxLayout, QLabel
-
-            def my_note(node, renderer):
-                frame = QFrame()
-                frame.setStyleSheet(“border: 2px solid red; border-radius: 8px;”)
-                layout = QVBoxLayout(frame)
-                title = node.attr_text(“title”) or ‘’
-                layout.addWidget(QLabel(f“⚠ {title}”))
-                for w in renderer._render_mixed_children(node.children):
-                    layout.addWidget(w)
-                return frame
-
-            renderer = QtRenderer(components={“Note”: my_note})
-
-        The component receives:
-        - ``node``     : the complete Any with ``node.attributes``, ``node.children``
-        - ``renderer``: the current QtRenderer — use ``renderer._render_mixed_children()``
-          to render children, or ``renderer.render()`` for a complete subtree.
-
-    math_font_size: int
-        Font size (pt) for image rendering of block math formulas.
+    1. User-defined component (via constructor or .register())
+    2. Built-in library component (Note, Details)
+    3. Generic fallback UI (placeholder with component name)
     """
 
     def __init__(self, components: Optional[Dict[str, Callable]] = None,
                  math_font_size: int = 14):
+        """
+        Args:
+            components: Initial registry of custom components. 
+                        Signature: fn(node, renderer) -> QWidget.
+            math_font_size: Point size for block math formula image generation.
+        """
         self.components:     Dict[str, Callable] = dict(components or {})
         self.math_font_size: int                 = math_font_size
 
     def register(self, name: str, fn: Callable) -> "QtRenderer":
-        """
-        Registers (or replaces) a component.
-
-        Can override a built-in (Note, Details) or define a new one.
-        Returns ``self`` for chaining.
-
-        Example
-        -------
-        >>> renderer.register("Note", my_note_fn).register("Alert", my_alert_fn)
-        """
+        """Registers a custom widget generator for a specific MDX component name."""
         self.components[name] = fn
         return self
 
     def unregister(self, name: str) -> "QtRenderer":
-        """
-        Deletes a registered component.
-
-        If ``name`` is a built-in (Note, Details), the built-in takes precedence.
-        Returns ``self`` for chaining.
-        """
+        """Removes a component from the user registry."""
         self.components.pop(name, None)
         return self
 
     def registered(self) -> Dict[str, Callable]:
-        """Returns a copy of the current registry (user components only)."""
+        """Returns a copy of the current custom component registry."""
         return dict(self.components)
 
     @property
     def builtin_components(self) -> frozenset:
-        """Names of built-in components (always available even without registration)."""
+        """Names of built-in components available by default."""
         return frozenset(_BUILTIN_COMPONENTS)
 
     def render(self, nodes: List[Any], parent: Optional[QWidget] = None) -> QWidget:
-        """Returns a QWidget containing the rendering of all nodes."""
+        """
+        Main entry point. Renders a list of AST nodes into a vertical container widget.
+        """
         container = QWidget(parent)
         container.setStyleSheet("background:transparent;")
         layout = QVBoxLayout(container)
@@ -197,6 +174,7 @@ class QtRenderer:
         return container
 
     def _node(self, node: Any) -> Optional[QWidget]:
+        """Dispatches node rendering to specific handlers based on node_type."""
         t = node.node_type
         dispatch = {
             "h1": self._heading, "h2": self._heading,
@@ -223,6 +201,7 @@ class QtRenderer:
         return None
 
     def _heading(self, node: Any) -> QLabel:
+        """Renders headers (h1-h6) with appropriate sizing, weight, and colors."""
         level = int(node.node_type[1])
         lbl   = QLabel(node.text_content())
         lbl.setTextInteractionFlags(Qt.TextSelectableByMouse)
@@ -237,6 +216,7 @@ class QtRenderer:
         return lbl
 
     def _paragraph(self, node: Any) -> QWidget:
+        """Renders a paragraph using a FlowLayout to allow inline text wrapping."""
         w = QWidget()
         w.setStyleSheet("background:transparent;")
         layout = FlowLayout(w, h_spacing=2, v_spacing=2)
@@ -246,7 +226,7 @@ class QtRenderer:
 
     def _inline_into(self, children: List[Any], layout: FlowLayout,
                      bold=False, italic=False, strike=False):
-        """Populate a FlowLayout with inline nodes."""
+        """Recursively populates a FlowLayout with inline styled widgets."""
         for child in children:
             t = child.node_type
             if t == "text":
@@ -274,6 +254,7 @@ class QtRenderer:
                 lbl.setStyleSheet("color:#7c3aed;background:transparent;")
                 layout.addWidget(lbl)
             elif t == "br":
+                # Forced break: insert a spacer widget that fills the line width
                 spacer = QWidget()
                 spacer.setFixedSize(9999, 0)
                 layout.addWidget(spacer)
@@ -281,27 +262,30 @@ class QtRenderer:
                 self._inline_into(child.children, layout, bold, italic, strike)
 
     def _inline_math_into(self, node: Any, layout: FlowLayout):
-        """
-        Inline math rendering → always Unicode.
-        matplotlib is not suited to inline rendering: images do not align
-        correctly in a FlowLayout and break the text flow.
-        """
+        """Renders inline LaTeX as Unicode text to maintain flow alignment."""
         latex = node.content or ""
         lbl = InlineLabel(latex_to_unicode(latex), math_inline=True)
         lbl.setToolTip(f"LaTeX : {latex}")
         layout.addWidget(lbl)
 
     def _block_math(self, node: Any) -> QFrame:
+        """
+        Renders block math formulas.
+        Priority: 
+        1. Render as PNG via Matplotlib (if installed)
+        2. Fallback to stylized Unicode text
+        """
         frame = QFrame()
         frame.setStyleSheet(
             "QFrame{background:#faf5ff;border:1px solid #ddd6fe;"
             "border-radius:8px;margin:4px 0;}"
         )
         layout = QVBoxLayout(frame)
-        layout.setContentsMargins(16, 12, 16, 12)
+        layout.setContentsMargins(16, 12, 16, 18)
+        layout.setSpacing(8)
         layout.setAlignment(Qt.AlignCenter)
 
-        latex = node.text_content() or ""
+        latex = node.content or node.text_content() or ""
 
         pixmap: Optional[QPixmap] = None
         if latex_to_pixmap_available():
@@ -323,6 +307,7 @@ class QtRenderer:
             layout.addWidget(lbl)
             frame.setMinimumHeight(pixmap.height() + 24)
         else:
+            # Unicode fallback for math rendering
             unicode_text = latex_to_unicode(latex)
 
             lbl_unicode = QLabel(unicode_text)
@@ -335,6 +320,7 @@ class QtRenderer:
             lbl_unicode.setToolTip(f"LaTeX : {latex}")
             layout.addWidget(lbl_unicode)
 
+            # Display raw source in smaller font below
             lbl_src = QLabel(latex)
             font_s = QFont("JetBrains Mono", 9)
             lbl_src.setFont(font_s)
@@ -345,11 +331,12 @@ class QtRenderer:
                 "font-size:9pt;margin-top:2px;"
             )
             layout.addWidget(lbl_src)
+            frame.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
 
         return frame
 
     def _inline_math_as_block(self, node: Any) -> QWidget:
-        """InlineMath encountered at block level (outside <p>) — centered."""
+        """Handles InlineMath that appears outside of a text block (treated as centered block)."""
         w = QWidget()
         w.setStyleSheet("background:transparent;")
         layout = QVBoxLayout(w)
@@ -362,6 +349,7 @@ class QtRenderer:
         return w
 
     def _list(self, node: Any, ordered: bool) -> QWidget:
+        """Renders ordered/unordered lists with indentation and custom bullet symbols."""
         w = QWidget()
         w.setStyleSheet("background:transparent;")
         layout = QVBoxLayout(w)
@@ -384,6 +372,8 @@ class QtRenderer:
             content.setStyleSheet("background:transparent;")
             cl = FlowLayout(content, h_spacing=2, v_spacing=2)
             content.setLayout(cl)
+
+            # Separate nested lists from the immediate inline content
             inline_children = [c for c in item.children
                                 if c.node_type not in ("ul", "ol")]
             self._inline_into(inline_children, cl)
@@ -392,6 +382,7 @@ class QtRenderer:
             rl.addWidget(content, 1)
             layout.addWidget(row)
 
+            # Recursive render for nested lists
             for child in item.children:
                 if child.node_type in ("ul", "ol"):
                     sub = self._list(child, child.node_type == "ol")
@@ -404,6 +395,7 @@ class QtRenderer:
         return w
 
     def _blockquote(self, node: Any) -> QFrame:
+        """Renders blockquotes with a left border accent."""
         frame = QFrame()
         frame.setStyleSheet(
             "QFrame{background:#f9fafb;border-left:4px solid #d1d5db;"
@@ -419,6 +411,7 @@ class QtRenderer:
         return frame
 
     def _code_block(self, node: Any) -> QFrame:
+        """Renders preformatted code blocks with a dark theme."""
         frame = QFrame()
         frame.setStyleSheet(
             "QFrame{background:#1e293b;border-radius:6px;margin:2px 0;}"
@@ -434,6 +427,7 @@ class QtRenderer:
         return frame
 
     def _separator(self, node=None) -> QFrame:
+        """Renders a horizontal rule (hr)."""
         line = QFrame()
         line.setFrameShape(QFrame.HLine)
         line.setFixedHeight(1)
@@ -441,6 +435,7 @@ class QtRenderer:
         return line
 
     def _table(self, node: Any) -> QFrame:
+        """Renders tables using QGridLayout with borders and header styling."""
         from PyQt5.QtWidgets import QGridLayout
         frame = QFrame()
         frame.setStyleSheet(
@@ -478,6 +473,7 @@ class QtRenderer:
         return frame
 
     def _component(self, node: Any) -> QFrame:
+        """Dispatcher for JSX components. Checks user registry before built-ins."""
         fn = self.components.get(node.node_type)
         if fn:
             return fn(node, self)
@@ -506,12 +502,8 @@ class QtRenderer:
 
     def _render_mixed_children(self, children: List[Any]) -> List[QWidget]:
         """
-        Returns a list of children that can mix block and inline nodes.
-
-        Consecutive inline nodes (text, InlineMath, strong, em, code, a)
-        are grouped together in a common FlowLayout (like an implicit <p>).
-        Block nodes (p, h1-h6, BlockMath, ul, ol, ...) are rendered
-        individually via _node().
+        Utility to render lists of nodes that might mix block and inline types.
+        Groups consecutive inline nodes into a single FlowLayout widget.
         """
         _INLINE_TYPES = {"text", "InlineMath", "strong", "em", "del",
                          "code", "a", "br"}
@@ -543,6 +535,7 @@ class QtRenderer:
         return widgets
 
     def _note(self, node: Any) -> QFrame:
+        """Renders the built-in <Note /> component with semantic color variants."""
         kind  = node.attr_text("type") or "info"
         title = node.attr_text("title") or ""
         styles = {
@@ -572,6 +565,7 @@ class QtRenderer:
         return frame
 
     def _details(self, node: Any) -> QFrame:
+        """Renders the built-in <Details /> component as an interactive toggle."""
         title = node.attr_text("title") or "Détails"
         outer = QFrame()
         outer.setStyleSheet(
