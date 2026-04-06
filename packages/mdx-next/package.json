@@ -38,10 +38,6 @@
       "types": "./dist/client.d.ts",
       "import": "./dist/client.js",
       "require": "./dist/client.cjs"
-    },
-    "./wasm": {
-      "import": "./wasm/mdx_parser.js",
-      "require": "./wasm/mdx_parser.js"
     }
   },
   "main": "./dist/index.cjs",

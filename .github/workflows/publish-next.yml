@@ -127,7 +127,6 @@ jobs:
           mkdir -p platform-pkg
           cp "$NODE_FILE" "platform-pkg/omni-mdx-core.${{ matrix.name }}.node"
           
-          # Génération dynamique du package.json du subpackage
           cat > platform-pkg/package.json << PKGJSON
           {
             "name": "$PKG_NAME",
