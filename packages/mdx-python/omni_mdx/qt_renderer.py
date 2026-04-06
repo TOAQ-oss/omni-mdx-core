@@ -281,7 +281,8 @@ class QtRenderer:
             "border-radius:8px;margin:4px 0;}"
         )
         layout = QVBoxLayout(frame)
-        layout.setContentsMargins(16, 12, 16, 12)
+        layout.setContentsMargins(16, 12, 16, 18)
+        layout.setSpacing(8)
         layout.setAlignment(Qt.AlignCenter)
 
         latex = node.content or node.text_content() or ""
@@ -330,6 +331,7 @@ class QtRenderer:
                 "font-size:9pt;margin-top:2px;"
             )
             layout.addWidget(lbl_src)
+            frame.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
 
         return frame
 
