@@ -1,23 +1,24 @@
 """
-omni_mdx — Moteur MDX Python + Rust.
+omni_mdx — High-performance Python + Rust MDX Engine.
 
-Le binaire Rust (omni_mdx_core.pyd) est embarqué directement dans ce
-package — un seul pip install suffit, aucune installation séparée.
+The native Rust binary (omni_mdx_core) is embedded directly within this 
+package. A single 'pip install' is all you need—no separate Rust installation 
+or toolchain required on the user's side.
 
-Quick start
+Quick Start
 -----------
     import omni_mdx
 
-    # Parse
-    ast = omni_mdx.parse("# Hello\\n\\n$E = mc^2$")
+    # Parse MDX text into a list of AST nodes
+    nodes = omni_mdx.parse("# Hello\\n\\n$E = mc^2$")
 
-    # Rendu HTML (pour web)
-    html = omni_mdx.render_html(ast.nodes)
+    # Option 1: Render to HTML (for Web environments)
+    html = omni_mdx.render_html(nodes)
 
-    # Rendu Qt natif (pour desktop, 0 HTML)
-    from omni_mdx import OmniMDX
-    engine = OmniMDX()
-    widget = engine.render_qt(ast.nodes, parent=my_parent)
+    # Option 2: Render to Native Qt Widgets (for Desktop apps, 0 HTML)
+    from omni_mdx.qt_renderer import QtRenderer
+    renderer = QtRenderer()
+    widget = renderer.render(nodes, parent=my_parent)
 """
 
 from .parser import MDXParser
@@ -25,22 +26,23 @@ from .engine import OmniMDX
 from .renderer import HtmlRenderer, render_html
 from .exceptions import OmniMDXError, MDXSyntaxError, MDXRenderError
 
-# Instance partagée pour l'usage fonctionnel
+# Shared singleton instance for convenient functional-style parsing
 _parser = MDXParser()
 parse = _parser.parse
 
 __all__ = [
-    # Fonctions
+    # Core Functions
     "parse",
     "render_html",
-    # Classes
+    # Primary Classes
     "MDXParser",
     "OmniMDX",
     "HtmlRenderer",
-    # Exceptions
+    # Exception Hierarchy
     "OmniMDXError",
     "MDXSyntaxError",
     "MDXRenderError",
 ]
 
-__version__ = "0.1.10"
+# Synchronized with the official stable v1 release
+__version__ = "0.1.18"
