@@ -20,6 +20,7 @@
       { "title": "Next.js Integration", "slug": "nextjs-integration" },
       { "title": "Binary AST Transfer", "slug": "binary-ast-transfer" },
       { "title": "Custom Components", "slug": "custom-components" },
+      { "title": "Unified & Plugins Ecosystem Integration", "slug": "unified-plugins-integration" },
       {
         "group": "Examples",
         "items": [
