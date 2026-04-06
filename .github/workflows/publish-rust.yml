@@ -50,12 +50,12 @@ jobs:
         run: |
           VERSION=$(grep -m 1 '^version =' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
           
-          EXISTS=$(curl -s https://crates.io/api/v1/crates/omni-mdx | jq -r ".versions[] | select(.num == \"$VERSION\") | .num" | grep -c "$VERSION" || true)
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://crates.io/api/v1/crates/omni-mdx/$VERSION")
 
-          if [ "$EXISTS" -gt "0" ]; then
-            echo "⚠️ Version $VERSION already exists on crates.io. Skipping publish step."
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "⚠️ Version $VERSION already exists on crates.io (HTTP 200). Skipping publish."
           else
-            echo "🚀 Publishing version $VERSION..."
+            echo "🚀 Version $VERSION not found (HTTP $HTTP_STATUS). Publishing..."
             cargo publish
           fi
 
