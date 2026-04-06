@@ -284,7 +284,7 @@ class QtRenderer:
         layout.setContentsMargins(16, 12, 16, 12)
         layout.setAlignment(Qt.AlignCenter)
 
-        latex = node.text_content() or ""
+        latex = node.content or node.text_content() or ""
 
         pixmap: Optional[QPixmap] = None
         if latex_to_pixmap_available():
