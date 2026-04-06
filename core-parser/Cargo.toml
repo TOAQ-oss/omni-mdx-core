@@ -1,6 +1,6 @@
 [package]
 name    = "omni-mdx"
-version = "0.2.5"
+version = "1.0.0"
 edition = "2021"
 description = "A highly secure, DoS-resistant MDX parser and OCP binary protocol engine."
 license = "MIT"
@@ -11,7 +11,7 @@ authors = [
 repository = "https://github.com/TOAQ-oss/omni-mdx-core"
 homepage    = "https://omni-core.org/mdx"
 readme = "README.md"
-keywords = ["mdx", "markdown", "parser", "security"]
+keywords = ["mdx", "markdown", "parser", "wasm", "nextjs"]
 categories = ["parsing", "text-processing"]
 
 [package.metadata.docs.rs]
@@ -48,6 +48,7 @@ pulldown-cmark = "0.10"
 regex          = "1"
 serde          = { version = "1", features = ["derive"] }
 serde_json     = "1"
+
 wasm-bindgen   = { version = "0.2.93", optional = true }
 pyo3           = { version = "0.24.1", features = ["extension-module"], optional = true }
 napi           = { version = "2", features = ["napi4"], optional = true }

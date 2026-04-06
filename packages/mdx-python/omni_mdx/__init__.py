@@ -45,4 +45,4 @@ __all__ = [
 ]
 
 # Synchronized with the official stable v1 release
-__version__ = "0.1.18"
+__version__ = "1.0.0"
