@@ -232,8 +232,21 @@ function renderNode(
   }
 
   if (node.node_type === "pre") {
-    const rawText = extractText(node);
-    return <pre key={key} {...resolvedProps}><code>{rawText}</code></pre>;
+    const hasCodeChild = node.children?.some(c => c.node_type === "code");
+    
+    if (hasCodeChild) {
+      return (
+        <pre key={key} {...resolvedProps}>
+          {renderedChildren}
+        </pre>
+      );
+    }
+    
+    return (
+      <pre key={key} {...resolvedProps}>
+        <code>{renderedChildren}</code>
+      </pre>
+    );
   }
 
   if (HTML_TAGS.has(node.node_type)) {
