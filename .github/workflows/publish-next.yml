@@ -113,7 +113,9 @@ jobs:
 
       - name: Set Version for Build
         shell: bash
-        run: cd core-parser && npm --no-git-tag-version version ${{ needs.prepare.outputs.version }}
+        run: |
+          cd core-parser
+          npm --no-git-tag-version version ${{ needs.prepare.outputs.version }} --allow-same-version
 
       - name: Build native addon
         working-directory: core-parser
@@ -210,7 +212,7 @@ jobs:
       - name: Finalize version and Publish
         working-directory: packages/mdx-next
         run: |
-          npm --no-git-tag-version version ${{ needs.prepare.outputs.version }}
+          npm --no-git-tag-version version ${{ needs.prepare.outputs.version }} --allow-same-version
           npm install --ignore-scripts
           npm run build
           
