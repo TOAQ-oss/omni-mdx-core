@@ -28,6 +28,8 @@ In the traditional `unified` ecosystem, there are two main steps:
 **Rule of thumb:** Always use `rehype-*` plugins with Omni-MDX, not `remark-*` plugins.
 </Note>
 
+### Performance: The Hybrid Cost
+While adding JavaScript plugins (`rehype-highlight`, etc.) introduces a small overhead due to the Rust-to-JS bridge, Omni-MDX remains significantly faster because the **initial parsing** (the heaviest task) is already completed natively. The JS engine only processes a pre-structured HAST tree instead of raw text.
 ---
 
 ## Usage in Server Components (Async)
