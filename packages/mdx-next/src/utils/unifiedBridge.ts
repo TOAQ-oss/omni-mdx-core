@@ -7,7 +7,8 @@
  * seamlessly with the Omni-MDX engine.
  */
 
-import { unified, Plugin } from 'unified';
+import { unified } from 'unified';
+import type { PluggableList } from 'unified';
 import type { Element, Text, Root, Node as HastNode } from 'hast';
 import type { AstNode, AttrValueKind } from '../types/MdxAST';
 
@@ -31,6 +32,8 @@ function toHast(node: AstNode): HastNode {
   }
 
   const properties: Record<string, any> = {};
+  let classNameArray: string[] | undefined = undefined;
+
   if (node.attributes) {
     const attrs = typeof node.attributes === 'string' 
       ? JSON.parse(node.attributes) 
@@ -38,9 +41,39 @@ function toHast(node: AstNode): HastNode {
     
     for (const [key, val] of Object.entries(attrs)) {
       const v = val as AttrValueKind;
-      if (v.kind === 'text') properties[key] = v.value;
+      if (v.kind === 'text') {
+        if (key === 'className' || key === 'class') {
+          classNameArray = v.value.split(' ');
+          properties['className'] = classNameArray;
+        } else {
+          properties[key] = v.value;
+        }
+      }
       if (v.kind === 'boolean') properties[key] = true;
       if (v.kind === 'expression') properties[key] = v.value; 
+    }
+  }
+
+  if (node.node_type === 'pre') {
+    const hasCodeChild = node.children?.some(c => c.node_type === 'code');
+    
+    if (!hasCodeChild) {
+      const codeProps: Record<string, any> = {};
+      if (classNameArray) codeProps['className'] = classNameArray;
+
+      return {
+        type: 'element',
+        tagName: 'pre',
+        properties: {},
+        children: [
+          {
+            type: 'element',
+            tagName: 'code',
+            properties: codeProps,
+            children: (node.children || []).map(toHast) as any[]
+          }
+        ]
+      } as Element;
     }
   }
 
@@ -76,11 +109,14 @@ function fromHast(node: HastNode): AstNode {
   
   if (el.properties) {
     for (const [key, val] of Object.entries(el.properties)) {
-      if (typeof val === 'boolean') {
-        attributes[key] = { kind: 'boolean' };
-      } else if (val !== undefined && val !== null) {
-        attributes[key] = { kind: 'text', value: String(val) };
-      }
+        if (key === 'className' && Array.isArray(val)) {
+            attributes['className'] = { kind: 'text', value: val.join(' ') };
+        }
+        if (typeof val === 'boolean') {
+            attributes[key] = { kind: 'boolean' };
+        } else if (val !== undefined && val !== null) {
+            attributes[key] = { kind: 'text', value: String(val) };
+        }
     }
   }
 
@@ -101,7 +137,7 @@ function fromHast(node: HastNode): AstNode {
  */
 export async function runUnifiedPipeline(
   ast: AstNode[], 
-  plugins: Plugin[]
+  plugins: PluggableList
 ): Promise<AstNode[]> {
   if (!plugins || plugins.length === 0) return ast;
 
@@ -109,10 +145,7 @@ export async function runUnifiedPipeline(
   
   const hastTree = toHast(rootNode);
 
-  const processor = unified();
-  for (const plugin of plugins) {
-    processor.use(plugin);
-  }
+  const processor = unified().use({ plugins });
 
   const processedHast = await processor.run(hastTree);
   const processedOmniAst = fromHast(processedHast);
@@ -132,17 +165,14 @@ export async function runUnifiedPipeline(
  */
 export function runUnifiedPipelineSync(
   ast: AstNode[], 
-  plugins: Plugin[]
+  plugins: PluggableList
 ): AstNode[] {
   if (!plugins || plugins.length === 0) return ast;
 
   const rootNode: AstNode = { node_type: 'fragment', children: ast };
   const hastTree = toHast(rootNode);
 
-  const processor = unified();
-  for (const plugin of plugins) {
-    processor.use(plugin);
-  }
+  const processor = unified().use({ plugins });
 
   const processedHast = processor.runSync(hastTree);
 

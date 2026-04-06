@@ -5,10 +5,10 @@ interface SerializedBuffer {
 
 type MdxInput = string | Buffer | Uint8Array | SerializedBuffer;
 
-import type { Plugin } from 'unified';
+import type { PluggableList } from 'unified';
 
 export type OmniMdxOptions = {
-  rehypePlugins?: Plugin[];
+  rehypePlugins?: PluggableList;
 };
 
 export {
