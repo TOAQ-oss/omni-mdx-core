@@ -269,7 +269,7 @@ fn parse_children<'a>(
     let mut i = 0;
 
     while i < len {
-        if bytes[i] == b'<' && i + 1 < len && (bytes[i + 1] as char).is_ascii_uppercase() {
+        if bytes[i] == b'<' && i + 1 < len && (bytes[i + 1] as char).is_ascii_alphabetic() {
             let start = i;
             let mut end = i;
             crate::lexer::scan_jsx_block_pub(bytes, &mut end, len)
@@ -284,7 +284,7 @@ fn parse_children<'a>(
         } else {
             let start = i;
             while i < len {
-                if bytes[i] == b'<' && i + 1 < len && (bytes[i + 1] as char).is_ascii_uppercase() {
+                if bytes[i] == b'<' && i + 1 < len && (bytes[i + 1] as char).is_ascii_alphabetic() {
                     break;
                 }
                 i += 1;

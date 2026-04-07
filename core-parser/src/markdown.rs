@@ -35,6 +35,9 @@ fn get_ph_re() -> &'static Regex {
 const PFX_JSX: &str = "\x02JSX";
 const PFX_MATHB: &str = "\x02MATHB";
 const PFX_MATHI: &str = "\x02MATHI";
+const MASK_LT: &str = "\u{E001}";
+const MASK_GT: &str = "\u{E004}";
+const MASK_DOLLAR: &str = "\u{E005}";
 const SFX: &str = "\x03";
 
 /// Creates a JSX placeholder string for a given pool index.
@@ -60,39 +63,42 @@ fn make_mathi_placeholder(n: usize) -> String {
 ///
 /// Positions are preserved — `pulldown-cmark` will re-parse the actual input.
 pub fn mask_code_blocks(input: &str) -> Cow<'_, str> {
-    let bytes = input.as_bytes();
-    let len = bytes.len();
-    let mut out: Option<Vec<u8>> = None;
+    // On travaille en chars pour éviter de couper du UTF-8
+    let chars: Vec<char> = input.chars().collect();
+    let len = chars.len();
+    let mut out: Option<String> = None;
     let mut i = 0;
 
     while i < len {
         // --- Fenced Blocks ``` ---
-        if i + 2 < len && bytes[i] == b'`' && bytes[i + 1] == b'`' && bytes[i + 2] == b'`' {
+        if i + 2 < len && chars[i] == '`' && chars[i+1] == '`' && chars[i+2] == '`' {
+            if out.is_none() {
+                out = Some(chars[..i].iter().collect());
+            }
+            // Écrire les ``` d'ouverture + la ligne du langage tels quels
+            out.as_mut().unwrap().push('`');
+            out.as_mut().unwrap().push('`');
+            out.as_mut().unwrap().push('`');
             i += 3;
-            // Skip the language identifier (e.g., ```html)
-            while i < len && bytes[i] != b'\n' {
+            while i < len && chars[i] != '\n' {
+                out.as_mut().unwrap().push(chars[i]);
                 i += 1;
             }
 
+            // Corps du bloc : masquer < > $
             while i < len {
-                // Look for closing fence
-                if i + 2 < len && bytes[i] == b'`' && bytes[i + 1] == b'`' && bytes[i + 2] == b'`' {
+                if i + 2 < len && chars[i] == '`' && chars[i+1] == '`' && chars[i+2] == '`' {
+                    out.as_mut().unwrap().push('`');
+                    out.as_mut().unwrap().push('`');
+                    out.as_mut().unwrap().push('`');
                     i += 3;
                     break;
                 }
-
-                // MASK EVERYTHING inside the fence
-                if bytes[i] == b'<' || bytes[i] == b'>' || bytes[i] == b'$' {
-                    if out.is_none() {
-                        out = Some(bytes.to_vec());
-                    }
-                    let masked = match bytes[i] {
-                        b'<' => 0x01,
-                        b'>' => 0x04,
-                        b'$' => 0x05,
-                        _ => bytes[i],
-                    };
-                    out.as_mut().unwrap()[i] = masked;
+                match chars[i] {
+                    '<' => out.as_mut().unwrap().push_str(MASK_LT),
+                    '>' => out.as_mut().unwrap().push_str(MASK_GT),
+                    '$' => out.as_mut().unwrap().push_str(MASK_DOLLAR),
+                    c   => out.as_mut().unwrap().push(c),
                 }
                 i += 1;
             }
@@ -100,34 +106,37 @@ pub fn mask_code_blocks(input: &str) -> Cow<'_, str> {
         }
 
         // --- Inline Code ` ---
-        if bytes[i] == b'`' {
+        if chars[i] == '`' {
+            if out.is_none() {
+                out = Some(chars[..i].iter().collect());
+            }
+            out.as_mut().unwrap().push('`');
             i += 1;
-            while i < len && bytes[i] != b'`' {
-                if bytes[i] == b'<' || bytes[i] == b'>' || bytes[i] == b'$' {
-                    if out.is_none() {
-                        out = Some(bytes.to_vec());
-                    }
-                    let masked = match bytes[i] {
-                        b'<' => 0x01,
-                        b'>' => 0x04,
-                        b'$' => 0x05,
-                        _ => bytes[i],
-                    };
-                    out.as_mut().unwrap()[i] = masked;
+            while i < len && chars[i] != '`' {
+                match chars[i] {
+                    '<' => out.as_mut().unwrap().push_str(MASK_LT),
+                    '>' => out.as_mut().unwrap().push_str(MASK_GT),
+                    '$' => out.as_mut().unwrap().push_str(MASK_DOLLAR),
+                    c   => out.as_mut().unwrap().push(c),
                 }
                 i += 1;
             }
             if i < len {
+                out.as_mut().unwrap().push('`');
                 i += 1;
             }
             continue;
+        }
+
+        if let Some(ref mut s) = out {
+            s.push(chars[i]);
         }
         i += 1;
     }
 
     match out {
-        Some(v) => Cow::Owned(unsafe { String::from_utf8_unchecked(v) }),
-        None => Cow::Borrowed(input),
+        Some(v) => Cow::Owned(v),
+        None    => Cow::Borrowed(input),
     }
 }
 
@@ -135,17 +144,24 @@ pub fn mask_code_blocks(input: &str) -> Cow<'_, str> {
 ///
 /// Converts the arbitrary invisible bytes back to their original `<`, `>`, and `$` characters
 /// right before generating the final AST text nodes.
+// fn unmask_code(s: String) -> String {
+//     let mut bytes = s.into_bytes();
+//     for b in bytes.iter_mut() {
+//         match *b {
+//             0x01 => *b = b'<',
+//             0x04 => *b = b'>',
+//             0x05 => *b = b'$',
+
+//             _ => (),
+//         }
+//     }
+//     unsafe { String::from_utf8_unchecked(bytes) }
+// }
+
 fn unmask_code(s: String) -> String {
-    let mut bytes = s.into_bytes();
-    for b in bytes.iter_mut() {
-        match *b {
-            0x01 => *b = b'<',
-            0x04 => *b = b'>',
-            0x05 => *b = b'$',
-            _ => (),
-        }
-    }
-    unsafe { String::from_utf8_unchecked(bytes) }
+    s.replace(MASK_LT, "<")
+     .replace(MASK_GT, ">")
+     .replace(MASK_DOLLAR, "$")
 }
 
 /// Extracts LaTeX math blocks before any other parsing occurs.
@@ -291,7 +307,7 @@ pub fn parse_markdown<'a>(
 
     let mut stack: Vec<AstNode<'a>> = Vec::new();
     let mut root: Vec<AstNode<'a>> = Vec::new();
-    let mut in_code_block = false;
+    let mut code_block_buf: Option<String> = None;
     let mut in_table_head = false;
     let mut in_table_body = false;
 
@@ -299,7 +315,7 @@ pub fn parse_markdown<'a>(
         match event {
             Event::Start(tag) => {
                 if let Tag::CodeBlock(_) = tag {
-                    in_code_block = true;
+                    code_block_buf = Some(String::new());
                 }
 
                 if let Tag::TableHead = tag {
@@ -377,7 +393,9 @@ pub fn parse_markdown<'a>(
             }
             Event::End(tag_end) => {
                 if let TagEnd::CodeBlock = tag_end {
-                    in_code_block = false;
+                    if let Some(buf) = code_block_buf.take() {
+                        push_child(AstNode::text(buf), &mut stack, &mut root);
+                    }
                 }
                 if let TagEnd::TableHead = tag_end {
                     in_table_head = false;
@@ -408,9 +426,8 @@ pub fn parse_markdown<'a>(
             Event::Text(text_cow) => {
                 let owned_text = text_cow.into_string();
 
-                if in_code_block {
-                    let cleaned = unmask_code(owned_text);
-                    push_child(AstNode::text(cleaned), &mut stack, &mut root);
+                if let Some(ref mut buf) = code_block_buf {
+                    buf.push_str(&unmask_code(owned_text));
                 } else {
                     expand_text(
                         &owned_text,
@@ -636,5 +653,28 @@ fn map_tag(tag: &Tag) -> Cow<'static, str> {
         Tag::TableRow => "tr".into(),
         Tag::TableCell => "td".into(),
         _ => "div".into(),
+    }
+}
+
+
+#[cfg(test)]
+mod debug_tests {
+    use super::*;
+    use pulldown_cmark::{Event, Options, Parser};
+
+    #[test]
+    fn debug_code_block_events() {
+        let input = "```js\nfunction test() {\n  return \"<div>HTML</div>\";\n}\n```\n";
+        let protected = mask_code_blocks(input);
+        println!("=== APRÈS MASK ===\n{:?}\n", protected);
+
+        let (after_math, _, _) = extract_math(&protected);
+        let (markdown, _) = crate::lexer::extract_jsx(&after_math).unwrap();
+        println!("=== MARKDOWN FINAL ===\n{:?}\n", markdown);
+
+        let parser = Parser::new_ext(&markdown, Options::all());
+        for event in parser {
+            println!("EVENT: {:?}", event);
+        }
     }
 }
