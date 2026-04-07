@@ -2,6 +2,17 @@
 
 All notable changes to the Rust MDX parser crate are documented here.
 
+## [1.1.0] - 2026-04-07
+
+### Changed
+- **Math AST Structure**: LaTeX formulas (`InlineMath` and `BlockMath`) now store their raw content inside the `data-math` attribute rather than the generic `content` field. This ensures mathematical expressions survive transformations by HTML-focused external plugins (like Unified/Rehype).
+- **Memory Management**: Introduced the `promote_to_owned` utility in the JSX parser. This safely escalates `Cow::Borrowed` node lifetimes to `Cow::Owned` when local string mutations are required, maintaining the engine's zero-copy architecture without triggering borrow checker conflicts.
+
+### Fixed
+- **Lowercase HTML Tag Parsing**: Upgraded the lexer and JSX parser to use `.is_ascii_alphabetic()` instead of `.is_ascii_uppercase()`. Standard HTML tags (e.g., `<div>`, `<span>`) within MDX are now correctly extracted into the JSX pool and parsed as structured nodes with attributes, rather than being downgraded to raw text.
+- **JSX Indentation Code-Block Bug**: Implemented a "Dindent Hack" in `jsx.rs`. Text indented with 4 spaces inside custom JSX components is no longer erroneously parsed as Markdown code blocks (`<pre><code>`). The parser now automatically cleans relative indentation before passing the block to the Markdown engine.
+- **Dependency Compatibility**: Updated pattern matching for `Tag::BlockQuote` to resolve compilation errors with recent versions of the `pulldown-cmark` crate.
+
 ---
 ## [0.2.4] - 2026-03-31
 

@@ -2,6 +2,17 @@
 
 All notable changes to the Python package `omni-mdx` are documented here.
 
+## [1.1.0] — 2026-04-07
+
+### 🚀 Core & Compatibility
+
+* **AST Structure Alignment:** Synchronized the Python package with the new `v1.1.0` Rust engine AST format. Mathematical formulas (`InlineMath`, `BlockMath`) are now extracted from the `data-math` attribute rather than the generic `content` field, ensuring perfect parity with the JavaScript/TypeScript ecosystem.
+
+### 🐛 Bug Fixes
+
+* **HTML Renderer (`renderer.py`):** Fixed an issue where `InlineMath` and `BlockMath` nodes would render as empty HTML tags. The `HtmlRenderer` now properly fetches the formula via `attr_text("data-math")` to populate the HTML data attributes required for KaTeX client-side hydration.
+* **Qt Native Renderer (`qt_renderer.py`):** Restored native desktop math rendering. Both the Unicode fallback and the Matplotlib `QPixmap` generation (for block formulas) have been updated to read from the new `data-math` attribute, preventing empty widget rendering in PyQt5 applications.
+
 ---
 
 ## [0.1.14] — 2026-03-27

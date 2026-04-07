@@ -2,6 +2,18 @@
 
 All notable changes to `@toaq-oss/omni-mdx` are documented here.
 
+## [1.1.0] - 2026-04-07
+
+### 🚀 Core & Architecture
+
+* **Robust Unified/Rehype Bridge:** Completely overhauled `unifiedBridge.ts` to make the Omni-MDX AST fully resilient against aggressive sanitization from external `rehype` plugins (like `rehype-slug` or `rehype-autolink-headings`). Custom Omni metadata is now safely cloaked during the HAST conversion and perfectly restored post-processing.
+* **JSON-First Server Parsing:** Updated `parse.server.ts` to prioritize JSON serialization over the binary decoder during Server Component rendering. This guarantees absolute data integrity for deeply nested attributes and custom nodes crossing the Rust/V8 FFI boundary.
+
+### 🐛 Bug Fixes
+
+* **Custom Attribute Preservation:** Fixed a critical data-loss issue where `rehype` plugins would strip non-standard HTML attributes. Omni-specific properties like `data-math` (used for KaTeX hydration) and nested AST props (`kind: 'ast'`) now survive the entire unified pipeline intact.
+* **Component Case Sensitivity:** Resolved an issue where standard HTML pipelines forced all tags to lowercase (e.g., transforming `<InlineMath>` to `<inlinemath>` or `<CustomComponent>` to `<customcomponent>`). The exact original casing and `self_closing` states are now meticulously saved (`dataOmniTag`) and restored, ensuring perfect matching with the React `components` registry.
+
 ---
 
 ## [0.1.24] - 2026-03-27
