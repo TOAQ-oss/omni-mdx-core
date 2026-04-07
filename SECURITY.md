@@ -6,12 +6,10 @@ We currently provide security updates for the following versions of the Omni-MDX
 
 | Component       | Version | Supported          |
 | --------------- | ------- | ------------------ |
-| **Core Parser** | 0.2.x   | :white_check_mark: |
-| **MDX Next** | 0.1.x   | :white_check_mark: |
-| **MDX Python** | 0.1.x   | :white_check_mark: |
-| Legacy / Others | < 0.1.0 | :x:                |
-
-*Note: As the project is in active development prior to a 1.0 release, we strongly encourage users to always upgrade to the latest minor version.*
+| **Core Parser** | 1.x.x   | :white_check_mark: |
+| **MDX Next** | 1.x.x   | :white_check_mark: |
+| **MDX Python** | 1.x.x   | :white_check_mark: |
+| Legacy / Others | < 1.x.x | :x:                |
 
 ## Reporting a Vulnerability
 
