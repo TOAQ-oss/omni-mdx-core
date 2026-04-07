@@ -291,12 +291,14 @@ fn parse_children<'a>(
             }
             let text = &src[start..i];
             if !text.trim().is_empty() {
-                let cleaned_text = text.lines()
+                let cleaned_text = text
+                    .lines()
                     .map(|line| line.strip_prefix("    ").unwrap_or(line))
                     .collect::<Vec<&str>>()
                     .join("\n");
 
-                let mut sub_nodes = crate::markdown::parse_markdown(&cleaned_text, &[], block_math, inline_math)?;
+                let mut sub_nodes =
+                    crate::markdown::parse_markdown(&cleaned_text, &[], block_math, inline_math)?;
 
                 if sub_nodes.len() == 1 && sub_nodes[0].node_type == "p" {
                     for child in sub_nodes.remove(0).children {
@@ -313,7 +315,7 @@ fn parse_children<'a>(
     Ok(children)
 }
 
-/// Converts a node associated with a local lifetime into a node capable of surviving for 'a 
+/// Converts a node associated with a local lifetime into a node capable of surviving for 'a
 /// by forcing a switch to Owned mode (data ownership).
 fn promote_to_owned<'a>(node: AstNode<'_>) -> AstNode<'a> {
     use crate::ast::AttrValue;
@@ -322,15 +324,22 @@ fn promote_to_owned<'a>(node: AstNode<'_>) -> AstNode<'a> {
         content: node.content.map(|c| Cow::Owned(c.into_owned())),
         self_closing: node.self_closing,
         attributes: node.attributes.map(|attrs| {
-            attrs.into_iter().map(|(k, v)| {
-                let owned_v = match v {
-                    AttrValue::Text(t) => AttrValue::Text(Cow::Owned(t.into_owned())),
-                    AttrValue::Boolean => AttrValue::Boolean,
-                    AttrValue::Expression(e) => AttrValue::Expression(Cow::Owned(e.into_owned())),
-                    AttrValue::Ast(nodes) => AttrValue::Ast(nodes.into_iter().map(promote_to_owned).collect()),
-                };
-                (Cow::Owned(k.into_owned()), owned_v)
-            }).collect()
+            attrs
+                .into_iter()
+                .map(|(k, v)| {
+                    let owned_v = match v {
+                        AttrValue::Text(t) => AttrValue::Text(Cow::Owned(t.into_owned())),
+                        AttrValue::Boolean => AttrValue::Boolean,
+                        AttrValue::Expression(e) => {
+                            AttrValue::Expression(Cow::Owned(e.into_owned()))
+                        }
+                        AttrValue::Ast(nodes) => {
+                            AttrValue::Ast(nodes.into_iter().map(promote_to_owned).collect())
+                        }
+                    };
+                    (Cow::Owned(k.into_owned()), owned_v)
+                })
+                .collect()
         }),
         children: node.children.into_iter().map(promote_to_owned).collect(),
     }
