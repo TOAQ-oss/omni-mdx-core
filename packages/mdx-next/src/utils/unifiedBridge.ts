@@ -34,6 +34,11 @@ function toHast(node: AstNode): HastNode {
   const properties: Record<string, any> = {};
   let classNameArray: string[] | undefined = undefined;
 
+  properties['dataOmniTag'] = node.node_type;
+  if (node.self_closing) {
+     properties['dataOmniSelfClosing'] = true;
+  }
+
   if (node.attributes) {
     const attrs = typeof node.attributes === 'string' 
       ? JSON.parse(node.attributes) 
@@ -51,12 +56,12 @@ function toHast(node: AstNode): HastNode {
       }
       if (v.kind === 'boolean') properties[key] = true;
       if (v.kind === 'expression') properties[key] = v.value; 
+      if (v.kind === 'ast') properties[key] = JSON.stringify({ _omni_ast: v.value });
     }
   }
 
   if (node.node_type === 'pre') {
     const hasCodeChild = node.children?.some(c => c.node_type === 'code');
-    
     if (!hasCodeChild) {
       const codeProps: Record<string, any> = {};
       if (classNameArray) codeProps['className'] = classNameArray;
@@ -79,7 +84,7 @@ function toHast(node: AstNode): HastNode {
 
   return {
     type: 'element',
-    tagName: node.node_type,
+    tagName: node.node_type.toLowerCase(),
     properties,
     children: (node.children || []).map(toHast) as any[]
   } as Element;
@@ -107,13 +112,31 @@ function fromHast(node: HastNode): AstNode {
   const el = node as Element;
   const attributes: Record<string, AttrValueKind> = {};
   
+  let originalTag = el.tagName || 'div';
+  let selfClosing = false;
+  
   if (el.properties) {
     for (const [key, val] of Object.entries(el.properties)) {
+        if (key === 'dataOmniTag') {
+            originalTag = String(val);
+            continue;
+        }
+        if (key === 'dataOmniSelfClosing') {
+            selfClosing = true;
+            continue;
+        }
+
         if (key === 'className' && Array.isArray(val)) {
             attributes['className'] = { kind: 'text', value: val.join(' ') };
-        }
-        if (typeof val === 'boolean') {
+        } else if (typeof val === 'boolean') {
             attributes[key] = { kind: 'boolean' };
+        } else if (typeof val === 'string' && val.startsWith('{"_omni_ast":')) {
+            try {
+                const parsed = JSON.parse(val);
+                attributes[key] = { kind: 'ast', value: parsed._omni_ast };
+            } catch {
+                attributes[key] = { kind: 'text', value: val };
+            }
         } else if (val !== undefined && val !== null) {
             attributes[key] = { kind: 'text', value: String(val) };
         }
@@ -121,9 +144,10 @@ function fromHast(node: HastNode): AstNode {
   }
 
   return {
-    node_type: el.tagName || 'div',
+    node_type: originalTag,
     attributes,
-    children: (el.children || []).map(fromHast)
+    children: (el.children || []).map(fromHast),
+    self_closing: selfClosing
   };
 }
 
