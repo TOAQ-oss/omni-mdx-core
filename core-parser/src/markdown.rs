@@ -288,9 +288,7 @@ pub fn parse_markdown<'a>(
         ));
     }
 
-    let mut options = Options::all();
-    options.remove(Options::ENABLE_INDENTED_CODE_BLOCKS);
-    let parser = Parser::new_ext(text, options);
+    let parser = Parser::new_ext(text, Options::all());
     let ph_re = get_ph_re();
 
     let mut stack: Vec<AstNode<'a>> = Vec::new();
@@ -626,7 +624,7 @@ fn map_tag(tag: &Tag) -> Cow<'static, str> {
     match tag {
         Tag::Paragraph => "p".into(),
         Tag::Heading { level, .. } => format!("h{}", *level as u8).into(),
-        Tag::BlockQuote => "blockquote".into(),
+        Tag::BlockQuote(_) => "blockquote".into(),
         Tag::CodeBlock(_) => "pre".into(),
         Tag::List(Some(_)) => "ol".into(),
         Tag::List(None) => "ul".into(),
