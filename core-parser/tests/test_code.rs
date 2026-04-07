@@ -32,6 +32,14 @@ fn find_all<'a>(nodes: &'a [AstNode], node_type: &str) -> Vec<&'a AstNode<'a>> {
     result
 }
 
+/// Extracts the string value of a specific attribute, if it exists and is a text attribute.
+fn attr_text<'a>(node: &'a AstNode, key: &str) -> Option<&'a str> {
+    match node.attributes.as_ref()?.get(key)? {
+        AttrValue::Text(s) => Some(&*s),
+        _ => None,
+    }
+}
+
 /// Recursively checks if a specific node type exists anywhere in the tree.
 fn has_node_type(nodes: &[AstNode], node_type: &str) -> bool {
     nodes
@@ -164,12 +172,11 @@ $$\int_0^\infty$$
 Real math: $x^2$
 "#;
     let ast = parse_mdx(mdx).expect("parse_mdx failed");
-
     let inline_maths = find_all(&ast, "InlineMath");
 
-    // Only the real $x^2$ should be extracted
+    // Only the real $x^2$ should be extracted, we now read from "data-math"
     let has_complex_math = inline_maths.iter().any(|m| {
-        let c = m.content.as_deref().unwrap_or("");
+        let c = attr_text(m, "data-math").unwrap_or("");
         c.contains("mc^2") || c.contains("int")
     });
 
@@ -180,7 +187,7 @@ Real math: $x^2$
     assert!(
         inline_maths
             .iter()
-            .any(|m| m.content.as_deref() == Some("x^2")),
+            .any(|m| attr_text(m, "data-math") == Some("x^2")),
         "Real math after code block missing"
     );
 }

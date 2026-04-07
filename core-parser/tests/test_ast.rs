@@ -116,13 +116,13 @@ fn test_jsx_note_component_with_inline_math() {
     assert_eq!(attr_text(note, "type"), Some("warning"));
     assert_eq!(attr_text(note, "title"), Some("Point de vigilance"));
 
-    // Inline Math Check
+    // Inline Math Check (Using data-math attribute)
     let math = note
         .children
         .iter()
         .find(|c| c.node_type == "InlineMath")
         .expect("InlineMath inside Note missing");
-    assert_eq!(math.content.as_deref(), Some("t > 0"));
+    assert_eq!(attr_text(math, "data-math"), Some("t > 0"));
 
     // Checking for non-wrapping (React hoisting rules)
     let is_wrapped = note
@@ -148,7 +148,7 @@ fn test_jsx_details_with_block_math() {
         .iter()
         .find(|c| c.node_type == "BlockMath")
         .expect("BlockMath inside Details missing");
-    assert_eq!(bmath.content.as_deref(), Some("E = mc^2"));
+    assert_eq!(attr_text(bmath, "data-math"), Some("E = mc^2"));
 
     // No <p> around BlockMath
     let is_wrapped = details
@@ -182,8 +182,7 @@ fn test_root_level_block_math() {
     assert!(bmaths.len() >= 2, "Should find at least 2 BlockMath nodes");
 
     let has_math = bmaths.iter().any(|n| {
-        n.content
-            .as_deref()
+        attr_text(n, "data-math")
             .map_or(false, |c| c.contains("int") || c.contains("sum"))
     });
 
@@ -192,7 +191,7 @@ fn test_root_level_block_math() {
         "Root-level math not found. Available BlockMath contents: {:?}",
         bmaths
             .iter()
-            .map(|n| n.content.as_deref().unwrap_or(""))
+            .map(|n| attr_text(n, "data-math").unwrap_or(""))
             .collect::<Vec<_>>()
     );
 }
@@ -242,15 +241,16 @@ fn test_math_content_persistence() {
             if child.node_type == "InlineMath" {
                 math_node_found = true;
 
+                let data_math = attr_text(child, "data-math");
                 assert!(
-                    child.content.is_some(),
-                    "FAILED: 'content' is None for InlineMath"
+                    data_math.is_some(),
+                    "FAILED: 'data-math' attribute is missing for InlineMath"
                 );
 
-                let content = child.content.as_ref().unwrap();
+                let content = data_math.unwrap();
                 assert!(
                     !content.is_empty(),
-                    "FAILED: The 'content' field is an empty string"
+                    "FAILED: The 'data-math' attribute is an empty string"
                 );
                 assert_eq!(
                     content, "e = mc^2",
