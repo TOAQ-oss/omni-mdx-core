@@ -71,7 +71,7 @@ pub fn mask_code_blocks(input: &str) -> Cow<'_, str> {
 
     while i < len {
         // --- Fenced Blocks ``` ---
-        if i + 2 < len && chars[i] == '`' && chars[i+1] == '`' && chars[i+2] == '`' {
+        if i + 2 < len && chars[i] == '`' && chars[i + 1] == '`' && chars[i + 2] == '`' {
             if out.is_none() {
                 out = Some(chars[..i].iter().collect());
             }
@@ -87,7 +87,7 @@ pub fn mask_code_blocks(input: &str) -> Cow<'_, str> {
 
             // Corps du bloc : masquer < > $
             while i < len {
-                if i + 2 < len && chars[i] == '`' && chars[i+1] == '`' && chars[i+2] == '`' {
+                if i + 2 < len && chars[i] == '`' && chars[i + 1] == '`' && chars[i + 2] == '`' {
                     out.as_mut().unwrap().push('`');
                     out.as_mut().unwrap().push('`');
                     out.as_mut().unwrap().push('`');
@@ -98,7 +98,7 @@ pub fn mask_code_blocks(input: &str) -> Cow<'_, str> {
                     '<' => out.as_mut().unwrap().push_str(MASK_LT),
                     '>' => out.as_mut().unwrap().push_str(MASK_GT),
                     '$' => out.as_mut().unwrap().push_str(MASK_DOLLAR),
-                    c   => out.as_mut().unwrap().push(c),
+                    c => out.as_mut().unwrap().push(c),
                 }
                 i += 1;
             }
@@ -117,7 +117,7 @@ pub fn mask_code_blocks(input: &str) -> Cow<'_, str> {
                     '<' => out.as_mut().unwrap().push_str(MASK_LT),
                     '>' => out.as_mut().unwrap().push_str(MASK_GT),
                     '$' => out.as_mut().unwrap().push_str(MASK_DOLLAR),
-                    c   => out.as_mut().unwrap().push(c),
+                    c => out.as_mut().unwrap().push(c),
                 }
                 i += 1;
             }
@@ -136,7 +136,7 @@ pub fn mask_code_blocks(input: &str) -> Cow<'_, str> {
 
     match out {
         Some(v) => Cow::Owned(v),
-        None    => Cow::Borrowed(input),
+        None => Cow::Borrowed(input),
     }
 }
 
@@ -160,8 +160,8 @@ pub fn mask_code_blocks(input: &str) -> Cow<'_, str> {
 
 fn unmask_code(s: String) -> String {
     s.replace(MASK_LT, "<")
-     .replace(MASK_GT, ">")
-     .replace(MASK_DOLLAR, "$")
+        .replace(MASK_GT, ">")
+        .replace(MASK_DOLLAR, "$")
 }
 
 /// Extracts LaTeX math blocks before any other parsing occurs.
@@ -655,7 +655,6 @@ fn map_tag(tag: &Tag) -> Cow<'static, str> {
         _ => "div".into(),
     }
 }
-
 
 #[cfg(test)]
 mod debug_tests {
