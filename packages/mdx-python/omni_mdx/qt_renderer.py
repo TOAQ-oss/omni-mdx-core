@@ -263,7 +263,7 @@ class QtRenderer:
 
     def _inline_math_into(self, node: Any, layout: FlowLayout):
         """Renders inline LaTeX as Unicode text to maintain flow alignment."""
-        latex = node.content or ""
+        latex = node.attr_text("data-math") or ""
         lbl = InlineLabel(latex_to_unicode(latex), math_inline=True)
         lbl.setToolTip(f"LaTeX : {latex}")
         layout.addWidget(lbl)
@@ -285,7 +285,7 @@ class QtRenderer:
         layout.setSpacing(8)
         layout.setAlignment(Qt.AlignCenter)
 
-        latex = node.content or node.text_content() or ""
+        latex = node.attr_text("data-math") or ""
 
         pixmap: Optional[QPixmap] = None
         if latex_to_pixmap_available():
@@ -342,7 +342,9 @@ class QtRenderer:
         layout = QVBoxLayout(w)
         layout.setContentsMargins(0, 4, 0, 4)
         layout.setAlignment(Qt.AlignCenter)
-        lbl = InlineLabel(latex_to_unicode(node.text_content() or ""), math_inline=True)
+
+        latex = node.attr_text("data-math") or ""
+        lbl = InlineLabel(latex_to_unicode(latex), math_inline=True)
         lbl.setAlignment(Qt.AlignCenter)
         lbl.setToolTip(f"LaTeX : {node.text_content()}")
         layout.addWidget(lbl)
