@@ -478,12 +478,20 @@ fn expand_text<'a>(
             "JSX" => jsx.get(idx).map(|s| parse_jsx(s, block_math, inline_math)),
             "MATHB" => block_math.get(idx).map(|s| {
                 let mut n = AstNode::element("BlockMath", true);
-                n.content = Some(Cow::Owned(unmask_code(s.trim().to_string())));
+                let attrs = n.attributes.get_or_insert_with(HashMap::new);
+                attrs.insert(
+                    "data-math".into(), 
+                    AttrValue::Text(Cow::Owned(unmask_code(s.trim().to_string())))
+                );
                 Ok(n)
             }),
             "MATHI" => inline_math.get(idx).map(|s| {
                 let mut n = AstNode::element("InlineMath", true);
-                n.content = Some(Cow::Owned(unmask_code(s.trim().to_string())));
+                let attrs = n.attributes.get_or_insert_with(HashMap::new);
+                attrs.insert(
+                    "data-math".into(), 
+                    AttrValue::Text(Cow::Owned(unmask_code(s.trim().to_string())))
+                );
                 Ok(n)
             }),
             _ => None,
@@ -531,15 +539,24 @@ fn unwrap_solo_jsx_paragraph<'a>(mut node: AstNode<'a>) -> AstNode<'a> {
         return node;
     }
 
-    let is_block = |n: &AstNode| -> bool {
-        if n.node_type == "InlineMath" {
+    let is_block = |n: &crate::ast::AstNode| -> bool {
+        if n.node_type == "InlineMath" || n.node_type == "text" {
             return false;
         }
-        n.node_type
-            .chars()
-            .next()
-            .map(|c| c.is_ascii_uppercase())
-            .unwrap_or(false)
+        
+        let node_name = n.node_type.as_ref();
+        
+        if node_name.starts_with(|c: char| c.is_ascii_uppercase()) {
+            return true;
+        }
+        
+        matches!(
+            node_name,
+            "div" | "table" | "pre" | "ul" | "ol" | "li" | "blockquote" | 
+            "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "hr" | "script" | 
+            "style" | "header" | "footer" | "section" | "article" | "nav" | 
+            "aside" | "main" | "figure" | "video" | "audio"
+        )
     };
 
     let has_block = node.children.iter().any(is_block);

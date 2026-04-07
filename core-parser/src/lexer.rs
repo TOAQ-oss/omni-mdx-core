@@ -38,7 +38,7 @@ pub fn extract_jsx(input: &str) -> Result<(String, Vec<String>), ParseError> {
     while i < len {
         // Detect the start of a custom JSX block: `<` followed strictly by an ASCII uppercase letter.
         // This explicitly avoids cloaking standard HTML tags (like `<div>` or `<p>`), leaving them for the Markdown parser.
-        if bytes[i] == b'<' && i + 1 < len && (bytes[i + 1] as char).is_ascii_uppercase() {
+        if bytes[i] == b'<' && i + 1 < len && (bytes[i + 1] as char).is_ascii_alphabetic() {
             let start = i;
 
             // Advance `i` to the end of the JSX block using the state machine.
