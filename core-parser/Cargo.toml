@@ -44,7 +44,7 @@ name = "test_security"
 path = "tests/test_security.rs"
 
 [dependencies]
-pulldown-cmark = "0.10"
+pulldown-cmark = "0.13"
 regex          = "1"
 serde          = { version = "1", features = ["derive"] }
 serde_json     = "1"
