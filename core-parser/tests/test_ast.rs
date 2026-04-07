@@ -182,8 +182,7 @@ fn test_root_level_block_math() {
     assert!(bmaths.len() >= 2, "Should find at least 2 BlockMath nodes");
 
     let has_math = bmaths.iter().any(|n| {
-        attr_text(n, "data-math")
-            .map_or(false, |c| c.contains("int") || c.contains("sum"))
+        attr_text(n, "data-math").map_or(false, |c| c.contains("int") || c.contains("sum"))
     });
 
     assert!(

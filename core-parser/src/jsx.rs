@@ -380,14 +380,14 @@ mod tests {
         // Simulate what parse_mdx passes: placeholder already substituted.
         let inline_pool = vec!["E = mc^2".to_string()];
         let node = parse_jsx("<Note>\x02MATHI0\x03</Note>", &[], &inline_pool).unwrap();
-        
+
         assert_eq!(node.children[0].node_type, "InlineMath");
-        
+
         let attrs = node.children[0]
             .attributes
             .as_ref()
             .expect("InlineMath should have attributes");
-            
+
         assert_eq!(
             attrs.get("data-math"),
             Some(&AttrValue::Text(std::borrow::Cow::Borrowed("E = mc^2")))
