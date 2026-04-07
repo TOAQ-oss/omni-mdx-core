@@ -144,20 +144,6 @@ pub fn mask_code_blocks(input: &str) -> Cow<'_, str> {
 ///
 /// Converts the arbitrary invisible bytes back to their original `<`, `>`, and `$` characters
 /// right before generating the final AST text nodes.
-// fn unmask_code(s: String) -> String {
-//     let mut bytes = s.into_bytes();
-//     for b in bytes.iter_mut() {
-//         match *b {
-//             0x01 => *b = b'<',
-//             0x04 => *b = b'>',
-//             0x05 => *b = b'$',
-
-//             _ => (),
-//         }
-//     }
-//     unsafe { String::from_utf8_unchecked(bytes) }
-// }
-
 fn unmask_code(s: String) -> String {
     s.replace(MASK_LT, "<")
         .replace(MASK_GT, ">")
@@ -302,7 +288,9 @@ pub fn parse_markdown<'a>(
         ));
     }
 
-    let parser = Parser::new_ext(text, Options::all());
+    let mut options = Options::all();
+    options.remove(Options::ENABLE_INDENTED_CODE_BLOCKS);
+    let parser = Parser::new_ext(text, options);
     let ph_re = get_ph_re();
 
     let mut stack: Vec<AstNode<'a>> = Vec::new();
