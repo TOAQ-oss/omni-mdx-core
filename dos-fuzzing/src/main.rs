@@ -67,7 +67,7 @@ fn test_mdx_pattern(pat: &Pattern, test_id: usize) -> bool {
             }
             None => {
                 println!("\n  INFINITE LOOP — MDX text parser frozen.");
-                let _ = fs::rename(tmp, format!("artifacts/fatal_loop_text_{}.mdx", test_id));
+                let _ = fs::rename(tmp_path, format!("artifacts/fatal_loop_text_{}.mdx", test_id));
                 return true;
             }
         }
