@@ -6,8 +6,8 @@
       {
         "group": "Installation",
         "items": [
-          { "title": "Web & Next.js", "slug": "installation/web" },
-          { "title": "Python Engine", "slug": "installation/python" },
+          { "title": "Web & Next.js", "slug": "installation/web", "platforms": ["next"] },
+          { "title": "Python Engine", "slug": "installation/python", "platforms": ["python"] },
           { "title": "Build from Source", "slug": "installation/source" }
         ]
       },
@@ -29,7 +29,8 @@
           { "title": "Live Client Editor", "slug": "web-integration/examples/client-rendering" }
         ]
       }
-    ]
+    ],
+    "platforms": ["next"]
   },
   {
     "group": "Python",
@@ -73,7 +74,8 @@
           { "title": "Qt Rendering", "slug": "python/examples/qt-rendering" }
         ]
       }
-    ]
+    ],
+    "platforms": ["python"]
   },
   {
     "group": "Architecture & Core",
@@ -120,6 +122,7 @@
           {  "title": "Fuzzing Results", "slug": "architecture/performance/fuzzing" }
         ]
       }
-    ]
+    ],
+    "platforms": ["rust"]
   }
 ]
