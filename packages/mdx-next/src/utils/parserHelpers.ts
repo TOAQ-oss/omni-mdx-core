@@ -35,7 +35,7 @@ export const parseProps = (propValue: any): any => {
     (val.startsWith("{") && val.endsWith("}"))
   ) {
     try {
-      return new Function(`return ${val}`)();
+      return JSON.parse(val);
     } catch {
       return propValue;
     }
