@@ -6,8 +6,8 @@
       {
         "group": "Installation",
         "items": [
-          { "title": "Web & Next.js", "slug": "installation/web" },
-          { "title": "Python Engine", "slug": "installation/python" },
+          { "title": "Web & Next.js", "slug": "installation/web", "platforms": ["Next.js"] },
+          { "title": "Python Engine", "slug": "installation/python", "platforms": ["Python"] },
           { "title": "Build from Source", "slug": "installation/source" }
         ]
       },
@@ -29,7 +29,8 @@
           { "title": "Live Client Editor", "slug": "web-integration/examples/client-rendering" }
         ]
       }
-    ]
+    ],
+    "platforms": ["Next.js"]
   },
   {
     "group": "Python",
@@ -73,7 +74,8 @@
           { "title": "Qt Rendering", "slug": "python/examples/qt-rendering" }
         ]
       }
-    ]
+    ],
+    "platforms": ["Python"]
   },
   {
     "group": "Architecture & Core",
@@ -91,14 +93,16 @@
           { "title": "Lexing & Tokenization", "slug": "architecture/parser/lexing" },
           { "title": "AST Node Design", "slug": "architecture/parser/ast-design" },
           { "title": "Math & JSX Handling", "slug": "architecture/parser/math-jsx" }
-        ]
+        ],
+        "platforms": ["Rust"]
       },
       {
         "group": "OCP Binary Protocol",
         "items": [
           { "title": "Protocol Specification", "slug": "architecture/ocp/specification" },
           { "title": "Zero-Copy Decoding", "slug": "architecture/ocp/zero-copy" }
-        ]
+        ],
+        "platforms": ["Rust"]
       },
       {
         "group": "FFI & Memory Model",
