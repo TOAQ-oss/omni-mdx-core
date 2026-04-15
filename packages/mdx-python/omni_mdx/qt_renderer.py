@@ -580,7 +580,7 @@ class QtRenderer:
 
     def _details(self, node: Any) -> QFrame:
         """Renders the built-in <Details /> component as an interactive toggle."""
-        title = node.attr_text("title") or "Détails"
+        title = node.attr_text("title") or "Details"
         outer = QFrame()
         outer.setStyleSheet(
             "QFrame{background:white;border:1px solid #e5e7eb;"

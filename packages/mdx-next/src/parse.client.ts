@@ -9,6 +9,9 @@ import { MdxBinaryDecoder } from "./utils/binaryDecoder";
 import { runUnifiedPipeline } from "./utils/unifiedBridge";
 import type { OmniMdxOptions } from "./types/MdxInput";
 
+type BufferLikeInput = { type: "Buffer"; data: number[] };
+type NormalizableInput = string | Uint8Array | BufferLikeInput;
+
 let initPromise: Promise<(mdx: Uint8Array) => Uint8Array> | null = null;
 
 /**
@@ -40,7 +43,7 @@ function getClientParser(): Promise<(mdx: Uint8Array) => Uint8Array> {
  * @param input - The raw input data (string, Buffer object, or Uint8Array).
  * @returns A normalized `Uint8Array` ready to be parsed by the WASM core.
  */
-function normalizeToUint8Array(input: any): Uint8Array {
+function normalizeToUint8Array(input: NormalizableInput): Uint8Array {
   if (input instanceof Uint8Array) {
     return input;
   }

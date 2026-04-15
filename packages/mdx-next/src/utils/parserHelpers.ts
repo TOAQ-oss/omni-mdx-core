@@ -28,6 +28,10 @@ type ParsedPropOutput =
   | Record<string, unknown>
   | unknown[];
 
+// Matches signed decimal literals: integers and decimals like "12", "-3.5", ".75", or "10.".
+// Intentionally excludes scientific notation (e.g. "1e3"), hex, and numeric separators.
+const DECIMAL_NUMBER_PATTERN = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/;
+
 export const parseProps = (propValue: ParsedPropInput): ParsedPropOutput => {
   if (typeof propValue !== "string") return propValue;
  
@@ -36,11 +40,8 @@ export const parseProps = (propValue: ParsedPropInput): ParsedPropOutput => {
   // Primitives
   if (cleanVal === "true")  return true;
   if (cleanVal === "false") return false;
-
-  const decimalNumberPattern = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/;
-
-  if (decimalNumberPattern.test(cleanVal)) return Number(cleanVal);
- 
+  if (DECIMAL_NUMBER_PATTERN.test(cleanVal)) return Number(cleanVal);
+  
   // Unwrap double JSX braces: {{ a: 1 }} → { a: 1 }
   let val = cleanVal;
   if (val.startsWith("{") && val.endsWith("}")) {
