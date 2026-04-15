@@ -55,12 +55,14 @@ jobs:
           cp pkg/* ../packages/mdx-next/wasm/
           
       - name: Run Tests with Coverage
-        run: npm run test -- --coverage
+        working-directory: packages/mdx-next
+        run: npm test
 
       - name: Upload to Codecov
         uses: codecov/codecov-action@v4
         with:
-          files: ./packages/mdx-next/coverage/lcov.info
+          files: packages/mdx-next/coverage/lcov.info
           flags: npm
+          working-directory: packages/mdx-next
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
