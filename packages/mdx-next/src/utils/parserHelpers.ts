@@ -37,7 +37,7 @@ export const parseProps = (propValue: ParsedPropInput): ParsedPropOutput => {
   if (cleanVal === "true")  return true;
   if (cleanVal === "false") return false;
 
-  const decimalNumberPattern = /^[+-]?(?:\d+\.?\d*|\.\d+)$/;
+  const decimalNumberPattern = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/;
 
   if (decimalNumberPattern.test(cleanVal)) return Number(cleanVal);
  

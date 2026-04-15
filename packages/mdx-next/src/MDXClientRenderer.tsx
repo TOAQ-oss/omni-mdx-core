@@ -16,7 +16,7 @@
  * For the live editor use case, import from '@toaq/omni-mdx/client'.
  */
 
-import React, { ReactNode, useRef } from "react";
+import React, { ReactNode } from "react";
 import katex from "katex";
 import { MDXErrorBoundary } from "./MDXErrorBoundary";
 import type { AstNode, MDXComponents } from "./types/MdxAST";
