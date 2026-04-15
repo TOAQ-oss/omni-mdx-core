@@ -8,7 +8,6 @@ BlockMath   → QPixmap via matplotlib.mathtext (two passes).
 
 from __future__ import annotations
 import re
-from typing import Optional
 
 # Tables mapping common LaTeX commands to their Unicode equivalents
 _GREEK = {

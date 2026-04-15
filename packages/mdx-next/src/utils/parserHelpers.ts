@@ -1,3 +1,5 @@
+import JSON5 from "json5";
+
 /**
  * Parses a stringified JSX property value into its native JavaScript type.
  *
@@ -7,7 +9,26 @@
  * @param propValue - Raw property value from the Rust AST (may be a string representation)
  * @returns Parsed JS value — object, array, boolean, number, or original string as fallback
  */
-export const parseProps = (propValue: any): any => {
+
+type ParsedPropInput =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | Record<string, unknown>
+  | unknown[];
+
+type ParsedPropOutput =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | Record<string, unknown>
+  | unknown[];
+
+export const parseProps = (propValue: ParsedPropInput): ParsedPropOutput => {
   if (typeof propValue !== "string") return propValue;
  
   const cleanVal = propValue.trim();
@@ -15,7 +36,10 @@ export const parseProps = (propValue: any): any => {
   // Primitives
   if (cleanVal === "true")  return true;
   if (cleanVal === "false") return false;
-  if (cleanVal !== "" && !isNaN(Number(cleanVal))) return Number(cleanVal);
+
+  const decimalNumberPattern = /^[+-]?(?:\d+\.?\d*|\.\d+)$/;
+
+  if (decimalNumberPattern.test(cleanVal)) return Number(cleanVal);
  
   // Unwrap double JSX braces: {{ a: 1 }} → { a: 1 }
   let val = cleanVal;
@@ -35,7 +59,7 @@ export const parseProps = (propValue: any): any => {
     (val.startsWith("{") && val.endsWith("}"))
   ) {
     try {
-      return JSON.parse(val);
+      return JSON5.parse(val);
     } catch {
       return propValue;
     }

@@ -63,7 +63,7 @@ fn make_mathi_placeholder(n: usize) -> String {
 ///
 /// Positions are preserved — `pulldown-cmark` will re-parse the actual input.
 pub fn mask_code_blocks(input: &str) -> Cow<'_, str> {
-    // On travaille en chars pour éviter de couper du UTF-8
+    // Work with chars to avoid splitting UTF-8 sequences
     let chars: Vec<char> = input.chars().collect();
     let len = chars.len();
     let mut out: Option<String> = None;
@@ -75,7 +75,7 @@ pub fn mask_code_blocks(input: &str) -> Cow<'_, str> {
             if out.is_none() {
                 out = Some(chars[..i].iter().collect());
             }
-            // Écrire les ``` d'ouverture + la ligne du langage tels quels
+            // Write the opening ``` and the language line as-is
             out.as_mut().unwrap().push('`');
             out.as_mut().unwrap().push('`');
             out.as_mut().unwrap().push('`');
@@ -85,7 +85,7 @@ pub fn mask_code_blocks(input: &str) -> Cow<'_, str> {
                 i += 1;
             }
 
-            // Corps du bloc : masquer < > $
+            // Block body: hide < > $
             while i < len {
                 if i + 2 < len && chars[i] == '`' && chars[i + 1] == '`' && chars[i + 2] == '`' {
                     out.as_mut().unwrap().push('`');

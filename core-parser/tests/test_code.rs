@@ -223,7 +223,7 @@ const x = <MDXServerRenderer ast={ast} />;
 
 `<Inline />` and $math$
 "#;
-    let ast = parse_mdx(mdx).expect("Le parsing a échoué");
+    let ast = parse_mdx(mdx).expect("Parsing failed");
 
     check_no_hidden_bytes(&ast);
 }

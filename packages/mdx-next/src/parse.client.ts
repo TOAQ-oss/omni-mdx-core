@@ -85,7 +85,7 @@ export async function parseMdxClient(mdx: string | Uint8Array, options?: OmniMdx
     const binaryAst = parse(inputBuffer);
     const decoder = new MdxBinaryDecoder(binaryAst);
     
-    parsedAst = decoder.decode()
+    parsedAst = decoder.decode();
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);
     

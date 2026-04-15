@@ -4,11 +4,9 @@ omni_mdx.renderer — HTML rendering from AST MDX.
 
 from __future__ import annotations
 import html as _html
-from typing import Callable, Dict, List, Optional
+from typing import Callable, List
 
-from .exceptions import MDXRenderError
-
-# Type hint simplifié
+# Simplified type hint
 ComponentFn = Callable[["MdxNode", "RenderContext"], str]
 
 class RenderContext:
@@ -22,8 +20,6 @@ class RenderContext:
     def __init__(self, components=None, katex=True):
         self.components = components or {}
         self.katex = katex
-
-_BUILTIN_HTML_COMPONENTS: frozenset = frozenset()
 
 class HtmlRenderer:
     """

@@ -224,8 +224,6 @@ export function MDXClientRenderer({
   ast,
   components = {},
 }: MDXClientRendererProps) {
-  const rootRef = useRef<HTMLDivElement>(null);
-
   if (!ast || !Array.isArray(ast)) return null;
 
   const finalComponents = {

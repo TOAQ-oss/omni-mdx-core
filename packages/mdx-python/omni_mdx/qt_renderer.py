@@ -16,7 +16,7 @@ Usage
 """
 
 from __future__ import annotations
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, Any, Protocol, TypeVar
 
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame,
@@ -27,6 +27,18 @@ from PyQt5.QtGui import QFont, QPixmap
 
 from .math_render import latex_to_unicode, latex_to_pixmap, latex_to_pixmap_available
 
+AstNodeT = TypeVar("AstNodeT")
+
+class AstNode(Protocol):
+    """
+    Minimal interface for AST nodes consumed by QtRenderer.
+    This remains structural, so any object with these attributes
+    will be accepted without coupling to a concrete AST implementation.
+    """
+    node_type: str
+    is_component: bool
+    children: List["AstNode"]
+                   
 class FlowLayout(QLayout):
     """
     A custom QLayout that disposes widgets in lines with automatic word-wrapping.
@@ -157,7 +169,7 @@ class QtRenderer:
         """Names of built-in components available by default."""
         return frozenset(_BUILTIN_COMPONENTS)
 
-    def render(self, nodes: List[Any], parent: Optional[QWidget] = None) -> QWidget:
+    def render(self, nodes: List[AstNodeT], parent: Optional[QWidget] = None) -> QWidget:
         """
         Main entry point. Renders a list of AST nodes into a vertical container widget.
         """
@@ -173,7 +185,7 @@ class QtRenderer:
         layout.addStretch()
         return container
 
-    def _node(self, node: Any) -> Optional[QWidget]:
+    def _node(self, node: AstNode) -> Optional[QWidget]:
         """Dispatches node rendering to specific handlers based on node_type."""
         t = node.node_type
         dispatch = {

@@ -70,6 +70,7 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "json5": "^2.2.3",
     "katex": "^0.16.0",
     "unified": "^11.0.5"
   }
