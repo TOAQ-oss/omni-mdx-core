@@ -49,7 +49,7 @@
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run --coverage.enabled=true --coverage.reporter=lcov --coverage.reporter=text"
   },
   "optionalDependencies": {
     "@toaq-oss/omni-mdx-darwin-arm64": "1.1.0",
