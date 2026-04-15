@@ -229,23 +229,48 @@ fn verify_markdown_safety(text: &str) -> Result<(), ParseError> {
         return Err(ParseError::InputTooLong);
     }
 
-    if text.matches("[^").count() > 100 {
-        return Err(ParseError::ComplexityLimitExceeded(
-            "ParseError: Document complexity limit exceeded (too many specific syntax tokens)."
-                .to_string(),
-        ));
-    }
+    let bytes = text.as_bytes();
+    let mut count_bracket_caret = 0;
+    let mut count_dash_double_space_dash = 0;
+    let mut count_dash_space_dash_space_dash = 0;
 
-    if text.matches("-  -").count() > 50 || text.matches("- - -").count() > 50 {
-        return Err(ParseError::ComplexityLimitExceeded(
-            "ParseError: Excessive structural ambiguity detected.".to_string(),
-        ));
-    }
+    for i in 0..bytes.len() {
+        // Detection of "[^" (2 bytes)
+        if i + 2 <= bytes.len() && &bytes[i..i + 2] == b"[^" {
+            count_bracket_caret += 1;
+            if count_bracket_caret > 100 {
+                return Err(ParseError::ComplexityLimitExceeded(
+                    "ParseError: Document complexity limit exceeded (too many specific syntax tokens).".to_string(),
+                ));
+            }
+        }
 
-    if text.matches(">>>>>>>>>").count() > 0 {
-        return Err(ParseError::ComplexityLimitExceeded(
-            "ParseError: Excessive nesting depth detected.".to_string(),
-        ));
+        // Detection of "-  -" (4 bytes)
+        if i + 4 <= bytes.len() && &bytes[i..i + 4] == b"-  -" {
+            count_dash_double_space_dash += 1;
+            if count_dash_double_space_dash > 50 {
+                return Err(ParseError::ComplexityLimitExceeded(
+                    "ParseError: Excessive structural ambiguity detected.".to_string(),
+                ));
+            }
+        }
+
+        // Detection of "- - -" (5 bytes)
+        if i + 5 <= bytes.len() && &bytes[i..i + 5] == b"- - -" {
+            count_dash_space_dash_space_dash += 1;
+            if count_dash_space_dash_space_dash > 50 {
+                return Err(ParseError::ComplexityLimitExceeded(
+                    "ParseError: Excessive structural ambiguity detected.".to_string(),
+                ));
+            }
+        }
+
+        // Detection of ">>>>>>>>>" (9 bytes)
+        if i + 9 <= bytes.len() && &bytes[i..i + 9] == b">>>>>>>>>" {
+            return Err(ParseError::ComplexityLimitExceeded(
+                "ParseError: Excessive nesting depth detected.".to_string(),
+            ));
+        }
     }
 
     let mut symbol_streak = 0;
@@ -645,7 +670,7 @@ fn map_tag(tag: &Tag) -> Cow<'static, str> {
 #[cfg(test)]
 mod debug_tests {
     use super::*;
-    use pulldown_cmark::{Event, Options, Parser};
+    use pulldown_cmark::{Options, Parser};
 
     #[test]
     fn debug_code_block_events() {

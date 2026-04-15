@@ -6,49 +6,6 @@
 //!
 //! Run with: `cargo test --test test_errors --release -- --nocapture`
 
-use omni_mdx_core::parser::parse_mdx;
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-/// Asserts that a parsing result is an `Err` and that the error message contains
-/// the expected keyword.
-fn assert_err(
-    result: Result<Vec<omni_mdx_core::ast::AstNode>, omni_mdx_core::ast::ParseError>,
-    expected_kind: &str,
-) {
-    match result {
-        Err(e) => {
-            let msg = e.to_string();
-            assert!(
-                msg.to_lowercase().contains(&expected_kind.to_lowercase()),
-                "Expected error kind '{}', but got: {}",
-                expected_kind,
-                msg
-            );
-        }
-        Ok(ast) => {
-            panic!(
-                "Expected error '{}' but parse succeeded:\n{}",
-                expected_kind,
-                serde_json::to_string_pretty(&ast).unwrap_or_default()
-            );
-        }
-    }
-}
-
-/// Recursively checks if a specific node type exists anywhere in the tree.
-fn has_node_type(nodes: &[omni_mdx_core::ast::AstNode], node_type: &str) -> bool {
-    nodes
-        .iter()
-        .any(|n| n.node_type == node_type || has_node_type(&n.children, node_type))
-}
-
-// ============================================================================
-// Test Cases
-// ============================================================================
-
 #[test]
 #[cfg(feature = "dev-tools")]
 fn test_unclosed_jsx_block() {

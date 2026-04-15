@@ -18,6 +18,7 @@
 
 import React, { ReactNode } from "react";
 import katex from "katex";
+import JSON5 from 'json5';
 import { MDXErrorBoundary } from "./MDXErrorBoundary";
 import type { AstNode, MDXComponents } from "./types/MdxAST";
 import { BASIC_STYLES } from "./utils/basicStyles";
@@ -53,7 +54,7 @@ function resolveAttr(
     case "expression": {
       const raw = attr.value.trim();
       try { return JSON.parse(raw); } catch {}
-      try { return new Function(`return (${raw})`)(); } catch {}
+      try { return JSON5.parse(raw); } catch {}
       return raw;
     }
     case "ast":
@@ -134,9 +135,22 @@ function renderNode(
 
   const resolvedProps: Record<string, any> = {};
   if (node.attributes) {
-    const attrs = typeof node.attributes === "string" 
-      ? JSON.parse(node.attributes) 
-      : node.attributes;
+    let attrs: Record<string, unknown> = {};
+    
+    if (typeof node.attributes === "string") {
+      try {
+        attrs = JSON.parse(node.attributes) as Record<string, unknown>;
+      } catch (error) {
+        if (process.env.NODE_ENV === "development") {
+          console.warn(
+            `[toaq-oss/omni-mdx] Failed to parse attributes JSON for <${node.node_type}>`,
+            error
+          );
+        }
+      }
+    } else {
+      attrs = node.attributes as Record<string, unknown>;
+    }
 
     for (const [k, v] of Object.entries(attrs)) {
       resolvedProps[k] = resolveAttr(v as AttrValueKind, components);
