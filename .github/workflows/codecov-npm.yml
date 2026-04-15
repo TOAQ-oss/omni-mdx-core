@@ -39,6 +39,21 @@ jobs:
           mkdir -p packages/mdx-next/wasm
           cp core-parser/pkg/* packages/mdx-next/wasm/
 
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Install wasm-pack
+        uses: jetli/wasm-pack-action@v0.4.0
+
+      - name: Build WASM for tests
+        run: |
+          cd core-parser
+          wasm-pack build --target web --features wasm
+          mkdir -p ../packages/mdx-next/wasm
+          cp pkg/* ../packages/mdx-next/wasm/
+          
       - name: Run Tests with Coverage
         run: npm run test -- --coverage
 
