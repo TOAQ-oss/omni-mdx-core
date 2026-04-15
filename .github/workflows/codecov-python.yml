@@ -1,0 +1,45 @@
+name: Python Coverage (Codecov)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+
+      - name: Install build tools
+        run: pip install pytest pytest-cov maturin
+
+      - name: Build Wheel
+        working-directory: packages/mdx-python
+        run: maturin build --out dist
+
+      - name: Install built package
+        run: pip install packages/mdx-python/dist/*.whl --force-reinstall
+
+      - name: Run Tests with Coverage
+        working-directory: packages/mdx-python
+        run: pytest --cov=./ --cov-report=xml
+
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./packages/mdx-python/coverage.xml
+          flags: python
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}

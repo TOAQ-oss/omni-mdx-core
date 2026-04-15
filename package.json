@@ -4,6 +4,9 @@
   "workspaces": [
     "packages/*"
   ],
+  "scripts": {
+    "test": "npm run test --workspaces --if-present"
+  },
   "dependencies": {
     "lucide-react": "^1.7.0",
     "vitest": "^4.1.0"
