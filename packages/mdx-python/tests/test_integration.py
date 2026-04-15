@@ -25,8 +25,7 @@ class TestRendererIntegration:
         renderer = HtmlRenderer(katex=True)
         html = renderer.render(ast.nodes)
         
-        assert '<span class="math-inline" data-math="a^2+b^2=c^2"></span>' in html
-        assert '<div class="math-block" data-math="E=mc^2"></div>' in html
+        assert '<p>Inline: <span class="math-inline" data-math="a^2+b^2=c^2"></span></p><p>Block:<br></p><div class="math-block" data-math="E=mc^2"></div>' in html
 
     def test_render_custom_jsx_component(self):
         """JSX components must be able to use a custom rendering function."""
