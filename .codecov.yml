@@ -1,0 +1,13 @@
+coverage:
+  precision: 2
+  round: down
+  range: "50...100"
+
+fixes:
+  - "packages/mdx-next/::"
+  - "packages/mdx-python/::"
+
+ignore:
+  - "dos-fuzzing"
+  - "**/tests/**"
+  - "core-parser/target"
