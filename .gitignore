@@ -31,3 +31,6 @@ tests-dev
 
 # dos-fuzzing
 dos-fuzzing/artifacts
+
+# Code Coverage
+coverage/
