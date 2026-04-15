@@ -43,7 +43,7 @@ jobs:
         working-directory: packages/mdx-next
         run: npm test
 
-      - name: Fix LCOV paths
+      - name: Fix LCOV paths for Monorepo
         run: |
           sed -i 's|SF:src/|SF:packages/mdx-next/src/|g' packages/mdx-next/coverage/lcov.info
 
