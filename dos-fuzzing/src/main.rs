@@ -24,7 +24,7 @@ use ocp::{
     generate_overflow_root_count, generate_overflow_string_length, generate_random_valid_ocp,
     generate_unknown_opcode, mutate_ocp_payload,
 };
-use rand::Rng;
+use rand::RngExt;
 use targets::{measure_isolated, FuzzTarget};
 
 use std::fs;
@@ -182,15 +182,12 @@ fn fuzz_ocp_binary(rng: &mut impl rand::Rng, iteration: usize) {
     ];
 
     for (name, payload) in &structured {
-        match measure_isolated(FuzzTarget::OcpBinary(payload.clone()), FATAL_TIMEOUT) {
-            None => {
-                println!("  INFINITE LOOP — OCP binary [{}]", name);
-                let _ = fs::write(
-                    format!("artifacts/fatal_loop_ocp_{}_{}.bin", name, iteration),
-                    payload,
-                );
-            }
-            Some(_) => {} // No hang → OK (panic = crash; in Rust, the thread terminates cleanly)
+        if measure_isolated(FuzzTarget::OcpBinary(payload.clone()), FATAL_TIMEOUT).is_none() {
+            println!("  INFINITE LOOP — OCP binary [{}]", name);
+            let _ = fs::write(
+                format!("artifacts/fatal_loop_ocp_{}_{}.bin", name, iteration),
+                payload,
+            );
         }
     }
 
@@ -198,19 +195,16 @@ fn fuzz_ocp_binary(rng: &mut impl rand::Rng, iteration: usize) {
     let base = generate_flat_ocp(5, "fuzz");
     let mutated = mutate_ocp_payload(rng, &base);
 
-    match measure_isolated(FuzzTarget::OcpBinary(mutated.clone()), FATAL_TIMEOUT) {
-        None => {
-            println!("  INFINITE LOOP — OCP mutated binary");
-            let _ = fs::write(
-                format!("artifacts/fatal_loop_ocp_mut_{}.bin", iteration),
-                &mutated,
-            );
-        }
-        Some(_) => {}
+    if measure_isolated(FuzzTarget::OcpBinary(mutated.clone()), FATAL_TIMEOUT).is_none() {
+        println!("  INFINITE LOOP — OCP mutated binary");
+        let _ = fs::write(
+            format!("artifacts/fatal_loop_ocp_mut_{}.bin", iteration),
+            &mutated,
+        );
     }
 
     // High depth valid payload.
-    let depth = rng.gen_range(1..=20);
+    let depth = rng.random_range(1..=20);
     let random_valid = generate_random_valid_ocp(rng, depth, 8);
     let _ = measure_isolated(FuzzTarget::OcpBinary(random_valid), FATAL_TIMEOUT);
 }
@@ -220,7 +214,7 @@ fn main() {
     let _ = fs::create_dir_all("artifacts");
     let _ = fs::remove_file("artifacts/.current_test.tmp");
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let mut i = 0usize;
     let mut suspects = 0usize;
 
@@ -231,7 +225,7 @@ fn main() {
         i += 1;
 
         // Weighted probabilities for different fuzzing targets.
-        let roll: f64 = rng.gen();
+        let roll: f64 = rng.random();
 
         if roll < 0.60 {
             let pat = generate_russian_doll(&mut rng, 4);

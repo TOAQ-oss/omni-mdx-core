@@ -1,4 +1,4 @@
-use rand::Rng;
+use rand::{Rng, RngExt};
 
 /// Represents a "Russian Doll" attack vector.
 /// Example: `prefix` + `repeating` * N + `suffix`
@@ -50,13 +50,13 @@ pub fn generate_russian_doll(rng: &mut impl Rng, parts_len: usize) -> Pattern {
     let mut suffix = String::new();
 
     for _ in 0..parts_len {
-        prefix.push_str(TOKENS[rng.gen_range(0..TOKENS.len())]);
+        prefix.push_str(TOKENS[rng.random_range(0..TOKENS.len())]);
     }
     for _ in 0..parts_len {
-        repeating.push_str(TOKENS[rng.gen_range(0..TOKENS.len())]);
+        repeating.push_str(TOKENS[rng.random_range(0..TOKENS.len())]);
     }
     for _ in 0..parts_len {
-        suffix.push_str(TOKENS[rng.gen_range(0..TOKENS.len())]);
+        suffix.push_str(TOKENS[rng.random_range(0..TOKENS.len())]);
     }
 
     Pattern {

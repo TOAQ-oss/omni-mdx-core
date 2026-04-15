@@ -1,4 +1,4 @@
-use rand::Rng;
+use rand::{Rng, RngExt};
 
 const NODE_TEXT: u8 = 0x01;
 const NODE_ELEMENT: u8 = 0x02;
@@ -18,24 +18,24 @@ pub fn mutate_ocp_payload(rng: &mut impl Rng, original: &[u8]) -> Vec<u8> {
         return data;
     }
 
-    let mutation_count = rng.gen_range(1..=5);
+    let mutation_count = rng.random_range(1..=5);
 
     for _ in 0..mutation_count {
-        let index = rng.gen_range(0..data.len());
-        match rng.gen_range(0..6) {
+        let index = rng.random_range(0..data.len());
+        match rng.random_range(0..6) {
             // Bit flip
             0 => {
-                let bit = rng.gen_range(0..8u8);
+                let bit = rng.random_range(0..8u8);
                 data[index] ^= 1 << bit;
             }
             // Random byte substitution
             1 => {
-                data[index] = rng.gen();
+                data[index] = rng.random();
             }
             // Limit values — critical for length headers
             2 => {
                 let boundaries = [0u8, 1, 127, 128, 254, 255];
-                data[index] = boundaries[rng.gen_range(0..boundaries.len())];
+                data[index] = boundaries[rng.random_range(0..boundaries.len())];
             }
             // Block deletion -> triggers “Unexpected EOF”
             #[allow(clippy::collapsible_match)]
@@ -46,11 +46,11 @@ pub fn mutate_ocp_payload(rng: &mut impl Rng, original: &[u8]) -> Vec<u8> {
             }
             // Insert a random byte → shifts all offsets
             4 => {
-                data.insert(index, rng.gen());
+                data.insert(index, rng.random());
             }
             // Duplicating a segment -> artificially inflates the lengths
             5 => {
-                let end = (index + rng.gen_range(1..=8)).min(data.len());
+                let end = (index + rng.random_range(1..=8)).min(data.len());
                 let segment = data[index..end].to_vec();
                 for (j, byte) in segment.iter().enumerate() {
                     data.insert(end + j, *byte);
@@ -194,7 +194,7 @@ pub fn generate_random_valid_ocp(rng: &mut impl Rng, node_count: u32, max_depth:
     let mut buf = Vec::new();
     write_u32(&mut buf, node_count);
     for _ in 0..node_count {
-        let depth = rng.gen_range(0..=max_depth);
+        let depth = rng.random_range(0..=max_depth);
         let node = random_node(rng, depth);
         buf.extend_from_slice(&node);
     }
@@ -202,22 +202,26 @@ pub fn generate_random_valid_ocp(rng: &mut impl Rng, node_count: u32, max_depth:
 }
 
 fn random_node(rng: &mut impl Rng, remaining_depth: usize) -> Vec<u8> {
-    if remaining_depth == 0 || rng.gen_bool(0.4) {
+    if remaining_depth == 0 || rng.random_bool(0.4) {
         // Sheet: text node
-        let content: String = (0..rng.gen_range(1..=64))
-            .map(|_| rng.gen_range(b'a'..=b'z') as char)
+        let content: String = (0..rng.random_range(1..=64))
+            .map(|_| rng.random_range(b'a'..=b'z') as char)
             .collect();
         let mut buf = Vec::new();
         encode_text_node(&mut buf, &content);
         buf
     } else {
         // Element node with recursive children
-        let tag = format!("Tag{}", rng.gen_range(0..10));
-        let attr_count = rng.gen_range(0..=3usize);
+        let tag = format!("Tag{}", rng.random_range(0..10));
+        let attr_count = rng.random_range(0..=3usize);
         let attrs: Vec<(String, String)> = (0..attr_count)
             .map(|_| {
-                let k: String = (0..4).map(|_| rng.gen_range(b'a'..=b'z') as char).collect();
-                let v: String = (0..8).map(|_| rng.gen_range(b'a'..=b'z') as char).collect();
+                let k: String = (0..4)
+                    .map(|_| rng.random_range(b'a'..=b'z') as char)
+                    .collect();
+                let v: String = (0..8)
+                    .map(|_| rng.random_range(b'a'..=b'z') as char)
+                    .collect();
                 (k, v)
             })
             .collect();
@@ -226,7 +230,7 @@ fn random_node(rng: &mut impl Rng, remaining_depth: usize) -> Vec<u8> {
             .map(|(k, v)| (k.as_str(), v.as_str()))
             .collect();
 
-        let child_count = rng.gen_range(0..=3usize);
+        let child_count = rng.random_range(0..=3usize);
         let children: Vec<Vec<u8>> = (0..child_count)
             .map(|_| random_node(rng, remaining_depth - 1))
             .collect();
