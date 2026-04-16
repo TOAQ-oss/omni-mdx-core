@@ -117,7 +117,6 @@ function renderNode(
   const getMathFormula = (node: AstNode) => {
     let formula = "";
     if (node.attributes) {
-      // Les attributs peuvent être une string (JSON) ou déjà un objet
       const attrs = typeof node.attributes === "string" 
         ? JSON.parse(node.attributes) 
         : node.attributes;
@@ -127,14 +126,12 @@ function renderNode(
         formula = String(mathData.value);
       }
     }
-    // Fallback de sécurité au cas où l'AST changerait
     if (!formula) {
       formula = extractText(node);
     }
     return formula;
   };
 
-  // Math — rendu via KaTeX
   if (node.node_type === "InlineMath") {
     const formula = getMathFormula(node);
 

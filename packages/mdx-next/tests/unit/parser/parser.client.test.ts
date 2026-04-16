@@ -4,25 +4,21 @@ import * as parserClient from '../../../src/parse.client';
 
 describe('parse.client depth coverage', () => {
   beforeEach(() => {
-    vi.resetModules(); // Vide le cache des modules pour réinitialiser le singleton initPromise
+    vi.resetModules();
     vi.restoreAllMocks();
   });
 
   it('covers initialization and fetch logic', async () => {
-    // Mock de fetch
     const fetchSpy = vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
       arrayBuffer: () => Promise.resolve(new ArrayBuffer(100))
     }));
 
-    // Import dynamique pour obtenir une NOUVELLE instance du module
     const { parseMdxClient } = await import('../../../src/parse.client');
 
     try {
       await parseMdxClient('# Test');
-    } catch (e) {
-      // On ignore l'erreur de parsing binaire, on veut juste le fetch
-    }
+    } catch (e) {}
     
     expect(globalThis.fetch).toHaveBeenCalled();
   });
@@ -53,18 +49,14 @@ describe('parseMdxClient', () => {
   });
 
   it('covers initialization and fetch logic', async () => {
-    // On mock fetch pour simuler la récupération du .wasm
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       arrayBuffer: () => Promise.resolve(new ArrayBuffer(100)) 
     });
 
     try {
-      // On lance le parse. Même si le binaire est bidon, on traverse l'init.
       await parserClient.parseMdxClient('# Test');
-    } catch (e) {
-      // On ignore l'erreur de parsing binaire, on veut juste le coverage du fetch
-    }
+    } catch (e) {}
     
     expect(globalThis.fetch).toHaveBeenCalled();
   });
@@ -75,9 +67,8 @@ describe('parseMdxClient', () => {
     await expect(parserClient.parseMdxClient('# Test')).rejects.toThrow();
   });
   it('covers window undefined branch', async () => {
-    // On simule un environnement non-navigateur temporairement
     const originalWindow = globalThis.window;
-    // @ts-expect-error - Simuler l'absence de window
+    // @ts-expect-error - Simulate the absence of a window
     delete globalThis.window;
     
     const result = await parserClient.parseMdxClient('# test');
@@ -87,13 +78,10 @@ describe('parseMdxClient', () => {
   });
 
   it('covers the error branch when fetch fails', async () => {
-  // On simule l'échec du fetch
-  globalThis.fetch = vi.fn().mockRejectedValue(new Error("Init Failed"));
-  
-  // On s'attend à ce que l'erreur soit interceptée et préfixée par parseMdxClient
-  // On utilise une Regex pour vérifier le début du message
-  await expect(parserClient.parseMdxClient('# test'))
-    .rejects
-    .toThrow(/Syntax error in MDX:/); 
-});
+    globalThis.fetch = vi.fn().mockRejectedValue(new Error("Init Failed"));
+
+    await expect(parserClient.parseMdxClient('# test'))
+      .rejects
+      .toThrow(/Syntax error in MDX:/); 
+  });
 });

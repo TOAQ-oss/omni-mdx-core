@@ -5,7 +5,6 @@ import { MDXServerRenderer } from '../../../src/MDXServerRenderer';
 
 describe('Basic Styles Coverage', () => {
   it('renders every single basic style component to ensure 100% coverage', () => {
-    // On construit un MDX qui contient absolument tous les éléments de BASIC_STYLES
     const fullMdx = [
       '# H1',
       '## H2',
@@ -30,7 +29,6 @@ describe('Basic Styles Coverage', () => {
     const ast = parseMdxSync(fullMdx);
     const html = renderToStaticMarkup(<MDXServerRenderer ast={ast} />);
 
-    // Assertions pour confirmer que les composants ont été appelés
     expect(html).toContain('text-3xl'); // h1
     expect(html).toContain('text-2xl'); // h2
     expect(html).toContain('text-xl');  // h3

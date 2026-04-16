@@ -35,7 +35,6 @@ describe('MdxBinaryDecoder - Advanced Nodes', () => {
     });
   });
   it('throws error on truncated buffer during string read', () => {
-    // On dit qu'il y a une string de 100 octets, mais on n'en donne que 2
     const truncated = new Uint8Array([1, 0, 0, 0, 0x01, 100, 0, 0, 0, 65, 66]);
     const decoder = new MdxBinaryDecoder(truncated);
     expect(() => decoder.decode()).toThrow();

@@ -34,20 +34,17 @@ describe('parser synchronous', () => {
     expect(result).toStrictEqual([ { node_type: 'h1', "children": [{"content": "Hello","node_type": "text"}]}])
   });
 
- it('throws on completely invalid MDX syntax', () => {
+  it('throws on completely invalid MDX syntax', () => {
     const badInput = '<UnclosedTag' 
 
     expect(() => parseMdxSync(badInput)).toThrow()
   });
   it('covers binary input and JSON errors in parse.server', async () => {
-  // Entrée binaire pour couvrir 122-123
-  const buf = Buffer.from('# Hello');
-  const ast = await parseMdx(buf);
-  expect(ast[0].node_type).toBe('h1');
+    const buf = Buffer.from('# Hello');
+    const ast = await parseMdx(buf);
+    expect(ast[0].node_type).toBe('h1');
 
-  // Forcer une erreur JSON (si possible via mock ou input spécifique)
-  // pour couvrir les branches de secours.
-  const error = new MDXParseError("test", "snippet");
-  expect(error.source).toBe("snippet");
+    const error = new MDXParseError("test", "snippet");
+    expect(error.source).toBe("snippet");
+  });
 });
-})
