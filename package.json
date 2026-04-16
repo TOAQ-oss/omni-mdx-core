@@ -12,6 +12,9 @@
     "vitest": "^4.1.0"
   },
   "devDependencies": {
-    "@types/react": "^19.2.14"
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "scheduler": "^0.27.0"
   }
 }
