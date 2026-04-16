@@ -67,12 +67,17 @@ describe('MDX Client Parser', () => {
   });
 
   it('throws syntax error when parsing fails with a non-Error object', async () => {
+    vi.resetModules();
+
     vi.doMock('../../../wasm/omni_mdx_core.js', () => ({
       default: vi.fn().mockResolvedValue(true),
-      parse_to_binary: () => { throw "String Error"; }
+      parse_to_binary: () => {
+        throw "String Error"; 
+      }
     }));
 
     const { parseMdxClient } = await import('../../../src/parse.client');
+
     await expect(parseMdxClient('# test')).rejects.toThrow(/Syntax error in MDX: String Error/); 
   });
 });
