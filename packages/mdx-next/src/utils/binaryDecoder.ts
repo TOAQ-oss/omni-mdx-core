@@ -158,6 +158,9 @@ export class MdxBinaryDecoder {
    */
   private readStringU16(): string {
     const len = this.readU16();
+    if (this.offset + len > this.buffer.byteLength) {
+      throw new Error(`Binary corruption: string (u16) out of bounds at offset ${this.offset}`);
+    }
     const str = this.decoder.decode(this.buffer.subarray(this.offset, this.offset + len));
     this.offset += len;
 
@@ -174,6 +177,9 @@ export class MdxBinaryDecoder {
    */
   private readStringU32(): string {
     const len = this.readU32();
+    if (this.offset + len > this.buffer.byteLength) {
+      throw new Error(`Binary corruption: string (u32) out of bounds at offset ${this.offset}`);
+    }
     const str = this.decoder.decode(this.buffer.subarray(this.offset, this.offset + len));
     this.offset += len;
     return str;
