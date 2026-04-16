@@ -2,7 +2,7 @@ name: NPM Coverage (Codecov)
 
 on:
   push:
-    branches: [ main, canary ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
@@ -41,14 +41,7 @@ jobs:
 
       - name: Run Tests with Coverage
         working-directory: packages/mdx-next
-        # On utilise npx pour forcer Vitest à cibler uniquement ton code source
-        run: npx vitest run --coverage.enabled=true --coverage.reporter=lcov --coverage.include="src/**/*.ts"
-
-      - name: Debug LCOV File
-        run: |
-          echo "=== DÉBUT DU FICHIER LCOV ==="
-          head -n 15 packages/mdx-next/coverage/lcov.info
-          echo "=== FIN DU FICHIER ==="
+        run: npm test
 
       - name: Fix LCOV paths for Monorepo
         run: |
