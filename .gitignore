@@ -35,3 +35,4 @@ dos-fuzzing/artifacts
 # Code Coverage
 coverage/
 .coverage
+coverage.xml
