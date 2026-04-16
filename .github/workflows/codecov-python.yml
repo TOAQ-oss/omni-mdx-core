@@ -25,6 +25,7 @@ jobs:
 
       - name: Install Python
         uses: actions/setup-python@v5
+        id: setup_python_step
         with:
           python-version: '3.13'
           cache: 'pip'
@@ -34,12 +35,14 @@ jobs:
 
       - name: Build Wheel
         working-directory: packages/mdx-python
-        run: maturin build --out dist
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install maturin pytest pytest-cov PyQt5 pytest-xvfb matplotlib
+          python -m pip install -e .[dev]
+        env:
+          PYO3_PYTHON: ${{ steps.setup_python_step.outputs.python-path }}
 
-      - name: Install built package
-        run: pip install packages/mdx-python/dist/*.whl --force-reinstall
-
-      - name: Run Tests with Coverage
+      - name: Run pytest with coverage
         working-directory: packages/mdx-python
         run: pytest --cov=omni_mdx --cov-report=xml
 
