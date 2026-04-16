@@ -33,9 +33,9 @@ jobs:
       - name: Build and install extension
         working-directory: packages/mdx-python
         run: |
+          python -m pip install --upgrade pip
           python -m pip install maturin pytest pytest-cov PyQt5 pytest-xvfb matplotlib
-          # On utilise maturin develop pour injecter le binaire dans le dossier local omni_mdx/
-          maturin develop
+          
           python -m pip install -e .[dev]
         env:
           PYO3_PYTHON: ${{ steps.setup_python_step.outputs.python-path }}
