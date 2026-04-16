@@ -40,7 +40,8 @@ class MdxNode:
             try:
                 self.attributes = dict(raw_attrs)
             except (TypeError, ValueError):
-                pass
+                # Ignore non-mapping/invalid attribute payloads and keep default {}.
+                self.attributes = {}
 
     def text_content(self) -> str:
         """Retrieves the raw text content of this node and its children recursively."""

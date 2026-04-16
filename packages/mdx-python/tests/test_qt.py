@@ -1,7 +1,7 @@
 import textwrap
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton
+from PyQt5.QtWidgets import QApplication, QLabel, QPushButton
 from omni_mdx import parse
-from omni_mdx.qt_renderer import QtRenderer, InlineLabel
+from omni_mdx.qt_renderer import QtRenderer
 
 app = QApplication.instance() or QApplication([])
 
