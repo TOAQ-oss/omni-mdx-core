@@ -1,13 +1,12 @@
 from __future__ import annotations
 import json
-from typing import List, Dict, Any, Optional
+from typing import List, Any, Optional
 from .core_interface import CoreInterface
 from .exceptions import MDXSyntaxError
 
 class MdxNode:
-    """Wrapper universel pour les nœuds AST (Dictionnaires ou Objets natifs Rust)."""
+    """Universal wrapper for AST nodes (dictionaries or native Rust objects)."""
     def __init__(self, data: Any):
-        # Helper pour lire une propriété (attribut d'objet ou clé de dictionnaire)
         def _get_val(key: str, default: Any = None):
             if isinstance(data, dict):
                 return data.get(key, default)
@@ -17,14 +16,11 @@ class MdxNode:
         self.content = _get_val("content")
         self.self_closing = _get_val("self_closing", False)
         
-        # Récursion sur les enfants
         raw_children = _get_val("children", [])
         self.children = [MdxNode(c) for c in raw_children]
         
-        # Un composant commence par une Majuscule
         self.is_component = bool(self.node_type and self.node_type[0].isupper())
 
-        # Traitement des attributs
         self.attributes = {}
         raw_attrs = _get_val("attributes", {})
         
@@ -42,19 +38,18 @@ class MdxNode:
                     self.attributes[k] = v
         elif raw_attrs is not None:
             try:
-                # Tentative de conversion si c'est une Map native Rust
                 self.attributes = dict(raw_attrs)
             except (TypeError, ValueError):
                 pass
 
     def text_content(self) -> str:
-        """Extrait récursivement le texte brut de ce nœud et de ses enfants."""
+        """Retrieves the raw text content of this node and its children recursively."""
         if self.content is not None:
             return str(self.content)
         return "".join(c.text_content() for c in self.children)
 
     def attr_text(self, key: str) -> Optional[str]:
-        """Récupère la valeur d'un attribut sous forme de chaîne."""
+        """Retrieves the value of an attribute as a string."""
         val = self.attributes.get(key)
         return str(val) if val is not None else None
 
@@ -73,7 +68,7 @@ class MdxNode:
         return results
 
 class MdxAstRoot:
-    """Conteneur pour la racine de l'AST, tel qu'attendu par les tests."""
+    """Container for the root of AST, as expected by the tests."""
     def __init__(self, nodes: List[MdxNode]):
         self.nodes = nodes
         self.length = len(nodes)
@@ -88,7 +83,6 @@ class MDXParser:
             
         raw_result = self._interface.parse(mdx_text)
         
-        # Détection du format renvoyé par le noyau Rust
         if isinstance(raw_result, str):
             if not raw_result.strip():
                 parsed_data = []
@@ -96,14 +90,11 @@ class MDXParser:
                 try:
                     parsed_data = json.loads(raw_result)
                 except json.JSONDecodeError as e:
-                    # Fix pour test_json_error_handling
                     raise MDXSyntaxError(f"Invalid JSON from Rust core: {e}")
         else:
             parsed_data = raw_result or []
 
-        # Normalisation : Unpacking du Root/Fragment natif Rust vers une liste Python
         nodes = []
-        # On vérifie si l'objet natif a une propriété .nodes ou .children
         source = getattr(parsed_data, "nodes", getattr(parsed_data, "children", None))
         
         if source is not None:
@@ -113,7 +104,6 @@ class MDXParser:
         elif parsed_data:
             nodes = [MdxNode(parsed_data)]
 
-        # Cas spécifique : si Rust renvoie un nœud racine vide
         if len(nodes) == 1 and not nodes[0].node_type and not nodes[0].children and not nodes[0].content:
             nodes = []
 
