@@ -18,6 +18,6 @@ export const BASIC_STYLES: Record<string, React.FC<any>> = {
   table: (props) => <div className="overflow-x-auto mb-6"><table className="w-full text-sm text-left border-collapse" {...props} /></div>,
   th: (props) => <th className="border-b border-white/10 p-2 font-semibold text-neutral-200" {...props} />,
   td: (props) => <td className="border-b border-white/5 p-2 text-neutral-400" {...props} />,
-  img: (props) => <img className="rounded-xl border border-white/10 my-8 mx-auto max-w-full h-auto" {...props} />,
+  img: ({ children, ...props }) => <img className="rounded-xl border border-white/10 my-8 mx-auto max-w-full h-auto" {...props} />,
   a: (props) => <a className="text-blue-400 hover:text-blue-300 underline underline-offset-4 decoration-blue-500/30 transition-colors" {...props} />,
 };
