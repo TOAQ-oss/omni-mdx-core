@@ -41,7 +41,7 @@ jobs:
 
       - name: Run Tests with Coverage
         working-directory: packages/mdx-python
-        run: pytest --cov=./ --cov-report=xml
+        run: pytest --cov=omni_mdx --cov-report=xml
 
       - name: Upload to Codecov
         uses: codecov/codecov-action@v4
