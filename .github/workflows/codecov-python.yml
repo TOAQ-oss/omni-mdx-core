@@ -25,23 +25,26 @@ jobs:
 
       - name: Install Python
         uses: actions/setup-python@v5
+        id: setup_python_step
         with:
           python-version: '3.13'
           cache: 'pip'
 
-      - name: Install build tools
-        run: python -m pip install maturin pytest pytest-cov PyQt5 pytest-xvfb matplotlib
-
-      - name: Build Wheel
+      - name: Build and install extension
         working-directory: packages/mdx-python
-        run: maturin build --out dist
+        run: |
+          python -m pip install maturin pytest pytest-cov PyQt5 pytest-xvfb matplotlib
+          # On utilise maturin develop pour injecter le binaire dans le dossier local omni_mdx/
+          maturin develop
+          python -m pip install -e .[dev]
+        env:
+          PYO3_PYTHON: ${{ steps.setup_python_step.outputs.python-path }}
 
-      - name: Install built package
-        run: python -m pip install packages/mdx-python/dist/*.whl --force-reinstall
-
-      - name: Run Tests with Coverage
+      - name: Run pytest with coverage
         working-directory: packages/mdx-python
-        run: python -m pytest --cov=omni_mdx --cov-report=xml
+        run: |
+          # On utilise python -m pytest pour s'assurer que le binaire local est prioritaire
+          python -m pytest --cov=omni_mdx --cov-report=xml --cov-report=term
         env:
           PYTHONPATH: .
           QT_QPA_PLATFORM: offscreen
