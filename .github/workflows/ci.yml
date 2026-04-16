@@ -155,7 +155,7 @@ jobs:
       - name: Build and install extension
         working-directory: packages/mdx-python
         run: |
-          python -m pip install maturin pytest
+          python -m pip install maturin pytest PyQt5
           python -m pip install -e .[dev]
         env:
           PYO3_PYTHON: ${{ steps.setup_python_step.outputs.python-path }}
