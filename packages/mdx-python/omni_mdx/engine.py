@@ -1,4 +1,4 @@
-from .core_interface import CoreInterface
+from .parser import MDXParser
 
 class OmniMDX:
     """
@@ -17,7 +17,7 @@ class OmniMDX:
                         to Python functions that handle their rendering.
         """
         self.components = components or {}
-        self._interface = CoreInterface()
+        self._parser = MDXParser()
 
     def parse_to_ast(self, mdx_text: str):
         """
@@ -29,7 +29,7 @@ class OmniMDX:
         Returns:
             A list of MdxNode objects representing the document structure.
         """
-        return self._interface.parse(mdx_text).nodes
+        return self._parser.parse(mdx_text).nodes
 
     def render(self, mdx_text: str):
         """

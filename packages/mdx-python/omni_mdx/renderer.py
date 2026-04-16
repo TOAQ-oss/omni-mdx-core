@@ -131,14 +131,16 @@ class HtmlRenderer:
 
     def _inline_math(self, node) -> str:
         """Renders inline LaTeX. Uses a data-attribute if KaTeX is enabled."""
-        src = _html.escape(node.attr_text("data-math") or "")
+        formula = node.attr_text("data-math") or node.text_content() or ""
+        src = _html.escape(formula)
         if self._ctx.katex:
             return f'<span class="math-inline" data-math="{src}"></span>'
         return f"<code>{src}</code>"
 
     def _block_math(self, node) -> str:
         """Renders block LaTeX. Uses a div with data-attribute if KaTeX is enabled."""
-        src = _html.escape(node.attr_text("data-math") or "")
+        formula = node.attr_text("data-math") or node.text_content() or ""
+        src = _html.escape(formula)
         if self._ctx.katex:
             return f'<div class="math-block" data-math="{src}"></div>'
         return f"<pre><code>{src}</code></pre>"

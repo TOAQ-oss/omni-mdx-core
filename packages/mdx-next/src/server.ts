@@ -8,6 +8,8 @@
  * ❌ Never import in "use client" files
  */
 
+export const SERVER_READY = true;
+
 export {
     parseMdx,
     parseMdxSync,

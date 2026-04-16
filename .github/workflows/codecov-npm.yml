@@ -13,6 +13,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -20,12 +26,6 @@ jobs:
 
       - name: Install wasm-pack
         uses: jetli/wasm-pack-action@v0.4.0
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          cache: 'npm'
 
       - name: Install dependencies
         run: npm install --ignore-scripts
@@ -39,28 +39,18 @@ jobs:
           mkdir -p packages/mdx-next/wasm
           cp core-parser/pkg/* packages/mdx-next/wasm/
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
-
-      - name: Install wasm-pack
-        uses: jetli/wasm-pack-action@v0.4.0
-
-      - name: Build WASM for tests
-        run: |
-          cd core-parser
-          wasm-pack build --target web --features wasm
-          mkdir -p ../packages/mdx-next/wasm
-          cp pkg/* ../packages/mdx-next/wasm/
-          
       - name: Run Tests with Coverage
-        run: npm run test -- --coverage
+        working-directory: packages/mdx-next
+        run: npm test
+
+      - name: Fix LCOV paths for Monorepo
+        run: |
+          sed -i 's|SF:src/|SF:packages/mdx-next/src/|g' packages/mdx-next/coverage/lcov.info
 
       - name: Upload to Codecov
         uses: codecov/codecov-action@v4
         with:
-          files: ./packages/mdx-next/coverage/lcov.info
+          files: packages/mdx-next/coverage/lcov.info
           flags: npm
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}

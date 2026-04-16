@@ -88,6 +88,8 @@ function extractText(node: AstNode): string {
   return (node.children ?? []).map(extractText).join("");
 }
 
+const VOID_ELEMENTS = new Set(["img", "br", "hr", "input", "meta", "link"]);
+
 /**
  * Recursively renders a single AST node into a React node.
  * Handles text nodes, fragments, math blocks (KaTeX), HTML tags, and custom components.
@@ -117,8 +119,26 @@ function renderNode(
   }
 
   // Math — server-side rendering via KaTeX (static HTML, no client-side JavaScript)
+  const getMathFormula = (node: AstNode) => {
+    let formula = "";
+    if (node.attributes) {
+      const attrs = typeof node.attributes === "string" 
+        ? JSON.parse(node.attributes) 
+        : node.attributes;
+        
+      const mathData = attrs?.["data-math"];
+      if (mathData && mathData.value) {
+        formula = String(mathData.value);
+      }
+    }
+    if (!formula) {
+      formula = extractText(node);
+    }
+    return formula;
+  };
+
   if (node.node_type === "InlineMath") {
-    const formula = extractText(node);
+    const formula = getMathFormula(node);
 
     try {
       const html = katex.renderToString(formula, {
@@ -138,8 +158,8 @@ function renderNode(
     }
   }
 
-  if (node.node_type === "BlockMath") {
-    const formula = extractText(node);
+  if (node.node_type === "BlockMath" || node.node_type === "math") {
+    const formula = getMathFormula(node);
 
     try {
       const html = katex.renderToString(formula, {
@@ -162,9 +182,16 @@ function renderNode(
   // Resolve props from AST attributes
   const resolvedProps: Record<string, any> = {};
   if (node.attributes) {
-    const attrs = typeof node.attributes === "string" 
-      ? JSON.parse(node.attributes) 
-      : node.attributes;
+    let attrs: Record<string, unknown> = {};
+    if (typeof node.attributes === "string") {
+      try {
+        attrs = JSON.parse(node.attributes);
+      } catch {
+        attrs = {};
+      }
+    } else {
+      attrs = (node.attributes as any) || {};
+    }
 
     for (const [k, v] of Object.entries(attrs)) {
       resolvedProps[k] = resolveAttr(v as AttrValueKind, components);
@@ -175,52 +202,11 @@ function renderNode(
     ? renderChildren(node, components)
     : (node.content ?? undefined);
 
-  // Custom registered component
-  const Custom = components[node.node_type];
-  if (Custom) {
-    try {
-      return (
-        <Custom key={key} {...resolvedProps}>
-          {renderedChildren}
-        </Custom>
-      );
-    } catch (err) {
-      if (process.env.NODE_ENV === "development") {
-        console.error(`[toaq-oss/omni-mdx] Server render failed for <${node.node_type}>:`, err);
-      }
-      return (
-        <div
-          key={key}
-          className="mdx-component-error"
-          data-component={node.node_type}
-          style={{ padding: "1rem", border: "2px solid #ef4444", borderRadius: "0.5rem", margin: "1rem 0", background: "#fef2f2" }}
-        >
-          <strong style={{ color: "#b91c1c" }}>Render error: &lt;{node.node_type}&gt;</strong>
-          {process.env.NODE_ENV === "development" && (
-            <pre style={{ color: "#dc2626", fontSize: "0.875rem", marginTop: "0.5rem" }}>
-              {String(err)}
-            </pre>
-          )}
-        </div>
-      );
-    }
-  }
-
   if (node.node_type === "table") {
     const firstChild = node.children?.[0];
     const hasThead   = firstChild?.node_type === "thead";
     const theadNode  = hasThead ? firstChild : null;
     const bodyRows   = hasThead ? node.children!.slice(1) : node.children ?? [];
-
-    const theadEl = theadNode ? (
-      <thead key="thead">
-        <tr>
-          {theadNode.children?.map((cell, i) =>
-            renderNode({ ...cell, node_type: "th" }, i, components)
-          )}
-        </tr>
-      </thead>
-    ) : null;
 
     const tbodyEl = bodyRows.length > 0 ? (
       <tbody key="tbody">
@@ -228,7 +214,24 @@ function renderNode(
       </tbody>
     ) : null;
 
-    return <table key={key} {...resolvedProps}>{theadEl}{tbodyEl}</table>;
+    const theadEl = theadNode ? (
+    <thead key="thead">
+      <tr>
+        {theadNode.children?.map((cell, i) =>
+          renderNode(cell, i, components)
+        )}
+      </tr>
+    </thead>
+    ) : null;
+
+    const TableComponent = components.table || BASIC_STYLES.table || "table";
+    
+    return (
+      <TableComponent key={key} {...resolvedProps}>
+        {theadEl}
+        {tbodyEl}
+      </TableComponent>
+    );
   }
 
   if (node.node_type === "pre") {
@@ -249,8 +252,54 @@ function renderNode(
     );
   }
 
+  // Custom registered component
+  //
+  // NOTE: We intentionally avoid `process.env.NODE_ENV` here. Bundlers (Webpack,
+  // Turbopack, esbuild) inline that string at compile-time, which means
+  // `vi.stubEnv('NODE_ENV', 'development')` has no effect on it at runtime.
+  // Reading through `process.env["NODE_ENV"]` (bracket notation) forces a real
+  // runtime property lookup that vi.stubEnv *can* intercept.
+  const isDev = (): boolean =>
+    (typeof process !== "undefined" ? process.env["NODE_ENV"] : undefined) === "development";
+
+  try {
+    const Custom = components[node.node_type] || BASIC_STYLES[node.node_type];
+
+    if (Custom) {
+      return (
+        <Custom key={key} {...resolvedProps}>
+          {renderedChildren}
+        </Custom>
+      );
+    }
+  } catch (err) {
+    if (isDev()) {
+      console.error(`[toaq-oss/omni-mdx] Server render failed for <${node.node_type}>:`, err);
+    }
+    return (
+      <div
+        key={key}
+        className="mdx-component-error"
+        data-component={node.node_type}
+        style={{ padding: "1rem", border: "2px solid #ef4444", borderRadius: "0.5rem", margin: "1rem 0", background: "#fef2f2" }}
+      >
+        <strong style={{ color: "#b91c1c" }}>Render error: &lt;{node.node_type}&gt;</strong>
+        {isDev() && (
+          <pre style={{ color: "#dc2626", fontSize: "0.875rem", marginTop: "0.5rem" }}>
+            {err instanceof Error ? err.message : String(err)}
+          </pre>
+        )}
+      </div>
+    );
+  }
+
   if (HTML_TAGS.has(node.node_type)) {
     const Tag = node.node_type as keyof JSX.IntrinsicElements;
+
+    if (VOID_ELEMENTS.has(node.node_type)) {
+      return <Tag key={key} {...resolvedProps} />;
+    }
+    
     return (
       <Tag key={key} {...resolvedProps}>
         {renderedChildren}
@@ -326,14 +375,9 @@ export function MDXServerRenderer({
     return <></>;
   }
 
-  const finalComponents = {
-    ...BASIC_STYLES,
-    ...components
-  };
-
   return (
     <div className="omni-mdx-root">
-      {ast.map((node, i) => renderNode(node, i, finalComponents))}
+      {ast.map((node, i) => renderNode(node, i, components))}
     </div>
   );
 }

@@ -232,7 +232,7 @@ export function parseMdxSync(mdx: MdxInput, options?: OmniMdxOptions): AstNode[]
     return runUnifiedPipelineSync(parsedAst, options.rehypePlugins);
   }
 
-  throw new Error("[toaq-oss/omni-mdx] Unrecognized return format from Rust parser.");
+  return parsedAst;
 }
 
 /**

@@ -49,7 +49,7 @@
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --coverage.enabled=true --coverage.reporter=lcov --coverage.reportsDirectory=./coverage"
+    "test": "vitest run --coverage"
   },
   "optionalDependencies": {
     "@toaq-oss/omni-mdx-darwin-arm64": "1.1.0",
@@ -62,13 +62,18 @@
   },
   "peerDependenciesMeta": {},
   "devDependencies": {
+    "@testing-library/react": "^16.3.2",
     "@types/hast": "^3.0.4",
     "@types/katex": "^0.16.0",
     "@types/node": "^25.5.2",
     "@types/react": "^18.0.0",
     "@vitest/coverage-v8": "^4.1.4",
+    "jsdom": "^29.0.2",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
     "tsup": "^8.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^4.1.4"
   },
   "dependencies": {
     "json5": "^2.2.3",

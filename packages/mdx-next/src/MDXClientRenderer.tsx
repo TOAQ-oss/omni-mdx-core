@@ -114,20 +114,61 @@ function renderNode(
   }
 
   // Math — rendered directly via KaTeX (static import)
+  const getMathFormula = (node: AstNode) => {
+    let formula = "";
+    if (node.attributes) {
+      const attrs = typeof node.attributes === "string" 
+        ? JSON.parse(node.attributes) 
+        : node.attributes;
+        
+      const mathData = attrs?.["data-math"];
+      if (mathData && mathData.value) {
+        formula = String(mathData.value);
+      }
+    }
+    if (!formula) {
+      formula = extractText(node);
+    }
+    return formula;
+  };
+
   if (node.node_type === "InlineMath") {
-    const formula = extractText(node);
+    const formula = getMathFormula(node);
+
     try {
-      const html = katex.renderToString(formula, { displayMode: false, throwOnError: false, output: "html" });
-      return <span key={key} className="math math-inline" dangerouslySetInnerHTML={{ __html: html }} />;
+      const html = katex.renderToString(formula, {
+        displayMode:  false,
+        throwOnError: false,
+        output:       "html",
+      });
+      return (
+        <span
+          key={key}
+          className="math math-inline"
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      );
     } catch {
       return <span key={key} className="math math-inline">{formula}</span>;
     }
   }
-  if (node.node_type === "BlockMath") {
-    const formula = extractText(node);
+
+  if (node.node_type === "BlockMath" || node.node_type === "math") {
+    const formula = getMathFormula(node);
+
     try {
-      const html = katex.renderToString(formula, { displayMode: true, throwOnError: false, output: "html" });
-      return <div key={key} className="math math-display" dangerouslySetInnerHTML={{ __html: html }} />;
+      const html = katex.renderToString(formula, {
+        displayMode:  true,
+        throwOnError: false,
+        output:       "html",
+      });
+      return (
+        <div
+          key={key}
+          className="math math-display"
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      );
     } catch {
       return <div key={key} className="math math-display">{formula}</div>;
     }
