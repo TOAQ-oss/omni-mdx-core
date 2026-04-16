@@ -35,16 +35,13 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install maturin pytest pytest-cov PyQt5 pytest-xvfb matplotlib
-          
           python -m pip install -e .[dev]
         env:
           PYO3_PYTHON: ${{ steps.setup_python_step.outputs.python-path }}
 
       - name: Run pytest with coverage
         working-directory: packages/mdx-python
-        run: |
-          # On utilise python -m pytest pour s'assurer que le binaire local est prioritaire
-          python -m pytest --cov=omni_mdx --cov-report=xml --cov-report=term
+        run: python -m pytest --cov=omni_mdx --cov-report=xml --cov-report=term
         env:
           PYTHONPATH: .
           QT_QPA_PLATFORM: offscreen
