@@ -1,6 +1,9 @@
 # 🦀 Omni-MDX
 ## A blazing-fast, secure, cross-language MDX rendering engine powered by Rust.
 
+[![codecov](https://codecov.io/gh/TOAQ-oss/omni-mdx-core/branch/main/graph/badge.svg?token=CHI7QZ25B0)](https://codecov.io/gh/TOAQ-oss/omni-mdx-core)
+[![CI](https://github.com/TOAQ-oss/omni-mdx-core/actions/workflows/ci.yml/badge.svg)](https://github.com/TOAQ-oss/omni-mdx-core)
+
 Omni-MDX is designed to transform complex MDX documents (Markdown + JSX + LaTeX) into a universal, high-performance data tree (AST). Initially created for the TOAQ platform, this engine eliminates the JavaScript parsing bottleneck, allowing heavy MDX content to be processed instantly and securely across Web, Edge, and Data-Science environments.
 
 ## 🚀 Project Vision
