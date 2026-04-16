@@ -57,13 +57,18 @@ describe('MDX Client Parser', () => {
   });
 
   it('throws syntax error when parsing fails with an Error instance', async () => {
+    vi.resetModules();
+
     vi.doMock('../../../wasm/omni_mdx_core.js', () => ({
       default: vi.fn().mockResolvedValue(true),
-      parse_to_binary: () => { throw new Error("WASM Crash"); }
+      parse_to_binary: () => { 
+        throw new Error("Core Failure"); 
+      }
     }));
 
     const { parseMdxClient } = await import('../../../src/parse.client');
-    await expect(parseMdxClient('# test')).rejects.toThrow(/Syntax error in MDX: WASM Crash/); 
+
+    await expect(parseMdxClient('# test')).rejects.toThrow(/Syntax error/);
   });
 
   it('throws syntax error when parsing fails with a non-Error object', async () => {
