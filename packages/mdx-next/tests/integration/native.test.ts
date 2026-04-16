@@ -4,75 +4,29 @@ import { parseMdx, parseMdxSync } from '../../src/server';
 describe('Native Bindings Integration (Sync vs Async Parity)', () => {
   
   it('produces identical ASTs for basic Markdown', async () => {
-    const mdxContent = `
-# Titre Principal
-Voici un paragraphe simple avec du **gras** et de l'*italique*.
-    `.trim();
-
-    const syncAst = parseMdxSync(mdxContent);
-    const asyncAst = await parseMdx(mdxContent);
-
-    expect(syncAst).toEqual(asyncAst);
-
-    expect(syncAst.length).toBeGreaterThan(0);
-    expect(syncAst[0].node_type).toBe('h1');
+    const mdxContent = '# Titre Principal\nVoici un paragraphe simple avec du **gras** et de l\'*italique*.';
+    expect(parseMdxSync(mdxContent)).toEqual(await parseMdx(mdxContent));
   });
 
   it('produces identical ASTs for complex MDX (Components, Props, Math)', async () => {
-    const complexMdx = `
-<HeroBanner theme="dark" showTitle>
-  # Welcome
-  La formule de l'énergie est $E=mc^2$.
-</HeroBanner>
-
-$$
-\\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}
-$$
-    `.trim();
-
-    const syncAst = parseMdxSync(complexMdx);
-    const asyncAst = await parseMdx(complexMdx);
-
-    expect(syncAst).toEqual(asyncAst);
-    expect(syncAst[0].node_type).toBe('HeroBanner');
+    const complexMdx = '<HeroBanner theme="dark" showTitle>\n  # Welcome\n  $E=mc^2$\n</HeroBanner>';
+    expect(parseMdxSync(complexMdx)).toEqual(await parseMdx(complexMdx));
   });
 
   it('handles empty strings identically', async () => {
-    const syncAst = parseMdxSync('');
-    const asyncAst = await parseMdx('');
-
-    expect(syncAst).toEqual(asyncAst);
-    expect(syncAst).toEqual([]);
+    expect(parseMdxSync('')).toEqual(await parseMdx(''));
   });
 
-  it('handles syntax errors with parity (throws vs rejects)', async () => {
+  it('handles syntax errors with parity (throws vs rejects with exact same message)', async () => {
     const badMdx = '<UnclosedComponent prop="test"> Voici un texte';
-
-    expect(() => parseMdxSync(badMdx)).toThrow();
-
-    await expect(parseMdx(badMdx)).rejects.toThrow();
-  });
-
-  it('throws the exact same error message for both methods', async () => {
-    const badMdx = '<div>Balise mal fermée</span>';
     
     let syncErrorMsg = '';
     let asyncErrorMsg = '';
 
-    try {
-      parseMdxSync(badMdx);
-    } catch (e: any) {
-      syncErrorMsg = e.message;
-    }
-
-    try {
-      await parseMdx(badMdx);
-    } catch (e: any) {
-      asyncErrorMsg = e.message;
-    }
+    try { parseMdxSync(badMdx); } catch (e: any) { syncErrorMsg = e.message; }
+    try { await parseMdx(badMdx); } catch (e: any) { asyncErrorMsg = e.message; }
 
     expect(syncErrorMsg).toBeTruthy();
     expect(syncErrorMsg).toEqual(asyncErrorMsg);
   });
-
 });

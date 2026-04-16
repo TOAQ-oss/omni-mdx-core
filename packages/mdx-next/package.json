@@ -49,7 +49,7 @@
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --coverage.enabled=true --coverage.reporter=lcov --coverage.reportsDirectory=./coverage"
+    "test": "vitest run --coverage"
   },
   "optionalDependencies": {
     "@toaq-oss/omni-mdx-darwin-arm64": "1.1.0",
@@ -72,7 +72,8 @@
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "tsup": "^8.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^4.1.4"
   },
   "dependencies": {
     "json5": "^2.2.3",

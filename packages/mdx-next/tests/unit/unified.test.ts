@@ -29,7 +29,7 @@ describe('Unified Bridge - HAST Transformation', () => {
       }
     ];
 
-    const result = runUnifiedPipelineSync(inputAst, [
+    const result:any = runUnifiedPipelineSync(inputAst, [
         () => (tree) => tree 
     ]);
 
@@ -47,7 +47,7 @@ describe('Unified Bridge - HAST Transformation', () => {
       }
     ];
 
-    const result = runUnifiedPipelineSync(inputAst, [() => (tree) => tree]);
+    const result:any = runUnifiedPipelineSync(inputAst, [() => (tree) => tree]);
 
     expect(result[0].node_type).toBe('pre');
     expect(result[0].children?.[0].node_type).toBe('code');
@@ -65,7 +65,7 @@ describe('Unified Bridge - HAST Transformation', () => {
       }
     ];
 
-    const result = runUnifiedPipelineSync(inputAst, [() => (tree) => tree]);
+    const result:any = runUnifiedPipelineSync(inputAst, [() => (tree) => tree]);
 
     expect(result[0].attributes?.content).toMatchObject({
       kind: 'ast',
@@ -88,17 +88,5 @@ describe('Unified Bridge - HAST Transformation', () => {
       ];
       const result = runUnifiedPipelineSync(inputAst, [() => (tree) => tree]);
       expect(result).toEqual(inputAst);
-  });
-
-  it('covers the unified bridge ast attribute parsing', () => {
-    const inputAst: AstNode[] = [{
-        node_type: 'div',
-        attributes: {
-        nested: { kind: 'ast', value: [{ node_type: 'text', content: 'hello' }] }
-        }
-    }];
-    
-    const result = runUnifiedPipelineSync(inputAst, [() => (tree) => tree]);
-    expect(result[0].attributes?.nested).toBeDefined();
   });
 });

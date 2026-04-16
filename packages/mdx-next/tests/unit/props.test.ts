@@ -1,8 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { parseProps } from '../../src/utils/parserHelpers'; 
 
-describe('Props Parsing – parseProps', () => {
-
+describe('Props Parsing - parseProps', () => {
   it('returns non-string values immediately (passthrough)', () => {
     expect(parseProps(42 as any)).toBe(42);
     expect(parseProps(true as any)).toBe(true);

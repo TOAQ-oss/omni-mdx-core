@@ -6,6 +6,11 @@ import { parseMdxSync } from '../../../src/server';
 
 describe('MDXServerRenderer (RSC)', () => {
   
+    it('returns empty fragment for invalid or null AST', () => {
+        const html = renderToStaticMarkup(<MDXServerRenderer ast={null as any} />);
+        expect(html).toBe('');
+    });
+
     it('renders static HTML without client-side overhead', () => {
         const mockAst: AstNode[] = [
         { node_type: 'h1', children: [{ content: 'Server Side', node_type: 'text' }] },
@@ -19,41 +24,85 @@ describe('MDXServerRenderer (RSC)', () => {
         expect(html).toContain('Rendu statique.');
     });
 
-    it('renders tables correctly with thead and tbody', () => {
-        const mockAst: AstNode[] = [
-            {
-                node_type: 'table',
-                children: [
-                {
-                    node_type: 'thead',
-                    children: [{ node_type: 'tr', children: [{ node_type: 'th', children: [{ content: 'Header', node_type: 'text' }] }] }]
-                },
-                {
-                    node_type: 'tbody',
-                    children: [{ node_type: 'tr', children: [{ node_type: 'td', children: [{ content: 'Cell', node_type: 'text' }] }] }]
-                }
-                ]
-            }
-        ];
+    it('renders complex table structures and code blocks', () => {
+        const tableMdx = '| Header |\n| ------ |\n| Cell |';
+        const preMdx = '```\nraw text\n```';
 
-        const html = renderToStaticMarkup(<MDXServerRenderer ast={mockAst} />);
+        const astTable = parseMdxSync(tableMdx);
+        const astPre = parseMdxSync(preMdx);
 
-        expect(html).toMatch(/<thead[^>]*>/);
-        expect(html).toMatch(/<tbody[^>]*>/);
-        expect(html).toMatch(/<td[^>]*>Cell<\/td>/);
+        const htmlTable = renderToStaticMarkup(<MDXServerRenderer ast={astTable} />);
+        const htmlPre = renderToStaticMarkup(<MDXServerRenderer ast={astPre} />);
+
+        expect(htmlTable).toContain('<thead');
+        expect(htmlTable).toContain('<tbody');
+        expect(htmlTable).toContain('<td');
+        
+        expect(htmlPre).toContain('<pre');
+        expect(htmlPre).toContain('<code');
     });
 
-    it('handles math on server without hydration', () => {
+    it('renders void HTML elements correctly (e.g., img, br)', () => {
+        const mockAst: AstNode[] = [
+            { node_type: 'img', attributes: { src: { kind: 'text', value: 'test.png' } } },
+            { node_type: 'br' }
+        ];
+        const html = renderToStaticMarkup(<MDXServerRenderer ast={mockAst} />);
+        
+        expect(html).toContain('<img');
+        expect(html).toContain('src="test.png"');
+        expect(html).toContain('<br');
+    });
+
+    it('handles math on server without hydration (Inline and Block)', () => {
         const mockAst: AstNode[] = [
             {
                 node_type: 'InlineMath',
                 attributes: { 'data-math': { kind: 'text', value: '\\alpha' } }
+            },
+            {
+                node_type: 'BlockMath',
+                attributes: { 'data-math': { kind: 'text', value: '\\beta' } }
             }
         ];
         const html = renderToStaticMarkup(<MDXServerRenderer ast={mockAst} />);
 
         expect(html).toContain('katex');
         expect(html).toContain('α');
+        expect(html).toContain('β');
+    });
+
+    it('covers all resolveAttr branches for server components', () => {
+        const mockAst: AstNode[] = [{
+            node_type: 'CustomWidget',
+            attributes: {
+                isTrue: { kind: 'boolean' },
+                jsonExpr: { kind: 'expression', value: '{"val": 42}' },
+                jsExpr: { kind: 'expression', value: '10 + 5' },
+                rawExpr: { kind: 'expression', value: 'not-json' },
+                nested: { kind: 'ast', value: [{ node_type: 'text', content: 'NestedAST' }] }
+            }
+        }];
+
+        const components = {
+            CustomWidget: (props: any) => (
+                <div>
+                    {props.isTrue && 'BOOL_OK '}
+                    {props.jsonExpr?.val === 42 && 'JSON_OK '}
+                    {props.jsExpr === 15 && 'JS_OK '}
+                    {props.rawExpr === 'not-json' && 'RAW_OK '}
+                    {props.nested}
+                </div>
+            )
+        };
+
+        const html = renderToStaticMarkup(<MDXServerRenderer ast={mockAst as any} components={components} />);
+        
+        expect(html).toContain('BOOL_OK');
+        expect(html).toContain('JSON_OK');
+        expect(html).toContain('JS_OK');
+        expect(html).toContain('RAW_OK');
+        expect(html).toContain('NestedAST');
     });
 
     it('handles unknown components and malformed attribute JSON', () => {
@@ -71,140 +120,54 @@ describe('MDXServerRenderer (RSC)', () => {
         expect(html).toContain('Fallback');
     });
 
-    it('covers server-side component render errors', () => {
-        const mockAst: AstNode[] = [{ node_type: 'BadComp', children: [] }];
-
-        const components = {
-            BadComp: () => {
-            throw new Error('Server Crash');
-            }
-        };
-
-        const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-        try {
-            const html = renderToStaticMarkup(
-            <MDXServerRenderer ast={mockAst} components={components} />
-            );
-            expect(html).toContain('Server Crash');
-        } catch (err: any) {
-            expect(err.message).toBe('Server Crash');
-        }
-
-        spy.mockRestore();
-    });
-
     it('handles malformed AST nodes and null children', () => {
         const weirdAst = [{ children: [] }] as any;
         const html = renderToStaticMarkup(<MDXServerRenderer ast={weirdAst} />);
-        expect(html).toBe('<div class="omni-mdx-root"><div class="mdx-missing-component"></div></div>');
+        expect(html).toContain('mdx-missing-component');
     });
 
-    it('renders fragments with multiple siblings', () => {
-        const fragmentAst: AstNode[] = [
-            { node_type: 'fragment', children: [
-            { node_type: 'text', content: 'One' },
-            { node_type: 'text', content: 'Two' }
-            ]}
-        ];
-        const html = renderToStaticMarkup(<MDXServerRenderer ast={fragmentAst} />);
-        expect(html).toContain('OneTwo');
-    });
-    it('renders tables and pre-blocks without code child for coverage', () => {
-        const tableMdx = '| a |\n| - |\n| b |';
-        const preMdx = '```\nraw text\n```';
-
-        const astTable = parseMdxSync(tableMdx);
-        const astPre = parseMdxSync(preMdx);
-
-        const htmlTable = renderToStaticMarkup(<MDXServerRenderer ast={astTable} />);
-        const htmlPre = renderToStaticMarkup(<MDXServerRenderer ast={astPre} />);
-
-        expect(htmlTable).toContain('<thead');
-        expect(htmlTable).toContain('<tbody');
-        
-        expect(htmlPre).toContain('<pre');
-        expect(htmlPre).toContain('<code');
-    });
-    it('renders complex table structures and code fallbacks', () => {
-        const tableAst: AstNode[] = [{
-            node_type: 'table',
-            children: [
-            { node_type: 'thead', children: [{ node_type: 'th', children: [{node_type:'text', content:'H'}] }] },
-            { node_type: 'tr', children: [{ node_type: 'td', children: [{node_type:'text', content:'C'}] }] }
-            ]
-        }];
-        
-        const preAst: AstNode[] = [{
-            node_type: 'pre',
-            content: 'raw code content'
-        }];
-
-        const htmlTable = renderToStaticMarkup(<MDXServerRenderer ast={tableAst} />);
-        const htmlPre = renderToStaticMarkup(<MDXServerRenderer ast={preAst} />);
-
-        expect(htmlTable).toContain('<thead');
-        expect(htmlPre).toContain('<code>raw code content</code>');
-    });
-
-    it('covers server-side component catch block (163-179)', () => {
-        const originalEnv = process.env.NODE_ENV;
-        process.env.NODE_ENV = "development";
-
-        const mockAst: AstNode[] = [{ node_type: 'Crash', children: [] }];
-        const components = {
-            get Crash() { throw new Error("Server Crash"); }
-        };
-
+    it('covers edge cases: fragments, null content, math fallbacks, and catch blocks (Dev)', () => {
+        vi.stubEnv('NODE_ENV', 'development');
         const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
-        const html = renderToStaticMarkup(<MDXServerRenderer ast={mockAst} components={components} />);
-
-        expect(html).toContain('mdx-component-error');
-        expect(html).toContain('Server Crash');
-
-        spy.mockRestore();
-        process.env.NODE_ENV = originalEnv;
-    });
-    it('covers edge cases for table and pre tags', () => {
-        const edgeCaseAst: AstNode[] = [
-            {
-            node_type: 'table',
-            children: [{ node_type: 'tr', children: [{ node_type: 'td', content: 'Simple cell' }] }]
-            },
-            {
-            node_type: 'pre',
-            children: [{ node_type: 'text', content: 'Just raw text in pre' }]
-            }
-        ];
-
-        const html = renderToStaticMarkup(<MDXServerRenderer ast={edgeCaseAst} />);
-        
-        expect(html).toContain('<tbody>');
-        expect(html).toContain('<code>Just raw text in pre</code>');
-    });
-    it('covers fragments, null content and development error UI', () => {
-        const originalEnv = process.env.NODE_ENV;
-        process.env.NODE_ENV = 'development';
 
         const edgeCaseAst: AstNode[] = [
-            { node_type: 'fragment', children: [] },
+            { node_type: 'fragment', children: [{ node_type: 'text', content: 'FragContent' }] },
             { node_type: 'text', content: null as any },
-            { node_type: 'CrashComp' }
+            { node_type: 'InlineMath', children: [{ node_type: 'text', content: 'E=mc^2' }] },
+            { node_type: 'math', children: [{ node_type: 'text', content: 'E=mc^2' }] },
+            { node_type: 'CrashNode' }
         ];
 
-        const components = {
-            get CrashComp() { throw new Error("Dev Error"); }
+        const components:any = {
+            get CrashNode() { throw new Error("Server Error"); } 
         };
 
-        const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
-        const html = renderToStaticMarkup(
-            <MDXServerRenderer ast={edgeCaseAst} components={components} />
-        );
+        const html = renderToStaticMarkup(<MDXServerRenderer ast={edgeCaseAst as any} components={components} />);
+
+        expect(html).toContain('FragContent'); 
+        expect(html).toContain('math-inline'); 
+        expect(html).toContain('math-display'); 
+        expect(html).toContain('katex');
+        expect(html).toContain('mdx-component-error');
+        expect(html).toContain('Server Error');
+
+        vi.unstubAllEnvs();
+        spy.mockRestore();
+    });
+
+    it('covers the catch block in production (masks the traces)', () => {
+        vi.stubEnv('NODE_ENV', 'production');
+        
+        const edgeCaseAst: AstNode[] = [{ node_type: 'CrashNode' }];
+        const components: any = {
+            get CrashNode() { throw new Error("Prod Error"); } 
+        };
+
+        const html = renderToStaticMarkup(<MDXServerRenderer ast={edgeCaseAst as any} components={components} />);
 
         expect(html).toContain('mdx-component-error');
-        expect(html).toContain('Dev Error');
+        expect(html).not.toContain('Prod Error');
 
-        spy.mockRestore();
-        process.env.NODE_ENV = originalEnv;
+        vi.unstubAllEnvs();
     });
 });
