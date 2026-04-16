@@ -253,6 +253,15 @@ function renderNode(
   }
 
   // Custom registered component
+  //
+  // NOTE: We intentionally avoid `process.env.NODE_ENV` here. Bundlers (Webpack,
+  // Turbopack, esbuild) inline that string at compile-time, which means
+  // `vi.stubEnv('NODE_ENV', 'development')` has no effect on it at runtime.
+  // Reading through `process.env["NODE_ENV"]` (bracket notation) forces a real
+  // runtime property lookup that vi.stubEnv *can* intercept.
+  const isDev = (): boolean =>
+    (typeof process !== "undefined" ? process.env["NODE_ENV"] : undefined) === "development";
+
   try {
     const Custom = components[node.node_type] || BASIC_STYLES[node.node_type];
 
@@ -264,7 +273,7 @@ function renderNode(
       );
     }
   } catch (err) {
-    if (process.env.NODE_ENV === "development") {
+    if (isDev()) {
       console.error(`[toaq-oss/omni-mdx] Server render failed for <${node.node_type}>:`, err);
     }
     return (
@@ -275,9 +284,9 @@ function renderNode(
         style={{ padding: "1rem", border: "2px solid #ef4444", borderRadius: "0.5rem", margin: "1rem 0", background: "#fef2f2" }}
       >
         <strong style={{ color: "#b91c1c" }}>Render error: &lt;{node.node_type}&gt;</strong>
-        {process.env.NODE_ENV === "development" && (
+        {isDev() && (
           <pre style={{ color: "#dc2626", fontSize: "0.875rem", marginTop: "0.5rem" }}>
-            {String(err)}
+            {err instanceof Error ? err.message : String(err)}
           </pre>
         )}
       </div>
