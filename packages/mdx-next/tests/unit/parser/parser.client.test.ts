@@ -1,32 +1,43 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import * as wasm from '../../../wasm/omni_mdx_core.js';
+import { MdxBinaryDecoder } from '../../../src/utils/binaryDecoder';
+import { runUnifiedPipeline } from '../../../src/utils/unifiedBridge';
+
+vi.mock('../../../wasm/omni_mdx_core.js', () => ({
+  default: vi.fn().mockResolvedValue(true),
+  parse_to_binary: vi.fn()
+}));
+
+vi.mock('../../../src/utils/binaryDecoder', () => ({
+  MdxBinaryDecoder: vi.fn().mockImplementation(function() {
+    return {
+      decode: vi.fn()
+    };
+  })
+}));
+
+vi.mock('../../../src/utils/unifiedBridge', () => ({
+  runUnifiedPipeline: vi.fn()
+}));
 
 describe('MDX Client Parser', () => {
-  beforeEach(() => {
-    vi.resetModules();
-    vi.restoreAllMocks();
+ beforeEach(() => {
+    vi.clearAllMocks();
     
-    vi.doMock('../../../wasm/omni_mdx_core.js', () => ({
-      default: vi.fn().mockResolvedValue(true),
-      parse_to_binary: vi.fn().mockReturnValue(new Uint8Array([0]))
-    }));
+    vi.mocked(wasm.parse_to_binary).mockReturnValue(new Uint8Array([0]));
+    vi.mocked(MdxBinaryDecoder).mockImplementation(function() {
+      return {
+        decode: () => [{ node_type: 'h1' }]
+      } as any;
+    });
 
-    vi.doMock('../../../src/utils/binaryDecoder', () => ({
-      MdxBinaryDecoder: class MockDecoder {
-        decode() {
-          return [{ node_type: 'h1' }];
-        }
-      }
-    }));
-
-    vi.doMock('../../../src/utils/unifiedBridge', () => ({
-      runUnifiedPipeline: vi.fn().mockResolvedValue([{ node_type: 'p', content: 'unified' }])
-    }));
+    vi.mocked(runUnifiedPipeline).mockResolvedValue([{ node_type: 'p', content: 'unified' }]);
   });
 
   it('covers window undefined branch', async () => {
     const originalWindow = globalThis.window;
-    // @ts-expect-error
+    // @ts-expect-error - We simulate a windowless environment (e.g., pure Node)
     delete globalThis.window;
     
     const { parseMdxClient } = await import('../../../src/parse.client');
@@ -52,37 +63,24 @@ describe('MDX Client Parser', () => {
     const dummyPlugin = () => (tree: any) => tree;
     
     const result = await parseMdxClient('# Test', { rehypePlugins: [dummyPlugin] });
-    
     expect(result[0].node_type).toBe('p'); 
   });
 
   it('throws syntax error when parsing fails with an Error instance', async () => {
-    vi.resetModules();
-
-    vi.doMock('../../../wasm/omni_mdx_core.js', () => ({
-      default: vi.fn().mockResolvedValue(true),
-      parse_to_binary: () => { 
-        throw new Error("Core Failure"); 
-      }
-    }));
+    vi.mocked(wasm.parse_to_binary).mockImplementation(() => {
+      throw new Error("Core Failure");
+    });
 
     const { parseMdxClient } = await import('../../../src/parse.client');
-
     await expect(parseMdxClient('# test')).rejects.toThrow(/Syntax error/);
   });
 
   it('throws syntax error when parsing fails with a non-Error object', async () => {
-    vi.resetModules();
-
-    vi.doMock('../../../wasm/omni_mdx_core.js', () => ({
-      default: vi.fn().mockResolvedValue(true),
-      parse_to_binary: () => {
-        throw "String Error"; 
-      }
-    }));
+    vi.mocked(wasm.parse_to_binary).mockImplementation(() => {
+      throw "String Error";
+    });
 
     const { parseMdxClient } = await import('../../../src/parse.client');
-
     await expect(parseMdxClient('# test')).rejects.toThrow(/Syntax error in MDX: String Error/); 
   });
 });
