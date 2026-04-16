@@ -34,3 +34,4 @@ dos-fuzzing/artifacts
 
 # Code Coverage
 coverage/
+.coverage
