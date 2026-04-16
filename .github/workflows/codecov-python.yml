@@ -30,7 +30,7 @@ jobs:
           cache: 'pip'
 
       - name: Install build tools
-        run: pip install maturin pytest PyQt5 pytest-xvfb matplotlib
+        run: pip install maturin pytest pytest-cov PyQt5 pytest-xvfb matplotlib
 
       - name: Build Wheel
         working-directory: packages/mdx-python
