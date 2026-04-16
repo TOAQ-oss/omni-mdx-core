@@ -28,7 +28,7 @@ function getClientParser(): Promise<(mdx: Uint8Array) => Uint8Array> {
 
       if (typeof wasm.default === "function") {
         const wasmUrl = new URL("./omni_mdx_core_bg.wasm", import.meta.url);
-        await wasm.default(wasmUrl);
+        await wasm.default({ module_or_path: wasmUrl });
       }
 
       return (mdx: Uint8Array): Uint8Array => wasm.parse_to_binary(mdx);
