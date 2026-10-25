@@ -21,7 +21,7 @@ This is where the complex structural logic happens:
 ## 3. OCP Binary Encoding
 This is the secret sauce of Omni-MDX. We do not serialize the Rust AST into a massive JSON string (which would be incredibly slow to parse back in JS/Python). 
 
-Instead, the AST is flattened into the **OCP (Open Core Protocol) Binary format**. Every node type, attribute, and text content is encoded into a dense, contiguous array of bytes (e.g., `Uint8Array` in JavaScript).
+Instead, the AST is flattened into the **OCP (Omni-Core Protocol) Binary format**. Every node type, attribute, and text content is encoded into a dense, contiguous array of bytes (e.g., `Uint8Array` in JavaScript).
 
 ## 4. Zero-Copy FFI Transfer
 The encoded binary buffer must now cross the language boundary:
