@@ -1,6 +1,6 @@
 # Custom Components
 
-*Last Updated March 22, 2026*
+_Last Updated March 22, 2026_
 
 One of the most powerful features of MDX is the ability to interleave interactive React components within your Markdown content. Omni-MDX makes this process incredibly efficient by parsing the component tree in Rust and rendering it seamlessly via React Server Components (RSC) or Client Components.
 
@@ -12,28 +12,29 @@ To render this node, you pass a "Component Registry" (a standard JavaScript obje
 
 ### 1. Creating your React Components
 
-First, build your components exactly as you would in any standard Next.js application. 
+First, build your components exactly as you would in any standard Next.js application.
 
 Here is an example of a pure Server Component (`Note.tsx`):
+
 ```tsx
 // components/Note.tsx
-export function Note({ type, children }: { type: 'info' | 'warning', children: React.ReactNode }) {
-  const bg = type === 'warning' ? 'bg-amber-500/10 border-amber-500/20' : 'bg-blue-500/10 border-blue-500/20';
-  
-  return (
-    <div className={`p-4 my-4 border rounded-lg ${bg}`}>
-      {children}
-    </div>
-  );
+export function Note({ type, children }: { type: "info" | "warning"; children: React.ReactNode }) {
+  const bg =
+    type === "warning"
+      ? "bg-amber-500/10 border-amber-500/20"
+      : "bg-blue-500/10 border-blue-500/20";
+
+  return <div className={`p-4 my-4 border rounded-lg ${bg}`}>{children}</div>;
 }
 ```
 
 Here is an example of an interactive Client Component (`Chart.tsx`):
+
 ```tsx
 // components/Chart.tsx
 "use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 
 export function Chart({ data }: { data: any[] }) {
   const [active, setActive] = useState(false);
@@ -42,18 +43,19 @@ export function Chart({ data }: { data: any[] }) {
 ```
 
 ### 2. Mapping the Components
+
 Next, import these components and pass them to either `MDXServerRenderer` or `MDXClientRenderer` using the `components` prop.
 
 ```tsx
 // app/blog/[slug]/page.tsx
 import { parseMdx, MDXServerRenderer } from "@toaq-oss/omni-mdx/server";
-import { Note }  from "@/components/Note";
+import { Note } from "@/components/Note";
 import { Chart } from "@/components/Chart";
 
 // The keys here define what tags are valid in your MDX
 const MDX_COMPONENTS = {
   Note,
-  Chart
+  Chart,
 };
 
 export default async function Page({ params }) {
@@ -67,16 +69,21 @@ export default async function Page({ params }) {
 ---
 
 ## Server vs. Client Components
+
 Omni-MDX embraces the Next.js App Router paradigm fully:
-* **Server Components (Default):** Components like `Note` or `Details` will be rendered entirely on the server. Zero JavaScript is sent to the client. This is the ultimate performance optimization for content-heavy sites.
-* **Client Components:** If a component requires state, hooks, or browser APIs (like the `Chart` component with `"use client"` inside), Next.js will automatically hydrate only that specific component on the frontend.
+
+- **Server Components (Default):** Components like `Note` or `Details` will be rendered entirely on the server. Zero JavaScript is sent to the client. This is the ultimate performance optimization for content-heavy sites.
+- **Client Components:** If a component requires state, hooks, or browser APIs (like the `Chart` component with `"use client"` inside), Next.js will automatically hydrate only that specific component on the frontend.
 
 <Note type="info">
-**Clean Separation:** By keeping the parse step in Rust and the render step in React, you avoid the common pitfall of shipping a heavy markdown compiler bundle to your users.
+  **Clean Separation:** By keeping the parse step in Rust and the render step in React, you avoid
+  the common pitfall of shipping a heavy markdown compiler bundle to your users.
 </Note>
 
 ---
+
 ## Error Boundaries
+
 When using the `MDXClientRenderer` for live previews or purely client-side applications, Omni-MDX automatically wraps every custom component in an `MDXErrorBoundary`.
 
 If your custom `<Chart />` component throws a JavaScript error due to bad data, the error is isolated. The chart will display a fallback, but the rest of the Markdown document will continue to render normally.
@@ -88,5 +95,5 @@ import { MDXErrorBoundary } from "@toaq-oss/omni-mdx/client";
 
 <MDXErrorBoundary componentName="Chart">
   <Chart data={maybeNull} />
-</MDXErrorBoundary>
+</MDXErrorBoundary>;
 ```

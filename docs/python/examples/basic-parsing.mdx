@@ -1,11 +1,12 @@
 # Example: Basic Parsing & Traversal
 
-*Last Updated March 27, 2026*
+_Last Updated March 27, 2026_
 
 The foundation of the Omni-MDX Python engine is its ability to parse Markdown and JSX at lightning speed while keeping the memory footprint near zero. This example demonstrates how to load a document and iterate through its native AST nodes.
 
 <Note type="info">
-  **Full Source Code:** Clone and test this environment directly from [omni-mdx-sandbox/python/basic-parsing](https://github.com/TOAQ-oss/omni-mdx-sandbox/tree/main/python/basic-parsing).
+  **Full Source Code:** Clone and test this environment directly from
+  [omni-mdx-sandbox/python/basic-parsing](https://github.com/TOAQ-oss/omni-mdx-sandbox/tree/main/python/basic-parsing).
 </Note>
 
 ## Extracting Node Information
@@ -27,6 +28,7 @@ The system is currently operating normally.
 ```
 
 ### 2. The Python Extraction Script
+
 On the Python side, you use the `omni_mdx.parse()` function. Because of the Zero-Copy architecture, the attributes are instantly available as a native Python dictionary.
 
 ```python
@@ -43,20 +45,20 @@ The system is currently operating normally.
 </Alert>
 """
     ast = omni_mdx.parse(document_source)
-    
+
     # 2. Filter specific JSX nodes
     # In omni_mdx, JSX component nodes use the component tag name (e.g. "Alert") as node_type.
     alerts = [node for node in ast.nodes if node.node_type == "Alert"]
-    
+
     for alert in alerts:
         # 3. Access the native dictionary for attributes
         attrs = alert.attributes or {}
         level = attrs.get("level", "unknown")
         is_active = "active" in attrs
-        
+
         # 4. Use text_content() to recursively strip Markdown tags (like **lost**)
         clean_message = alert.text_content().strip()
-        
+
         status = "ONGOING" if is_active else "RESOLVED"
         print(f"[{status}] {level.upper()}: {clean_message}")
 

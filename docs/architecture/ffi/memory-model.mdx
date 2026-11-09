@@ -1,10 +1,10 @@
 # FFI & Memory Model
 
-*Last Updated March 24, 2026*
+_Last Updated March 24, 2026_
 
 When you bypass traditional serialization and pass raw memory pointers across language boundaries (FFI), you inherit a massive responsibility: **Memory Management**.
 
-JavaScript and Python use Garbage Collection (GC) to automatically clean up unused objects. Rust, however, has no Garbage Collector; it uses a strict Ownership model evaluated at compile time. 
+JavaScript and Python use Garbage Collection (GC) to automatically clean up unused objects. Rust, however, has no Garbage Collector; it uses a strict Ownership model evaluated at compile time.
 
 So, when Rust creates an OCP Buffer and passes its pointer to Node.js or Python, **who owns that memory, and who is responsible for freeing it?**
 
@@ -23,9 +23,11 @@ To guarantee memory safety and zero leaks, Omni-Core implements a deterministic,
 Here is the exact lifecycle of an Omni-MDX payload:
 
 ### 1. Allocation (Rust)
+
 When you call `parse()`, Rust allocates a `Vec<u8>` on its heap to store the OCP Binary payload. To prevent Rust's ownership rules from instantly destroying this vector when the function ends, we use `Box::into_raw()`. This effectively "leaks" the memory intentionally, converting it into a raw C-pointer (`*mut u8`).
 
 ### 2. The Handoff (FFI)
+
 Rust returns this raw pointer, along with the length of the buffer, to the host language. The host creates a zero-copy view (like a `Uint8Array` in JS or a `memoryview` in Python) that points directly to this address.
 
 ### 3. Automatic Deallocation (Host-Driven)
@@ -41,6 +43,7 @@ We utilize the modern `FinalizationRegistry` API. When the JavaScript engine gar
 ## Safety Guarantees
 
 By intertwining Rust's manual memory management with the host's Garbage Collector, Omni-Core achieves the holy grail of FFI:
+
 - **Zero-Copy Performance:** Data is never cloned.
 - **Zero Memory Leaks:** The host GC deterministically triggers Rust's deallocation.
 - **Zero Segfaults:** The host retains a strong reference to the wrapper object as long as the data is needed, preventing Rust from freeing the memory prematurely.

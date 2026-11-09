@@ -1,11 +1,12 @@
 # Example: HTML & Web Rendering
 
-*Last Updated March 27, 2026*
+_Last Updated March 27, 2026_
 
 If you are building a Python backend (such as FastAPI, Flask, or Django) and need to serve MDX content to a frontend, the `HtmlRenderer` provides a secure, high-performance solution that structurally reflects the Rust AST.
 
 <Note type="info">
-  **Full Source Code:** Clone and test this environment directly from [omni-mdx-sandbox/python/html-rendering](https://github.com/TOAQ-oss/omni-mdx-sandbox/tree/main/python/html-rendering).
+  **Full Source Code:** Clone and test this environment directly from
+  [omni-mdx-sandbox/python/html-rendering](https://github.com/TOAQ-oss/omni-mdx-sandbox/tree/main/python/html-rendering).
 </Note>
 
 ## Server-Side HTML Generation
@@ -25,6 +26,7 @@ Here is the server status:
 ```
 
 ### 2. The Python Backend Mapping
+
 You intercept the JSX tag and inject your own HTML structure, recursively rendering any children (like the bold `**offline**` text).
 
 ```python
@@ -34,16 +36,16 @@ from omni_mdx.renderer import HtmlRenderer
 
 def render_alert(node, ctx) -> str:
     """Custom rendering function for the <Alert /> component."""
-    
+
     # 1. Safely extract native attributes
     attrs = node.attributes or {}
     level = html.escape(attrs.get("level", "info"))
     is_dismissible = attrs.get("dismissible", False)
-    
+
     # 2. Temporarily render inner children (e.g., parsing the **offline** bold tag)
     temp_renderer = HtmlRenderer(components=ctx.components)
     inner_html = temp_renderer.render(node.children)
-    
+
     # 3. Build the final HTML string
     close_btn = "<button class='close-btn'>X</button>" if is_dismissible else ""
     return f'<div class="alert alert-{level}">{close_btn}{inner_html}</div>'
@@ -51,15 +53,15 @@ def render_alert(node, ctx) -> str:
 def main():
     # Parse the document
     ast = omni_mdx.parse(document_source)
-    
+
     # Initialize the renderer and map the "Alert" tag
     renderer = HtmlRenderer(components={"Alert": render_alert}, katex=True)
-    
+
     # Generate the safe HTML string
     html_output = renderer.render(ast.nodes)
     print(html_output)
 
-# Output: 
+# Output:
 # <h1>Dashboard</h1>
 # <p>Here is the server status:</p>
 # <div class="alert alert-danger"><button class='close-btn'>X</button><p>The primary database is <strong>offline</strong>.</p></div>
