@@ -1,6 +1,6 @@
 # Introduction & Core Engine
 
-*Last Updated March 27, 2026*
+_Last Updated March 27, 2026_
 
 Welcome to the Omni-MDX Python ecosystem.
 
@@ -31,8 +31,9 @@ Omni-MDX bypasses this bottleneck using a **Zero-Copy** bridge powered by PyO3:
 3. **Lazy Evaluation:** On the Python side, when you request a property like `node.node_type` or `node.children`, Python does not read from a pre-allocated dictionary. It crosses the native bridge in real-time to query that specific node directly from Rust's RAM.
 
 ### Performance Impact
-* **O(1) Memory Footprint in Python:** Whether the MDX document is 10 lines or 10,000 lines long, the `omni_mdx.parse()` function returns almost instantly with a near-zero memory footprint on the Python side.
-* **Surgical Data Extraction:** If a processing pipeline only needs to extract `<Table />` components, only those specific nodes will cross the Rust-to-Python boundary. The rest of the document remains securely in Rust's memory, bypassing Python's Garbage Collector entirely.
+
+- **O(1) Memory Footprint in Python:** Whether the MDX document is 10 lines or 10,000 lines long, the `omni_mdx.parse()` function returns almost instantly with a near-zero memory footprint on the Python side.
+- **Surgical Data Extraction:** If a processing pipeline only needs to extract `<Table />` components, only those specific nodes will cross the Rust-to-Python boundary. The rest of the document remains securely in Rust's memory, bypassing Python's Garbage Collector entirely.
 
 ---
 

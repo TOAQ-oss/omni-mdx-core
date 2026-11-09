@@ -1,6 +1,6 @@
 # Benchmarks & Performance
 
-*Last Updated March 24, 2026*
+_Last Updated March 24, 2026_
 
 In the modern web ecosystem, parsing Markdown and JSX is often the most expensive operation in a content-heavy build pipeline. When generating thousands of static pages in Next.js or processing vast amounts of documentation, the JavaScript bottleneck becomes painfully obvious.
 
@@ -13,28 +13,32 @@ We built Omni-Core to eliminate this bottleneck entirely. Here are the numbers.
 In our standardized test suite, Omni-MDX consistently outperforms traditional JavaScript-based MDX parsers (like the `remark` ecosystem) by a factor of **20x to 25x** depending on the complexity of the file.
 
 When parsing a standard 500-line MDX document containing mixed Markdown, React components, and LaTeX formulas:
+
 - **Traditional JS Parser:** ~12.5 milliseconds per file.
 - **Omni-MDX (WASM/Native):** ~0.53 milliseconds per file.
 
-If your documentation site has 2,000 pages, Omni-MDX reduces the AST generation time from *25 seconds* down to just *1 second*.
+If your documentation site has 2,000 pages, Omni-MDX reduces the AST generation time from _25 seconds_ down to just _1 second_.
 
 ## Methodology
 
 We believe in transparent, reproducible benchmarks. Our performance metrics are continuously tracked in our CI/CD pipeline across all supported environments.
 
 ### 1. JavaScript / WebAssembly (tinybench)
+
 For the JS ecosystem, we use `tinybench` (the benchmarking tool powering Vitest). We measure the exact time it takes to go from a raw string to a fully queryable AST object in V8. This includes the WASM instantiation, the Rust parsing, the OCP Binary encoding, and the Zero-Copy JavaScript decoding.
 
 ### 2. Python (pytest-benchmark)
+
 For our Python bindings (`omni-mdx`), we use `pytest-benchmark`. We compare Omni-Core against popular Python Markdown libraries. Because PyO3 allows direct memory access, the Python extension achieves near-identical speeds to the Node.js Native Addon, parsing hundreds of megabytes of text per second.
 
 ### 3. Rust Core (criterion)
+
 At the lowest level, we benchmark the isolated Rust parser using `criterion`. This allows us to track micro-optimizations in the Lexer. The raw Rust engine operates in the realm of microseconds (µs), completely saturating the CPU's L1 cache thanks to its flat memory layout.
 
 ## Beyond Speed: Memory Predictability
 
 While the execution speed is the headline feature, the most significant architectural win is **Memory Predictability**.
 
-JavaScript parsers allocate millions of temporary objects (AST nodes, tokens, regex matches) on the V8 heap, triggering massive Garbage Collection (GC) pauses that block the main thread. 
+JavaScript parsers allocate millions of temporary objects (AST nodes, tokens, regex matches) on the V8 heap, triggering massive Garbage Collection (GC) pauses that block the main thread.
 
 Because Omni-MDX performs all allocations in Rust and transfers data via a flat OCP Binary buffer, the host language's memory heap remains virtually untouched. Your server uses less RAM, avoids GC spikes, and maintains a perfectly flat performance curve even under heavy concurrent load.

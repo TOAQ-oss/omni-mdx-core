@@ -1,6 +1,6 @@
 # Python Engine & API
 
-*Last Updated March 22, 2026*
+_Last Updated March 22, 2026_
 
 **Omni-MDX** provides a native Python bridge to the high-performance Rust core. It parses MDX (Markdown + JSX) into a deeply manipulable Abstract Syntax Tree (AST) consisting of pure Python objects.
 
@@ -15,9 +15,11 @@ pip install omni-mdx
 ---
 
 ## 1. Parsing MDX to AST
+
 The core feature of `omni-mdx` in Python is transforming raw text into a structured, easily searchable AST.
 
 You can initialize the `OmniMDX` engine and call the `parse_to_ast` method:
+
 ```python
 from omni_mdx.engine import OmniMDX
 
@@ -36,29 +38,31 @@ engine = OmniMDX()
 nodes = engine.parse_to_ast(mdx_content)
 ```
 
---- 
+---
 
 ## 2. Understanding the AST Structure
 
 The parser generates a typed `AstNode` tree. Each node in the MDX AST is represented by an `AstNode` dataclass, which contains:
 
-* `node_type`: A string representing the tag name (e.g., `"p"`, `"h1"`, `"text"`, `"BlockMath"`, or custom components like `"Alert"`).
-* `content`: Raw text content (for leaf text nodes).
-* `attributes`: A dictionary mapping attribute names to `AttrValue` instances.
-* `children`: A list of nested `AstNode` child nodes.
-* `self_closing`: A boolean indicating if the tag was self-closing (`<Comp />`).
+- `node_type`: A string representing the tag name (e.g., `"p"`, `"h1"`, `"text"`, `"BlockMath"`, or custom components like `"Alert"`).
+- `content`: Raw text content (for leaf text nodes).
+- `attributes`: A dictionary mapping attribute names to `AttrValue` instances.
+- `children`: A list of nested `AstNode` child nodes.
+- `self_closing`: A boolean indicating if the tag was self-closing (`<Comp />`).
 
 ### The `AttrValue` Object
+
 JSX attributes can be complex. The `AttrValue` class neatly categorizes them by `kind`:
 
-* `text`: Standard string values (`prop="hello"`).
-* `expression`: Raw JavaScript/Python expressions (`prop={someExpr}`).
-* `boolean`: Implicitly true attributes (`disabled`).
-* `ast`: Sub-trees passed as props (`prop={<Component/>}`).
+- `text`: Standard string values (`prop="hello"`).
+- `expression`: Raw JavaScript/Python expressions (`prop={someExpr}`).
+- `boolean`: Implicitly true attributes (`disabled`).
+- `ast`: Sub-trees passed as props (`prop={<Component/>}`).
 
 ---
 
 ## 3. Advanced AST Manipulation
+
 The Python AST objects come with built-in helper methods to make traversing and extracting data incredibly easy for large-scale text analysis or metadata ingestion pipelines.
 
 Finding Nodes
@@ -68,6 +72,7 @@ Extracting Text
 The `text_content()` method recursively collects all text content inside a node as a single string, stripping away all MDX tags. The `attr_text(name)` method retrieves the plain-text value of a specific attribute.
 
 ### Example: Extracting Component Data
+
 If you need to programmatically extract specific nodes while ignoring the rest of the document formatting, you can easily iterate over the AST:
 
 ```python

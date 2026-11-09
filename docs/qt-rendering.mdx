@@ -1,6 +1,6 @@
 # Native Desktop Rendering (PyQt5)
 
-*Last Updated March 22, 2026*
+_Last Updated March 22, 2026_
 
 Omni-MDX provides a unique solution for rendering rich text and interactive layouts in native desktop applications without the overhead of a heavy WebEngine (Chromium) component. By mapping the Rust-generated AST directly to native **PyQt5** widgets, you get a lightweight, high-performance UI that feels native to the OS.
 
@@ -42,14 +42,15 @@ sys.exit(app.exec_())
 
 One of the most powerful aspects of the Qt renderer is its handling of mathematical equations. Instead of relying on CSS/JS (KaTeX), the Python engine uses Matplotlib as a backend to convert LaTeX strings into high-quality images (`QPixmap`).
 
-* **Inline Math**: Rendered as small, baseline-aligned images inside text flows.
-* **Block Math**: Rendered as centered, high-resolution images between paragraphs.
+- **Inline Math**: Rendered as small, baseline-aligned images inside text flows.
+- **Block Math**: Rendered as centered, high-resolution images between paragraphs.
 
 This ensures that complex formulas like `$$E_k = \frac{1}{2}mv^2$$` look perfect regardless of the user's screen resolution or installed fonts.
 
 ---
 
 ## Custom Component Mapping
+
 Just like in React, you can map MDX JSX tags to custom Python/Qt logic. This allows you to insert complex interactive widgets (like custom buttons, data tables, or media players) directly into your text flow.
 
 ```python
@@ -66,7 +67,9 @@ renderer = HtmlRenderer(components={"Alert": render_custom_alert})
 ```
 
 ---
+
 ## Architecture Overview
+
 The rendering pipeline follows a strict path to ensure stability:
 
 1. `parser.py`: Calls the Rust binary to get the raw AST.
@@ -75,5 +78,6 @@ The rendering pipeline follows a strict path to ensure stability:
 4. `qt_renderer.py`: Iterates through the AST and instantiates the corresponding `QLabel`, `QVBoxLayout`, or custom widgets.
 
 <Note type="info">
-This "Zero-HTML" approach significantly reduces memory usage compared to QWebEngineView, making it ideal for resource-constrained environments or high-performance scientific tools.
+  This "Zero-HTML" approach significantly reduces memory usage compared to QWebEngineView, making it
+  ideal for resource-constrained environments or high-performance scientific tools.
 </Note>

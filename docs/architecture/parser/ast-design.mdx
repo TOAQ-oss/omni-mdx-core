@@ -1,8 +1,8 @@
 # AST Node Design
 
-*Last Updated March 24, 2026*
+_Last Updated March 24, 2026_
 
-Once the lexer has tokenized the input string, the parser's job is to build the **Abstract Syntax Tree (AST)**. 
+Once the lexer has tokenized the input string, the parser's job is to build the **Abstract Syntax Tree (AST)**.
 
 In Omni-Core, the AST is the ultimate source of truth. It is a strictly typed, recursive data structure in Rust that guarantees every host language (Python, TypeScript) receives exactly the same logical representation of the document.
 
@@ -40,9 +40,11 @@ If you write `$$ E=mc^2 $$`, the AST does not look like:
 
 It looks like this:
 `{ type: "BlockMath", children: [ { type: "text", content: "E=mc^2" } ] }`
+
 </Note>
 
 ## Universal Traversal
+
 Because of this architectural rule, writing a `text_content()` function in Python or JavaScript becomes trivially simple and 100% reliable:
 
 ```python
@@ -50,7 +52,7 @@ def text_content(node):
     # Base case: it's a pure text node
     if node.node_type == "text":
         return node.content or ""
-    
+
     # Recursive case: gather text from all children
     return "".join(text_content(child) for child in node.children)
 ```
